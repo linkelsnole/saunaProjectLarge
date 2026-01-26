@@ -12,6 +12,11 @@ interface UpdateTempSettingsRequest {
   waterFailThreshold?: number;
   inflowWarnThreshold?: number;
   inflowFailThreshold?: number;
+
+  neutralZoneT?: number;
+  hotValveMinProc?: number;
+  waterMinTNoWork?: number;
+  waterMinTWork?: number;
 }
 
 export async function updateManualSettings(data: UpdateManualSettingsRequest): Promise<void> {

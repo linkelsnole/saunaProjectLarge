@@ -7,7 +7,7 @@ import { SquareBlock } from './SquareBlock';
 import { TemperatureBlock } from './TemperatureBlock';
 import { DiagonalBlock } from './DiagonalBlock';
 import { TriangleBlock } from './TriangleBlock';
-import { DeltaPBlock } from './DeltaPBlock';
+
 import { ControlButton } from '@/shared/ui/control-button';
 import { toggleRecuperator } from '@/api/deviceApi';
 import { toast } from 'sonner';
@@ -31,6 +31,36 @@ const Schema = () => {
 	const [loading, setLoading] = useState(false);
 	const [optimisticState, setOptimisticState] = useState<{ enabled: boolean; stateCode: number } | null>(null);
 	const defaultColor = '#000';
+
+
+	const lastNotifiedErrorCode = useRef<number | null>(null);
+	
+	useEffect(() => {
+        const status = data?.recuperatorStatus;
+        if (!status || status.stateCode == null) return;
+
+        const currentCode = status.stateCode;
+        const stateName = status.stateName;
+        const isAlarm = (currentCode & 6) !== 0;
+
+        if (isAlarm) {
+            if (lastNotifiedErrorCode.current !== currentCode) {
+                
+                toast.error("Внимание! Авария агрегата", {
+                    description: `Статус: ${stateName || 'Ошибка'} (Код ${currentCode})`,
+                    duration: 10000, 
+                });
+                lastNotifiedErrorCode.current = currentCode;
+            }
+        } else {
+            if (lastNotifiedErrorCode.current !== null) {
+                toast.success("Система в норме", {
+                    description: "Аварийные статусы сняты",
+                });
+                lastNotifiedErrorCode.current = null;
+            }
+        }
+    }, [data?.recuperatorStatus?.stateCode]);
 
 	const handleToggleRecuperator = async () => {
 		try {
@@ -66,9 +96,6 @@ const Schema = () => {
 		return data?.wSensors?.find(s => s.id === id);
 	};
 
-	const getPressureSensor = (id: string) => {
-		return data?.pressureSensors?.find(s => s.id === id);
-	};
 
 	const getValve = (id: string) => {
 		return data?.valves?.find(s => s.id === id);
@@ -90,15 +117,6 @@ const Schema = () => {
 		return value != null ? `${value} Па` : '-- Па';
 	};
 
-	const formatPressureSensor = (id: string): string => {
-		const sensor = getPressureSensor(id);
-		const value = sensor?.value;
-		if (value != null) {
-			const intValue = Math.round(parseFloat(value));
-			return `${intValue} Па`;
-		}
-		return '-- Па';
-	};
 
 	const formatValveLabel = (valveId: string, tempId: string): string => {
 		const valve = getValve(valveId);
@@ -277,11 +295,11 @@ const Schema = () => {
 		  <Line points={[480, 50, 480, 231]} strokeWidth={2.5} stroke="#006AD2"/>
 
 		  {/* Линии до ΔP2*/}
-		  <Line points={[90, 350, 160, 350]} stroke={defaultColor} strokeWidth={2.5} />
+		  {/* <Line points={[90, 350, 160, 350]} stroke={defaultColor} strokeWidth={2.5} />
 		  <Line points={[90, 450, 160, 450]} stroke={defaultColor} strokeWidth={2.5} />
-		  <Line points={[90, 349, 90, 451]} stroke={defaultColor} strokeWidth={2.5} />
+		  <Line points={[90, 349, 90, 451]} stroke={defaultColor} strokeWidth={2.5} /> */}
 
-		   {/*BPCalib BP5 и BP10*/}
+		   {/* BPCalib BP5 и BP10
 		  <DeltaPBlock
 			x={90}
 			y={400}
@@ -290,7 +308,7 @@ const Schema = () => {
 			labelWidth={70}
 			labelOffsetX={-15}
 			labelOffsetY={-5}
-		  />
+		  /> */}
 
 		{/* BP2 */}
 		  	<PressureBlock 
@@ -507,13 +525,13 @@ const Schema = () => {
 					fontSize={10}
 					fill="#000"
 				/> */}
-				<Text
+				{/* <Text
 					text={formatRecuperator('R_CURRENT')}
 					x={0}
 					y={15}
 					fontSize={10}
 					fill="#000"
-				/>
+				/> */}
 				<Text
 					text={formatRecuperator('R_EFFICIENCY')}
 					x={0}

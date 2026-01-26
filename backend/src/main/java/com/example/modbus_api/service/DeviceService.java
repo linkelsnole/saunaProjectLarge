@@ -13,6 +13,7 @@ import com.example.modbus_api.dto.TempSettingsDto;
 import java.util.Map;
 import java.util.List;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.io.IOException;
 
 import static com.example.modbus_api.service.ModbusConstants.*;
@@ -60,7 +61,8 @@ public class DeviceService {
 	}
 
 	public DashboardData getDashboardData() throws IOException {
-		List<Integer> allRegs = Arrays.asList(
+
+		List<Integer> allRegs = new ArrayList<>(Arrays.asList(
 			// --- ТЕМПЕРАТУРА (тип 1) ---
 			REG_T_BT3,    // T1
 			REG_T_BT11,    // T2
@@ -123,6 +125,9 @@ public class DeviceService {
 			REG_R_TARGET,
 			REG_R_EFFICIENCY,
 			REG_R_STATE,
+			TARGET_R_REG,  // Обороты вала рекуператора (целевые) - делить на 100
+			CURRENT_R_REG, // Обороты вала - делить на 100
+			SPEED_R_REG,   // Скорость вращения - делить на 10
 
 			// --- MANUAL PROC ---
 			REG_V_VManualProcIn,
@@ -137,8 +142,21 @@ public class DeviceService {
 			REG_T_CTRL_MODE_ZONE2,
 
 			//Задвижки
-			REG_Z_WORKSTATE
-		);
+			REG_Z_WORKSTATE,
+
+			// --- НОВЫЕ РЕГИСТРЫ (22.01.2026) ---
+			REG_T_NEUTRAL_ZONE,
+			REG_HOT_VALVE_MIN_PROC,
+			REG_T_WATER_NO_WORK,
+			REG_T_WATER_WORK,
+			REG_T_RAD_FZ_FAIL,
+			REG_VALVE_HEAT_POS1,
+			REG_VALVE_COOL_POS1,
+			REG_VALVE_OPEN_PROC1,
+			REG_VALVE_HEAT_POS2,
+			REG_VALVE_COOL_POS2,
+			REG_VALVE_OPEN_PROC2
+		));
 
 		Map<Integer, Integer> data =  modbusClient.readRegisters(SAUNA_PLC, allRegs);
 
@@ -203,6 +221,17 @@ public class DeviceService {
 			createSensor("VC2", "Клапан - справа", data.get(REG_F_VC2), "%")
 		);
 
+		List<SensorData> debugValveSensors = Arrays.asList(
+			createSensor("VHP1", "Положение вентиля ГВ зона 1", data.get(REG_VALVE_HEAT_POS1), "%"),
+			createSensor("VCP1", "Положение вентиля ХВ зона 1", data.get(REG_VALVE_COOL_POS1), "%"),
+			createSensor("VOP1", "% доп. открытия вентиля ГВ зона 1", data.get(REG_VALVE_OPEN_PROC1), "%"),
+			createSensor("VHP2", "Положение вентиля ГВ зона 2", data.get(REG_VALVE_HEAT_POS2), "%"),
+			createSensor("VCP2", "Положение вентиля ХВ зона 2", data.get(REG_VALVE_COOL_POS2), "%"),
+			createSensor("VOP2", "% доп. открытия вентиля ГВ зона 2", data.get(REG_VALVE_OPEN_PROC2), "%")
+		);
+
+		
+
 		// --- РЕКУПЕРАТОР ---
 		Integer recupSpeed = getValidOrNull(data.get(REG_R_RECUP_SPEED));
 		// Integer recupCurrentRaw = data.get(REG_R_CURRENT);
@@ -215,7 +244,7 @@ public class DeviceService {
 
 		Integer stateCode = data.get(REG_R_STATE);
 		String stateName = stateCode != null ? SYSTEM_STATES.getOrDefault(stateCode, "Неизвестно") : "Неизвестно";
-		boolean isEffectivelyOff = stateCode == null || stateCode == 0 || stateCode == 1 || stateCode == 128;
+		boolean isEffectivelyOff = stateCode == null || stateCode == 0 || (stateCode & 1) != 0 || stateCode == 128;
 		
 		RecuperatorStatusDto recuperatorStatus = RecuperatorStatusDto.builder()
 			.enabled(!isEffectivelyOff)
@@ -266,6 +295,11 @@ public class DeviceService {
 		//Логи
 		System.out.println("DEBUG: текущее состояние агрегата: " + stateCode + " - " + stateName);
 		
+		// --- НОВЫЕ РЕГИСТРЫ РЕКУПЕРАТОРА ---
+		Double recupTargetRpm = getValidScaled(data.get(TARGET_R_REG), 100.0);  // Обороты вала рекуператора (целевые)
+		Double recupCurrentRpm = getValidScaled(data.get(CURRENT_R_REG), 100.0); // Обороты вала
+		Double recupSpeedRpm = getValidScaled(data.get(SPEED_R_REG), 10.0);      // Скорость вращения
+		
 		TempSettingsDto tempSettings = TempSettingsDto.builder()
 			.targetZone1(targetZone1)
 			.targetZone2(targetZone2)
@@ -275,6 +309,11 @@ public class DeviceService {
 			.inflowFailThreshold(inflowFail)
 			.ctrlModeZone1(ctrlModeZone1)
 			.ctrlModeZone2(ctrlModeZone2)
+			.neutralZoneT(getValidScaled(data.get(REG_T_NEUTRAL_ZONE), 10.0))
+			.hotValveMinProc(getValidScaled(data.get(REG_HOT_VALVE_MIN_PROC), 10.0))
+			.waterMinTNoWork(getValidScaled(data.get(REG_T_WATER_NO_WORK), 10.0))
+			.waterMinTWork(getValidScaled(data.get(REG_T_WATER_WORK), 10.0))
+			.radTempFail(getValidScaled(data.get(REG_T_RAD_FZ_FAIL), 10.0))
 			.build();
 		
 		return DashboardData.builder()
@@ -293,8 +332,12 @@ public class DeviceService {
 			.vManualDProcOut(vManualDProcOut)
 			.manualSettings(manualSettings)
 			.tempSettings(tempSettings)
+			.debugValveSensors(debugValveSensors) //22.01.2026
 			.damperSupply(damperSupply)
 			.damperExhaust(damperExhaust)
+			.recupTargetRpm(recupTargetRpm)
+			.recupCurrentRpm(recupCurrentRpm)
+			.recupSpeedRpm(recupSpeedRpm)
 			.build();
 	}
 

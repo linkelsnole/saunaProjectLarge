@@ -14,6 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class DashboardData {
     private List<ClimateSensorDto> climateSensors; 
+    private List<SensorData> debugValveSensors; // Для отображения ValveHeatPos1 и тд 22.01.2026
     
     @JsonProperty("wSensors")
     private List<SensorData> wSensors;        
@@ -39,4 +40,9 @@ public class DashboardData {
 
     private Boolean damperSupply;
     private Boolean damperExhaust;
+    
+    // Новые регистры рекуператора
+    private Double recupTargetRpm;   // Обороты вала рекуператора (целевые), об/мин
+    private Double recupCurrentRpm;   // Обороты вала, об/мин
+    private Double recupSpeedRpm;     // Скорость вращения, об/мин
 }

@@ -25,5 +25,11 @@ public class TempSettingsDto {
     // Режимы управления (только чтение): 0-нейтральная, 1-нагрев, 2-охлаждение
     private Integer ctrlModeZone1;
     private Integer ctrlModeZone2;
+
+    private Double neutralZoneT;
+    private Double hotValveMinProc;
+    private Double waterMinTNoWork;
+    private Double waterMinTWork;
+    private Double radTempFail;
 }
 

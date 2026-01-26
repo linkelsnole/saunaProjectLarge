@@ -42,7 +42,11 @@ public class SettingsService {
 		Double waterWarn, 
 		Double waterFail,
 		Double inflowWarn, 
-		Double inflowFail
+		Double inflowFail,
+		Double neutralZoneT,
+		Double hotValveMinProc,
+		Double waterMinTNoWork,
+		Double waterMinTWork
 	) throws IOException {
 		// Целевые температуры зон (не делятся на 10)
 		if (targetZone1 != null) {
@@ -70,6 +74,24 @@ public class SettingsService {
 		if (inflowFail != null) {
 			int rawValue = (int) Math.round(inflowFail * 10);
 			modbusClient.writeRegister(SAUNA_PLC, REG_T_INFLOW_FAIL, rawValue);
+		}
+
+		// Новые температурные уставки (умножаем на 10)
+		if (neutralZoneT != null) {
+			int rawValue = (int) Math.round(neutralZoneT * 10);
+			modbusClient.writeRegister(SAUNA_PLC, REG_T_NEUTRAL_ZONE, rawValue);
+		}
+		if (hotValveMinProc != null) {
+			int rawValue = (int) Math.round(hotValveMinProc * 10);
+			modbusClient.writeRegister(SAUNA_PLC, REG_HOT_VALVE_MIN_PROC, rawValue);
+		}
+		if (waterMinTNoWork != null) {
+			int rawValue = (int) Math.round(waterMinTNoWork * 10);
+			modbusClient.writeRegister(SAUNA_PLC, REG_T_WATER_NO_WORK, rawValue);
+		}
+		if (waterMinTWork != null) {
+			int rawValue = (int) Math.round(waterMinTWork * 10);
+			modbusClient.writeRegister(SAUNA_PLC, REG_T_WATER_WORK, rawValue);
 		}
 		
 		performFastModeChange();

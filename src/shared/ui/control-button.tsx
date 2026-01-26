@@ -1,5 +1,5 @@
 import { Button } from "@/shared/ui/button"
-import { Power, Loader2 } from "lucide-react"
+import { Power, Loader2, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ControlButtonProps {
@@ -25,12 +25,20 @@ export function ControlButton({
   let buttonColor = "bg-red-500 hover:bg-red-600"
   let showSpinner = false
   let isTransitioning = false
+  let Icon = Power
+
+
+  const isAlarm = stateCode != null && (stateCode & 6) !==0
 
   if (isDataLoading) {
-    // Данные еще загружаются
     buttonText = "Загрузка"
     buttonColor = "bg-gray-400"
     showSpinner = true
+  } else if (isAlarm) {
+    buttonText = "Авария"
+    buttonColor = "bg-red-600 hover:bg-red-700" 
+    Icon = AlertTriangle
+    isTransitioning = true
   } else if (stateCode === 16) {
     // Начальный запуск
     buttonText = "Запуск"
@@ -68,7 +76,7 @@ export function ControlButton({
       {showSpinner || loading ? (
         <Loader2 className="w-4 h-4 animate-spin" />
       ) : (
-        <Power className="w-4 h-4" />
+        <Icon className="w-4 h-4" />
       )}
       {buttonText}
     </Button>

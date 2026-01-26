@@ -128,5 +128,28 @@ public class ModbusConstants {
 	// Проверка на 32768
 	public static final int INVALID_VALUE = 0x8000;
 
+
+	//Целевые обороты (Все в оборотах в минуту измеряются)
+	public static final int TARGET_R_REG = 0x0081; // делить на 100
+	public static final int CURRENT_R_REG = 0x0080;// Обороты вала (делить на 100)
+	public static final int SPEED_R_REG = 0x2C0; //Скорость вращения (делить на 10)
+	
+	
+
+	// --- НОВЫЕ ТЕМПЕРАТУРНЫЕ УСТАВКИ (MESetting) 22.01.2026 ---
+    public static final int REG_T_NEUTRAL_ZONE = 0x006E;    // DTNeutral
+    public static final int REG_HOT_VALVE_MIN_PROC = 0x00D2; // HotValveMinProc
+    public static final int REG_T_WATER_NO_WORK = 0x00D3;   // TWaterNoWork
+    public static final int REG_T_WATER_WORK = 0x00D4;      // TWaterWork
+    public static final int REG_T_RAD_FZ_FAIL = 0x00C7;     // TRadFzFail
+
+    // --- ДАННЫЕ ВЕНТИЛЕЙ (MEDataRegister) 22.01.2026 ---
+    public static final int REG_VALVE_HEAT_POS1 = 0x00AB;   // ValveHeatPos1
+    public static final int REG_VALVE_COOL_POS1 = 0x00AC;   // ValveCoolPos1
+    public static final int REG_VALVE_OPEN_PROC1 = 0x00B9;  // ValveOpenProc
+    public static final int REG_VALVE_HEAT_POS2 = 0x00AD;   // ValveHeatPos2
+    public static final int REG_VALVE_COOL_POS2 = 0x00AE;   // ValveCoolPos2
+    public static final int REG_VALVE_OPEN_PROC2 = 0x00BA;  // ValveOpenProc2
+
 }
 

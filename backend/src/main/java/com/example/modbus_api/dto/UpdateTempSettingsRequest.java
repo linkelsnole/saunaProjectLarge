@@ -14,5 +14,9 @@ public class UpdateTempSettingsRequest {
     private Double waterFailThreshold;
     private Double inflowWarnThreshold;
     private Double inflowFailThreshold;
+    private Double neutralZoneT;
+    private Double hotValveMinProc;
+    private Double waterMinTNoWork;
+    private Double waterMinTWork;
 }
 

@@ -132,7 +132,7 @@
     </dependencies>
 
     <build>
-        <finalName>sauna</finalName>
+        <finalName>sauna_large</finalName>
         <plugins>
             <!-- Maven Compiler Plugin -->
             <plugin>

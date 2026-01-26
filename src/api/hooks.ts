@@ -19,6 +19,11 @@ interface UpdateTempSettingsRequest {
   waterFailThreshold?: number;
   inflowWarnThreshold?: number;
   inflowFailThreshold?: number;
+
+  neutralZoneT?: number;
+  hotValveMinProc?: number;
+  waterMinTNoWork?: number;
+  waterMinTWork?: number;
 }
 
 export const useUpdateManualSettings = () => {
@@ -99,6 +104,11 @@ export const useUpdateTempSettings = () => {
         if (newSettings.waterFailThreshold !== undefined) temp.waterFailThreshold = newSettings.waterFailThreshold;
         if (newSettings.inflowWarnThreshold !== undefined) temp.inflowWarnThreshold = newSettings.inflowWarnThreshold;
         if (newSettings.inflowFailThreshold !== undefined) temp.inflowFailThreshold = newSettings.inflowFailThreshold;
+
+        if (newSettings.neutralZoneT !== undefined) temp.neutralZoneT = newSettings.neutralZoneT;
+        if (newSettings.hotValveMinProc !== undefined) temp.hotValveMinProc = newSettings.hotValveMinProc;
+        if (newSettings.waterMinTNoWork !== undefined) temp.waterMinTNoWork = newSettings.waterMinTNoWork;
+        if (newSettings.waterMinTWork !== undefined) temp.waterMinTWork = newSettings.waterMinTWork;
 
         newData.tempSettings = temp;
         return newData;

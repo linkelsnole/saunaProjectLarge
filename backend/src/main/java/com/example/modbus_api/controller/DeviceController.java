@@ -92,7 +92,11 @@ public class DeviceController {
 				request.getWaterWarnThreshold(),
 				request.getWaterFailThreshold(),
 				request.getInflowWarnThreshold(),
-				request.getInflowFailThreshold()
+				request.getInflowFailThreshold(),
+				request.getNeutralZoneT(),
+				request.getHotValveMinProc(),
+				request.getWaterMinTNoWork(),
+				request.getWaterMinTWork()
 			);
 			return ResponseEntity.ok().build();
 		} catch (IOException e) {
