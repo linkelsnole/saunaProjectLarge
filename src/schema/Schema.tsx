@@ -12,6 +12,7 @@ import { ControlButton } from '@/shared/ui/control-button';
 import { toggleRecuperator } from '@/api/deviceApi';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LoadingOverlay = () => (
 	<div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-[10px]">
@@ -24,6 +25,7 @@ const LoadingOverlay = () => (
 
 const Schema = () => {
 	const { data, isLoading, refetch } = useDashboardData();
+	const { role } = useAuth();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const stageRef = useRef(null);
 	const [stageSize, setStageSize] = useState({width: 800, height: 550});
@@ -31,6 +33,7 @@ const Schema = () => {
 	const [loading, setLoading] = useState(false);
 	const [optimisticState, setOptimisticState] = useState<{ enabled: boolean; stateCode: number } | null>(null);
 	const defaultColor = '#000';
+	const canToggleRecuperator = role === 'ROLE_ADMIN' || role === 'ROLE_USER';
 
 
 	const lastNotifiedErrorCode = useRef<number | null>(null);
@@ -284,6 +287,7 @@ const Schema = () => {
 					  loading={loading}
 					  stateCode={optimisticState?.stateCode ?? data?.recuperatorStatus?.stateCode}
 					  isDataLoading={!data}
+					  readOnly={!canToggleRecuperator}
 				  />
 			  </div>
 		  </Html>

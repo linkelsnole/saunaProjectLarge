@@ -6,91 +6,70 @@ JAR_NAME="sauna_large.jar"
 LOCAL_JAR="backend/target/sauna_large.jar"
 SSH_KEY="$HOME/.ssh/deploy_key"
 
+# !!! ВАЖНО: Путь, откуда Systemd запускает файл
+REMOTE_DEST_DIR="/opt/webpanel"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-echo -e "${YELLOW}🚀 Начинаем деплой...${NC}"
+echo -e "${YELLOW}🚀 Deploy started...${NC}"
 
-
-echo -e "${YELLOW}📦 Сборка проекта...${NC}"
+echo -e "${YELLOW}📦 Maven Build...${NC}"
 cd backend
 mvn clean package -DskipTests
 if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Ошибка сборки Maven${NC}"
+    echo -e "${RED}❌ Maven build failed${NC}"
     exit 1
 fi
 cd ..
-echo -e "${GREEN}✅ Сборка завершена${NC}"
+echo -e "${GREEN}✅ Build success${NC}"
 
+echo -e "${YELLOW}📤 Uploading new jar to ${REMOTE_DEST_DIR}...${NC}"
+# Копируем прямо в рабочую папку сервиса
+scp -i "$SSH_KEY" "$LOCAL_JAR" "${SERVER_USER}@${SERVER_IP}:${REMOTE_DEST_DIR}/${JAR_NAME}"
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ SCP failed. Check permissions for writing to /opt/webpanel${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ File uploaded${NC}"
 
-echo -e "${YELLOW}🛑 Останавливаем старый процесс...${NC}"
+echo -e "${YELLOW}🔄 Triggering Systemd Restart (Kill process)...${NC}"
 ssh -i "$SSH_KEY" "${SERVER_USER}@${SERVER_IP}" 'bash -s' << 'ENDSSH'
+    # Убиваем старый процесс
     PORT_PID=$(lsof -ti:8085)
     if [ -n "$PORT_PID" ]; then
-        echo "Найден процесс на порту 8085 (PID: $PORT_PID)"
-        kill $PORT_PID 2>/dev/null
-        sleep 2
-        PORT_PID=$(lsof -ti:8085)
-        if [ -n "$PORT_PID" ]; then
-            echo "Принудительное завершение..."
-            kill -9 $PORT_PID 2>/dev/null
-            sleep 2
-        fi
-    fi
-    
-    pkill -f "sauna_large.jar" 2>/dev/null
-    sleep 1
-    
-    if lsof -ti:8085 > /dev/null 2>&1; then
-        echo "❌ Порт 8085 всё ещё занят!"
-        lsof -i:8085
-        exit 1
-    fi
-    echo "✅ Порт 8085 свободен"
-ENDSSH
-
-if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Не удалось освободить порт${NC}"
-    exit 1
-fi
-
-
-echo -e "${YELLOW}📤 Копирование на сервер...${NC}"
-scp -i "$SSH_KEY" "$LOCAL_JAR" "${SERVER_USER}@${SERVER_IP}:~/${JAR_NAME}"
-if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Ошибка копирования${NC}"
-    exit 1
-fi
-echo -e "${GREEN}✅ Файл скопирован${NC}"
-
-
-echo -e "${YELLOW}🚀 Запуск приложения...${NC}"
-ssh -i "$SSH_KEY" "${SERVER_USER}@${SERVER_IP}" 'bash -s' << 'ENDSSH'
-    rm -f ~/app_large.log
-    
-    echo "Запускаем новый процесс..."
-    nohup java -jar ~/sauna_large.jar --spring.profiles.active=prod > ~/app_large.log 2>&1 &
-    NEW_PID=$!
-    
-    echo "Ожидаем запуск (PID: $NEW_PID)..."
-    sleep 5
-    
-    if ps -p $NEW_PID > /dev/null 2>&1; then
-        echo "✅ Процесс запущен (PID: $NEW_PID)"
-        sleep 3
-        if lsof -ti:8085 > /dev/null 2>&1; then
-            echo "✅ Приложение слушает порт 8085"
-        else
-            echo "⚠️ Порт 8085 пока не открыт, проверьте логи"
-        fi
+        echo "Killing PID: $PORT_PID"
+        kill $PORT_PID
     else
-        echo "❌ Процесс не запустился! Логи:"
-        tail -30 ~/app_large.log
-        exit 1
+        echo "Process not found on port 8085, maybe already dead."
     fi
+    
+    # На всякий случай добиваем по имени
+    pkill -f "sauna_large.jar"
+    
+    echo "Waiting for Systemd to restart application (RestartSec=5s in config)..."
+    
+    # Ждем до 60 секунд (30 * 2)
+    for i in {1..90}; do
+        sleep 2
+        if lsof -ti:8085 > /dev/null 2>&1; then
+            NEW_PID=$(lsof -ti:8085)
+            echo "✅ Service restarted automatically! PID: $NEW_PID"
+            exit 0
+        fi
+        echo -n "."
+    done
+    
+    echo ""
+    echo -e "⚠️ Timeout! Check logs at: /opt/webpanel/app_sauna_large.log"
+    exit 1
 ENDSSH
 
-echo -e "${GREEN}🎉 Деплой завершён успешно!${NC}"
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}🎉 Deploy successful!${NC}"
+else
+    echo -e "${RED}❌ Service did not start correctly${NC}"
+    exit 1
+fi

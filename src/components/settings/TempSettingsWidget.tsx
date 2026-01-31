@@ -3,6 +3,7 @@ import { useDashboardData } from '@/api/useDashboard';
 import { useUpdateTempSettings } from '@/api/hooks';
 import { Input } from '@/shared/ui/input';
 import { Badge } from '@/shared/ui/badge'; 
+import { useAuth } from '@/contexts/AuthContext';
 
 
 
@@ -12,9 +13,10 @@ interface TempInputProps {
   onChange: (val: number) => void;
   unit?: string;
   decimals?: number;
+  readOnly?: boolean;
 }
 
-const TempInput = ({ label, value, onChange, unit = '°C', decimals = 1 }: TempInputProps) => {
+const TempInput = ({ label, value, onChange, unit = '°C', decimals = 1, readOnly = false }: TempInputProps) => {
   const [localValue, setLocalValue] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
@@ -53,11 +55,17 @@ const TempInput = ({ label, value, onChange, unit = '°C', decimals = 1 }: TempI
           step={decimals === 0 ? '1' : '0.1'}
           value={localValue}
           onChange={(e) => {
+            if (readOnly) return;
             setIsEditing(true);
             setLocalValue(e.target.value);
           }}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
+          readOnly={readOnly}
+          onFocus={(e) => {
+            if (readOnly) e.currentTarget.blur();
+          }}
+          tabIndex={readOnly ? -1 : 0}
           className="pr-8 font-mono text-base sm:text-lg font-bold border-slate-200 hover:border-slate-300 focus:border-blue-500 h-9 sm:h-10 text-slate-800 bg-white"
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">
@@ -102,6 +110,11 @@ const getModeColor = (mode: number | null | undefined): string => {
 export const TempSettingsWidget = () => {
   const { data } = useDashboardData();
   const { mutate } = useUpdateTempSettings();
+  const { role } = useAuth();
+  const isAdmin = role === 'ROLE_ADMIN';
+  const isUser = role === 'ROLE_USER';
+  const canEditZones = isAdmin || isUser;
+  const canEditAll = isAdmin;
 
   const tempSettings = data?.tempSettings;
   const sensors = data?.debugValveSensors || [];
@@ -130,6 +143,7 @@ export const TempSettingsWidget = () => {
               value={tempSettings?.targetZone1}
               onChange={(val) => mutate({ targetZone1: val })}
               decimals={0}
+              readOnly={!canEditZones}
             />
             
             {/* Monitoring */}
@@ -158,6 +172,7 @@ export const TempSettingsWidget = () => {
               value={tempSettings?.targetZone2}
               onChange={(val) => mutate({ targetZone2: val })}
               decimals={0}
+              readOnly={!canEditZones}
             />
 
              {/* Monitoring */}
@@ -183,11 +198,13 @@ export const TempSettingsWidget = () => {
               label="Снижение оборотов"
               value={tempSettings?.waterWarnThreshold}
               onChange={(val) => mutate({ waterWarnThreshold: val })}
+              readOnly={!canEditAll}
             />
             <TempInput
               label="Авария"
               value={tempSettings?.waterFailThreshold}
               onChange={(val) => mutate({ waterFailThreshold: val })}
+              readOnly={!canEditAll}
             />
           </div>
         </div>
@@ -202,11 +219,13 @@ export const TempSettingsWidget = () => {
               label="Снижение оборотов"
               value={tempSettings?.inflowWarnThreshold}
               onChange={(val) => mutate({ inflowWarnThreshold: val })}
+              readOnly={!canEditAll}
             />
             <TempInput
               label="Авария"
               value={tempSettings?.inflowFailThreshold}
               onChange={(val) => mutate({ inflowFailThreshold: val })}
+              readOnly={!canEditAll}
             />
           </div>
         </div>
@@ -226,22 +245,26 @@ export const TempSettingsWidget = () => {
              label="Нейтральная зона T"
              value={tempSettings?.neutralZoneT}
              onChange={(val) => mutate({ neutralZoneT: val })}
+             readOnly={!canEditAll}
            />
            <TempInput
              label="Мин. % вентилей ГВ"
              value={tempSettings?.hotValveMinProc}
              onChange={(val) => mutate({ hotValveMinProc: val })}
              unit="%"
+             readOnly={!canEditAll}
            />
            <TempInput
              label="Мин. Т ГВ при неработающих вент."
              value={tempSettings?.waterMinTNoWork}
              onChange={(val) => mutate({ waterMinTNoWork: val })}
+             readOnly={!canEditAll}
            />
            <TempInput
              label="Мин. Т ГВ при работающих вент."
              value={tempSettings?.waterMinTWork}
              onChange={(val) => mutate({ waterMinTWork: val })}
+             readOnly={!canEditAll}
            />
         </div>
 

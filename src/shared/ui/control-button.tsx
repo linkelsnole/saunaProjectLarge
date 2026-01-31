@@ -7,6 +7,7 @@ interface ControlButtonProps {
   onClick?: () => void
   loading?: boolean
   disabled?: boolean
+  readOnly?: boolean
   className?: string
   stateCode?: number | null
   isDataLoading?: boolean
@@ -17,6 +18,7 @@ export function ControlButton({
   onClick,
   loading = false,
   disabled = false,
+  readOnly = false,
   className,
   stateCode,
   isDataLoading = false,
@@ -63,13 +65,16 @@ export function ControlButton({
 
   return (
     <Button
-      onClick={onClick}
+      onClick={readOnly ? undefined : onClick}
       disabled={disabled || loading || isDataLoading || isTransitioning}
+      aria-disabled={readOnly ? true : undefined}
+      tabIndex={readOnly ? -1 : 0}
       className={cn(
         "relative h-8 text-xs transition-all duration-200 text-white shadow-lg", 
         "min-w-[120px] justify-center",
         buttonColor,
         (loading || isDataLoading || isTransitioning) && "opacity-70 cursor-wait",
+        readOnly && "pointer-events-none",
         className
       )}
     >

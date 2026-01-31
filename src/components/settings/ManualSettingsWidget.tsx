@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
 import { useUpdateManualSettings } from '@/api/hooks';
 import { Input } from '@/shared/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ManualInputProps {
   label: string;
   value: number | null | undefined;
   onChange: (val: number) => void;
   unit?: string;
+  readOnly?: boolean;
 }
 
-const ManualInput = ({ label, value, onChange, unit = '%' }: ManualInputProps) => {
+const ManualInput = ({ label, value, onChange, unit = '%', readOnly = false }: ManualInputProps) => {
   const [localValue, setLocalValue] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
@@ -54,11 +56,17 @@ const ManualInput = ({ label, value, onChange, unit = '%' }: ManualInputProps) =
           step="0.1"
           value={localValue}
           onChange={(e) => {
+            if (readOnly) return;
             setIsEditing(true);
             setLocalValue(e.target.value);
           }}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
+          readOnly={readOnly}
+          onFocus={(e) => {
+            if (readOnly) e.currentTarget.blur();
+          }}
+          tabIndex={readOnly ? -1 : 0}
           className="pr-10 font-mono text-2xl font-bold border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent h-12 text-slate-800"
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">
@@ -72,6 +80,11 @@ const ManualInput = ({ label, value, onChange, unit = '%' }: ManualInputProps) =
 export const ManualSettingsWidget = () => {
   const { data } = useDashboardData();
   const { mutate } = useUpdateManualSettings();
+  const { role } = useAuth();
+  const isAdmin = role === 'ROLE_ADMIN';
+  const isUser = role === 'ROLE_USER';
+  const canEditVentilation = isAdmin || isUser;
+
 
   const supplySpeed = data?.manualSettings?.supplySpeed;
   const boostPercent = data?.manualSettings?.boostPercent;
@@ -84,6 +97,7 @@ export const ManualSettingsWidget = () => {
           label="Скорость вентилирования ПВ"
           value={supplySpeed}
           onChange={(val) => mutate({ supplySpeed: val })}
+          readOnly={!canEditVentilation}
         />
 
         {/* Процент наддува (ПВ-ОВ) */}
@@ -91,6 +105,7 @@ export const ManualSettingsWidget = () => {
           label="Наддув (ПВ-ОВ)"
           value={boostPercent}
           onChange={(val) => mutate({ boostPercent: val })}
+          readOnly={!canEditVentilation}
         />
       </div>
     </div>

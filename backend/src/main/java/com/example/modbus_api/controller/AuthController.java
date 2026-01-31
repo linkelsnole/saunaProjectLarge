@@ -56,7 +56,7 @@ public class AuthController {
                     .body(new ErrorResponse("INVALID_USERNAME", "Имя пользователя не может быть пустым"));
             }
 
-            // Проверка существования пользователя с обработкой ошибок БД
+
             Boolean userExists;
             try {
                 userExists = userRepository.existsByUsername(authRequest.getUsername());

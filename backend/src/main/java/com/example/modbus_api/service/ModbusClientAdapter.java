@@ -139,37 +139,31 @@ public class ModbusClientAdapter {
      * Проверяет, связана ли ошибка с авторизацией или обрывом соединения
      */
     private boolean isConnectionOrAuthError(Exception e) {
-        if (e == null || e.getMessage() == null) {
+        if (e == null) {
             return false;
         }
-        
-        String message = e.getMessage().toLowerCase();
-        
-        // Ошибки, связанные с аутентификацией
-        if (message.contains("401") || message.contains("сеанс закрыт") || message.contains("unauthorized")) {
+
+        if (e instanceof UniException) {
+            int code = ((UniException) e).getHttpCode();
+            if (code == 401 || code == 403) {
+                return true;
+            }
+        }
+
+        if (e instanceof java.net.SocketTimeoutException ||
+            e instanceof java.net.ConnectException) {
             return true;
         }
-        
-        // Распространенные ошибки обрыва соединения
-        if (e instanceof java.net.SocketException || 
-            e instanceof java.net.SocketTimeoutException ||
-            e instanceof java.net.ConnectException ||
-            e instanceof javax.net.ssl.SSLException) {
+
+        String message = e.getMessage();
+        if (message == null) {
+            return false;
+        }
+
+        if (message.contains("Failed to connect")) {
             return true;
         }
-        
-        // Проверяем текстовые описания сетевых ошибок
-        if (message.contains("connection reset") || 
-            message.contains("broken pipe") ||
-            message.contains("connection refused") ||
-            message.contains("connect timed out") ||
-            message.contains("read timed out") ||
-            message.contains("no route to host") ||
-            message.contains("network is unreachable") ||
-            message.contains("connection aborted")) {
-            return true;
-        }
-        
+
         return false;
     }
     
@@ -404,5 +398,8 @@ public class ModbusClientAdapter {
 		}
 	}
 
-
+    public void sabotageSession() {
+           System.out.println("{TEST} ПЛОХОЙ ТОКЕН");
+           this.sessionToken = "NAHUI_BLYAT";
+    }
 } 

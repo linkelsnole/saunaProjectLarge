@@ -19,6 +19,7 @@ interface AppHeaderProps {
 const AppHeader: React.FC<AppHeaderProps> = () => {
 	const { username, role, logout } = useAuth()
 	const navigate = useNavigate()
+	const isAdmin = role === 'ROLE_ADMIN'
 
 	const handleLogout = () => {
 		logout()
@@ -32,7 +33,9 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 
 	const getRoleDisplayName = (role: string | null) => {
 		if (!role) return 'Пользователь'
-		return role === 'ROLE_ADMIN' ? 'Администратор' : 'Пользователь'
+		if (role === 'ROLE_ADMIN') return 'Администратор'
+		if (role === 'ROLE_READONLY') return 'Только чтение'
+		return 'Пользователь'
 	}
 
 	return (
@@ -59,16 +62,18 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 								<User className="h-4 w-4 mr-2" />
 								<span>Profile</span>
 							</DropdownMenuItem>
-							<DropdownMenuItem 
-								className="cursor-pointer text-base"
-								onClick={(e) => {
-									e.preventDefault();
-									triggerReconnect();
-								}}
-							>
-								<RefreshCcw className="h-4 w-4 mr-2" />
-								<span>Reconnect</span>
-							</DropdownMenuItem>
+							{isAdmin && (
+								<DropdownMenuItem 
+									className="cursor-pointer text-base"
+									onClick={(e) => {
+										e.preventDefault();
+										triggerReconnect();
+									}}
+								>
+									<RefreshCcw className="h-4 w-4 mr-2" />
+									<span>Reconnect</span>
+								</DropdownMenuItem>
+							)}
 							<DropdownMenuItem className="cursor-pointer text-base">
 								<Settings className="h-4 w-4 mr-2" />
 								<span>Settings</span>
