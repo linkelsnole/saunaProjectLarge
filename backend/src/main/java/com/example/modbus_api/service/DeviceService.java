@@ -338,6 +338,14 @@ public class DeviceService {
 		Double recupTargetRpm = getValidScaled(data.get(TARGET_R_REG), 100.0);  // Обороты вала рекуператора (целевые)
 		Double recupCurrentRpm = getValidScaled(data.get(CURRENT_R_REG), 100.0); // Обороты вала
 		Double recupSpeedRpm = getValidScaled(data.get(SPEED_R_REG), 10.0);      // Скорость вращения
+		Integer rawTempBt6 = data.get(REG_R_TEMP);
+		Double recupTempBt6 = isValid(rawTempBt6) ? ((short) rawTempBt6.intValue()) / 10.0 : null;
+
+		Double recupTargetRpmMax = getValidScaled(data.get(REG_R_TARGET_RPM_MAX), 10.0);
+		Integer recupTargetPercent = null;
+		if (recupTargetRpm != null && recupTargetRpmMax != null && recupTargetRpmMax > 0) {
+			recupTargetPercent = (int) Math.round((recupTargetRpm / recupTargetRpmMax) * 100);
+		}
 		
 		// --- УСТАВКИ РЕКУПЕРАТОРА (25.01.2026) ---
 		RecuperatorSettingsDto recuperatorSettings = RecuperatorSettingsDto.builder()
@@ -385,6 +393,8 @@ public class DeviceService {
 			.recupTargetRpm(recupTargetRpm)
 			.recupCurrentRpm(recupCurrentRpm)
 			.recupSpeedRpm(recupSpeedRpm)
+			.recupTempBt6(recupTempBt6)
+			.recupTargetPercent(recupTargetPercent)
 			.build();
 	}
 
@@ -438,7 +448,7 @@ public class DeviceService {
 	}
 
 	private SensorData createSensor(String id, String name, Integer rawValue, String unit) {
-		return createSensor(id, name, rawValue, unit, 10.0);
+		return createSensor(id, name, rawValue, unit, 1.0);
 	}
 
 	// == HELPER METHODS

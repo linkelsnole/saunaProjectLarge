@@ -159,6 +159,8 @@ public class ModbusConstants {
     public static final int REG_R_TARGET_RPM_MAX = 0x005E;  // (макс) (сейчас от 1 до 7 оборотов может стоять)
     public static final int REG_R_TARGET_RPM_STEP = 0x0065;  // 0x0065 - шаг калибровки (сейчас 0.1 или 0.3 оборота)
 
+
+	public static final int REG_R_TEMP = 0x02C0; //температура рекуператора (BT6)
 	
 }
 

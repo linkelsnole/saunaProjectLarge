@@ -29,6 +29,34 @@ const LoadingOverlay = () => (
 	</div>
 );
 
+const FanBottomLabel = ({
+	x,
+	y,
+	text,
+	green = false,
+}: {
+	x: number;
+	y: number;
+	text: React.ReactNode;
+	green?: boolean;
+}) => (
+	<div
+		style={{
+			position: 'absolute',
+			left: x,
+			top: y,
+			fontSize: 13,
+			lineHeight: 1.2,
+			fontFamily: 'ui-monospace, SFMono-Regular, Menlo, sans-serif',
+			color: green ? '#22c55e' : '#0F172A',
+			whiteSpace: 'nowrap',
+			zIndex: 25,
+		}}
+	>
+		{text}
+	</div>
+);
+
 const GlassBackground = ({ scale }: { scale: number }) => {
 	const style: CSSProperties = {
 		top: 220 * scale,
@@ -150,7 +178,7 @@ const Schema = () => {
 	const formatPressure = (id: string): string => {
 		const sensor = getWSensor(id);
 		const value = sensor?.value;
-		return value != null ? `${value} Па` : '-- Па';
+		return value != null ? `${Math.round(parseFloat(value))} Па` : '-- Па';
 	};
 
 	const formatPressureSensor = (id: string): string => {
@@ -179,39 +207,37 @@ const Schema = () => {
 		return `${valveStr}\n${tempStr}\n${humidStr}`;
 	};
 
-	const formatFanLabel = (id: string, bottomValue: 'vm1' | 'vm2' | 'formula' | 'vmanual' = 'vm2'): string => {
+	const formatFanLabel = (id: string): string => {
 		const fan = getFan(id);
 		const pressure = fan?.pressure;
 		const speed = fan?.speedPerc;
 		const vm = fan?.vm;
-		
 		const pressureStr = pressure != null ? `${Math.round(pressure)} Па` : '-- Па';
 		const speedStr = speed != null ? `${speed} %` : '-- %';
 		const vmStr = vm != null ? `${vm} м³/ч` : '-- м³/ч';
-		
-		let bottomStr = '';
-		if (bottomValue === 'vm1') {
-			const vm1Value = data?.vm1;
-			bottomStr = vm1Value != null ? `${vm1Value} м³/ч` : '-- м³/ч';
-		} else if (bottomValue === 'vm2') {
-			const vm2Value = data?.vm2;
-			bottomStr = vm2Value != null ? `${vm2Value} м³/ч` : '-- м³/ч';
-		} else if (bottomValue === 'vmanual') {
-			const vManualProcIn = data?.vManualProcIn;
-			const targetStr = vManualProcIn != null ? `${vManualProcIn.toFixed(0)} %` : '-- %';
-			bottomStr = `<span style="color: #22c55e;">${targetStr}</span>`;
-		} else if (bottomValue === 'formula') {
-			const vManualProcIn = data?.vManualProcIn;
-			const vManualDProcOut = data?.vManualDProcOut;
-			let targetValue = null;
-			if (vManualProcIn != null && vManualDProcOut != null) {
-				targetValue = Math.max(0,vManualProcIn - vManualDProcOut);
-			}
-			const targetStr = targetValue != null ? `${targetValue.toFixed(0)} %` : '-- %';
-			bottomStr = `<span style="color: #22c55e;">${targetStr}</span>`;
+		return `${pressureStr}\n${speedStr}\n${vmStr}`;
+	};
+
+	const formatFanBottomLabel = (type: 'vm1' | 'vm2' | 'formula' | 'vmanual'): string => {
+		if (type === 'vm1') {
+			const v = data?.vm1;
+			return v != null ? `${v} м³/ч` : '-- м³/ч';
 		}
-		
-		return `${pressureStr}\n${speedStr}\n${vmStr}\n<span style="display: block; margin-top: 8px;">${bottomStr}</span>`;
+		if (type === 'vm2') {
+			const v = data?.vm2;
+			return v != null ? `${v} м³/ч` : '-- м³/ч';
+		}
+		if (type === 'vmanual') {
+			const v = data?.vManualProcIn;
+			return v != null ? `${v.toFixed(0)} %` : '-- %';
+		}
+		if (type === 'formula') {
+			const inVal = data?.vManualProcIn;
+			const outVal = data?.vManualDProcOut;
+			const v = inVal != null && outVal != null ? Math.max(0, inVal - outVal) : null;
+			return v != null ? `${v.toFixed(0)} %` : '-- %';
+		}
+		return '--';
 	};
 
 	const formatZoneTemperature = (id: string): string => {
@@ -223,6 +249,18 @@ const Schema = () => {
 
 	const getRecuperator = (id: string) => {
 		return data?.recuperator?.find(s => s.id === id);
+	};
+
+	const formatRecupTempBt6 = () => {
+		const t = data?.recupTempBt6;
+		const val = t != null ? t.toFixed(1) : '--';
+		return <>{val}<span style={{ marginLeft: 2 }}>°C</span></>;
+	};
+
+	const formatRecupFormula = () => {
+		const pct = data?.recupTargetPercent;
+		const val = pct != null ? String(pct) : '--';
+		return <>{val}<span style={{ marginLeft: 3 }}>%</span></>;
 	};
 
 	const formatRecuperator = (id: string): string => {
@@ -381,7 +419,7 @@ const Schema = () => {
 			x={90}
 			y={435}
 			text="ΔP"
-			label={`${formatPressureSensor('BP5')}\n${formatPressureSensor('BP10')}`}
+			label={`${formatPressureSensor('BP5')}`}
 			labelWidth={70}
 			labelOffsetX={-15}
 			labelOffsetY={-5}
@@ -576,7 +614,7 @@ const Schema = () => {
 					x={330}
 					y={292}
 					rotation={-90}
-					leftLabel={formatFanLabel('Вентилятор 1', 'vm1')}
+					leftLabel={formatFanLabel('Вентилятор 1')}
 					labelWidth={150}
 					labelGap={5}
 				/>
@@ -585,10 +623,12 @@ const Schema = () => {
 					x={455}
 					y={292}
 					rotation={-90}
-					rightLabel={formatFanLabel('Вентилятор 2', 'vmanual')}
+					rightLabel={formatFanLabel('Вентилятор 2')}
 					labelWidth={150}
 					labelGap={5}
 				/>
+				<FanBottomLabel x={360} y={315} text={formatFanBottomLabel('vm1')} />
+				<FanBottomLabel x={380} y={290} text={formatFanBottomLabel('vmanual')} green />
 			</Html>
 
 			{/*BF21 и BF22 - объединенный компонент*/}
@@ -598,7 +638,7 @@ const Schema = () => {
 					x={100}
 					y={543}
 					rotation={90}
-					leftLabel={formatFanLabel('Вентилятор 3', 'vm2')}
+					leftLabel={formatFanLabel('Вентилятор 3')}
 					labelWidth={150}
 					labelGap={5}
 				/>
@@ -608,10 +648,12 @@ const Schema = () => {
 					x={220}
 					y={543}
 					rotation={90}
-					rightLabel={formatFanLabel('Вентилятор 4', 'formula')}
+					rightLabel={formatFanLabel('Вентилятор 4')}
 					labelWidth={150}
 					labelGap={5}
 				/>
+				<FanBottomLabel x={125} y={568} text={formatFanBottomLabel('vm2')} />
+				<FanBottomLabel x={145} y={543} text={formatFanBottomLabel('formula')} green />
 			</Html>
 
 
@@ -654,9 +696,11 @@ const Schema = () => {
 					<TriangleBlockIcon size={20} x={120} y={37} />
 				</Html>
 				<Html>
+					<FanBottomLabel x={90} y={-32} text={formatRecupTempBt6()} />
 					<TemperatureBlockIcon width={40} height={24} x={120} y={0} rotation={90} />
 				</Html>
 				<Html>
+					<FanBottomLabel x={173} y={-15} text={formatRecupFormula()} />
 					<CanvasIcon src="/iconc.png" x={190} y={18} size={50} />
 				</Html>
 			</Group>

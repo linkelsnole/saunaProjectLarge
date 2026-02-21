@@ -83,6 +83,8 @@ export interface DashboardData {
   recupTargetRpm?: number | null;   // Обороты вала рекуператора (целевые), об/мин
   recupCurrentRpm?: number | null;  // Обороты вала, об/мин
   recupSpeedRpm?: number | null;    // Скорость вращения, об/мин
+  recupTempBt6?: number | null;    // Температура рекуператора BT6, °C
+  recupTargetPercent?: number | null; // recupTargetRpm / targetRpmMax * 100, %
 }
 
 export interface UpdateRecuperatorSettingsRequest {
