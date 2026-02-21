@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
-
+import { useUpdateRecuperatorSettings } from '@/api/hooks';
+import { Input } from '@/shared/ui/input';
+import { useAuth } from '@/contexts/AuthContext';
 
 const RecuperatorRow = ({ label, value, unit = 'об/мин' }: { label: string; value: number | null | undefined; unit?: string }) => (
   <div className="flex justify-between items-center py-3 px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
@@ -10,25 +13,131 @@ const RecuperatorRow = ({ label, value, unit = 'об/мин' }: { label: string;
   </div>
 );
 
-export const RecuperatorWidget = () => {
-  const { data } = useDashboardData();
+interface RecuperatorInputProps {
+  label: string;
+  value: number | null | undefined;
+  onChange: (val: number) => void;
+  unit?: string;
+  decimals?: number;
+  readOnly?: boolean;
+}
+
+const RecuperatorInput = ({ label, value, onChange, unit = 'об/мин', decimals = 1, readOnly = false }: RecuperatorInputProps) => {
+  const [localValue, setLocalValue] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    if (!isEditing && value !== null && value !== undefined) {
+      setLocalValue(value.toFixed(decimals));
+    }
+  }, [value, isEditing, decimals]);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    const normalizedValue = localValue.replace(',', '.');
+    const numVal = parseFloat(normalizedValue);
+
+    if (!isNaN(numVal) && Math.abs(numVal - (value || 0)) > 0.01) {
+      onChange(numVal);
+    } else {
+      if (value !== null && value !== undefined) {
+        setLocalValue(value.toFixed(decimals));
+      }
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') e.currentTarget.blur();
+  };
 
   return (
-    <div className="space-y-6 pb-6">        
-        <div className=" space-y-3">
-          <RecuperatorRow 
-            label="Обороты вала рекуператора (целевые)" 
-            value={data?.recupTargetRpm} 
+    <div className="flex flex-col gap-1 w-full">
+      <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium uppercase tracking-wide px-1 truncate" title={label}>
+        {label}
+      </span>
+      <div className="relative">
+        <Input
+          type="number"
+          step={decimals === 0 ? '1' : '0.1'}
+          value={localValue}
+          onChange={(e) => {
+            if (readOnly) return;
+            setIsEditing(true);
+            setLocalValue(e.target.value);
+          }}
+          onBlur={handleBlur}
+          onKeyDown={handleKeyDown}
+          readOnly={readOnly}
+          onFocus={(e) => {
+            if (readOnly) e.currentTarget.blur();
+          }}
+          tabIndex={readOnly ? -1 : 0}
+          className="pr-8 font-mono text-base sm:text-lg font-bold border-slate-200 hover:border-slate-300 focus:border-blue-500 h-9 sm:h-10 text-slate-800 bg-white"
+        />
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">
+          {unit}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+export const RecuperatorWidget = () => {
+  const { data } = useDashboardData();
+  const { mutate } = useUpdateRecuperatorSettings();
+  const { role } = useAuth();
+  const isAdmin = role === 'ROLE_ADMIN';
+
+  const recuperatorSettings = data?.recuperatorSettings;
+
+  return (
+    <div className="space-y-6 pb-6">
+      {/* === СЕКЦИЯ 1: МОНИТОРИНГ РЕКУПЕРАТОРА === */}
+      <div className="space-y-3">
+        <RecuperatorRow 
+          label="Обороты вала рекуператора (целевые)" 
+          value={data?.recupTargetRpm} 
+        />
+        <RecuperatorRow 
+          label="Обороты вала" 
+          value={data?.recupCurrentRpm} 
+        />
+        <RecuperatorRow 
+          label="Скорость вращения" 
+          value={data?.recupSpeedRpm} 
+        />
+      </div>
+
+
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span> 
+          Уставки рекуператора
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <RecuperatorInput
+            label="Минимальные обороты"
+            value={recuperatorSettings?.targetRpmMin}
+            onChange={(val) => mutate({ targetRpmMin: val })}
+            decimals={1}
+            readOnly={!isAdmin}
           />
-          <RecuperatorRow 
-            label="Обороты вала" 
-            value={data?.recupCurrentRpm} 
+          <RecuperatorInput
+            label="Максимальные обороты"
+            value={recuperatorSettings?.targetRpmMax}
+            onChange={(val) => mutate({ targetRpmMax: val })}
+            decimals={1}
+            readOnly={!isAdmin}
           />
-          <RecuperatorRow 
-            label="Скорость вращения" 
-            value={data?.recupSpeedRpm} 
+          <RecuperatorInput
+            label="Шаг калибровки"
+            value={recuperatorSettings?.targetRpmStep}
+            onChange={(val) => mutate({ targetRpmStep: val })}
+            decimals={1}
+            readOnly={!isAdmin}
           />
         </div>
+      </div>
     </div>
   );
 };

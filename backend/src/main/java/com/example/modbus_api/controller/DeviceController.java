@@ -14,6 +14,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.IOException;
+import java.util.List;
+import com.example.modbus_api.modbus.legacy.ArchESSEvent;
 
 @RestController
 @RequestMapping("/api/v1/devices")
@@ -25,7 +27,10 @@ public class DeviceController {
     private final SettingsService settingsService;
 
 
-    public DeviceController(DeviceService deviceService, SettingsService settingsService) {
+    public DeviceController(
+		DeviceService deviceService,
+		SettingsService settingsService
+	) {
         this.deviceService = deviceService;
         this.settingsService = settingsService;
     }
@@ -117,6 +122,35 @@ public class DeviceController {
 		}
 	}
 
+	@Operation(summary = "Обновить настройки рекуператора")
+	@PostMapping("/recuperator-settings")
+	@PreAuthorize("hasRole('ADMIN')")
+	public ResponseEntity<?> updateRecupSettings(@RequestBody UpdateRecupSettingsReq request) {
+		try {
+			settingsService.updateRecuperatorSettings(
+				request.getTargetRpmMin(),
+				request.getTargetRpmMax(),
+				request.getTargetRpmStep()
+			);
+			return ResponseEntity.ok().build();
+		} catch (IOException e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		}
+	}
+
+	@Operation(summary = "Получить журнал событий")
+	@GetMapping("/events")
+	@PreAuthorize("hasAnyRole('ADMIN','USER','READONLY')")
+	public ResponseEntity<?> getEvents(@RequestParam(defaultValue = "60") int minutes) {
+		try {
+			List<ArchESSEvent> events = deviceService.getSystemEvents(minutes);
+			return ResponseEntity.ok(events);
+		} catch (IOException e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new ErrorResponse("API_ERROR", e.getMessage()));
+		}
+	}
+
 	private boolean isRole(String role) {
 		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 		if (authentication == null || authentication.getAuthorities() == null) {
@@ -135,5 +169,6 @@ public class DeviceController {
 			|| request.getWaterMinTNoWork() != null
 			|| request.getWaterMinTWork() != null;
 	}
+	
 
 }

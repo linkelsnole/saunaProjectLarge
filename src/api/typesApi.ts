@@ -51,6 +51,12 @@ export interface TempSettingsDto {
   radTempFail?: number | null;       // TRadFzFail
 }
 
+export interface RecuperatorSettingsDto {
+  targetRpmMin: number | null;   // Минимальные обороты (об/мин) - сейчас 0 или 0.5 оборотов
+  targetRpmMax: number | null;   // Максимальные обороты (об/мин) - сейчас от 1 до 7 оборотов может стоять
+  targetRpmStep: number | null;  // Шаг калибровки (об/мин) - сейчас 0.1 или 0.3 оборота
+}
+
 export interface DashboardData {
   climateSensors: ClimateSensorDto[];
   wSensors: SensorData[];
@@ -62,11 +68,12 @@ export interface DashboardData {
   vm1: number | null;
   vm2: number | null;
   recupSpeed: number | null;
-  recupCurrent: number | null;
+  recupCurrent: number | null; //повторение, исправить
   vManualProcIn: number | null;
   vManualDProcOut: number | null;
   manualSettings: ManualSettingsDto;
   tempSettings: TempSettingsDto;
+  recuperatorSettings?: RecuperatorSettingsDto;
   damperSupply: boolean | null;   // задвижка притока
   damperExhaust: boolean | null;   // задвижка вытяжки
 
@@ -78,3 +85,33 @@ export interface DashboardData {
   recupSpeedRpm?: number | null;    // Скорость вращения, об/мин
 }
 
+export interface UpdateRecuperatorSettingsRequest {
+  targetRpmMin?: number;
+  targetRpmMax?: number;
+  targetRpmStep?: number;
+}
+
+export interface LegacyDateTime {
+  timeInMS?: number;
+}
+
+export interface SystemEvent {
+  type: number;
+  level: number;
+  title: string;
+  comment: string;
+  arrivalTime?: LegacyDateTime;
+  endTime?: LegacyDateTime;
+  equipName?: string;
+  devName?: string;
+  regNum?: number;
+  bitNum?: number;
+  prevValue?: number;
+  value?: number;
+  secondRegNum?: number;
+  secondRegValue?: number;
+  viewLevel?: number;
+  packedValues?: string;
+  logUnit?: number;
+  facadeClass?: string;
+}

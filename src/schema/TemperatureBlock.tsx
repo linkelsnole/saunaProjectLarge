@@ -1,9 +1,8 @@
-import { Group, Text, Line } from 'react-konva'
-
 interface TemperatureBlockProps {
   width: number
   height: number
   text: string
+  subText?: string
   x?: number
   y?: number
   rotation?: number
@@ -11,58 +10,176 @@ interface TemperatureBlockProps {
   labelOffsetY?: number
   labelWidth?: number
   keepLabelUpright?: boolean
+  subTextFontSize?: number
+  subTextColor?: string
+  subTextOffsetY?: number
 }
 
 export function TemperatureBlock({
   width,
   height,
   text,
+  subText,
   x = 0,
   y = 0,
   rotation = 0,
   labelOffsetX = 0,
   labelOffsetY = 0,
-  labelWidth = 70,
+  labelWidth = 40,
   keepLabelUpright = true,
+  subTextColor = '#4b5563',
+  subTextOffsetY = 0,
 }: TemperatureBlockProps) {
   const triangleSize = height * 0.8
   const lineLength = width * 0.3
 
-  const shapeX = labelWidth + 3
-  const centerY = height / 2
+  const labelPaddingX = 4
+  const labelPaddingY = 4
+  const badgeGap = 6
+  const mainFontSize = 13
+  const subFontSize = 10
+  const labelRotation = keepLabelUpright ? 0 : rotation
 
   return (
-    <Group x={x} y={y}>
-      <Text
-        text={text}
-        x={labelOffsetX}
-        y={centerY - 8 + labelOffsetY}
-        width={labelWidth}
-        align="right"
-        fontSize={16}
-        fill="#000"
-        rotation={keepLabelUpright ? 0 : rotation}
-      />
+    <div
+      style={{
+        position: 'absolute',
+        left: x,
+        top: y,
+        height: height,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        zIndex: 10,
+        pointerEvents: 'none',
+      }}
+    >
+      <div
+        style={{
+          minWidth: Math.max(labelWidth, width),
+          display: 'flex',
+          alignItems: 'stretch',
+          textAlign: 'right',
+          transform: `translate(${labelOffsetX}px, ${labelOffsetY}px) rotate(${labelRotation}deg)`,
+          transformOrigin: 'center',
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            border: '1.4px solid #E2E8F0',
+            borderRadius: '12px',
+            boxShadow:
+              '0 4px 10px -4px rgba(0, 0, 0, 0.12), 0 2px 6px -3px rgba(0, 0, 0, 0.08)',
+            padding: `${labelPaddingY + 2}px ${labelPaddingX + 4}px`,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: badgeGap,
+            userSelect: 'none',
+          }}
+        >
+          <div
+            style={{
+              fontSize: mainFontSize,
+              fontFamily: 'Inter, Arial, sans-serif',
+              fontWeight: 400,
+              color: '#0F172A',
+              lineHeight: '1',
+              whiteSpace: 'nowrap',
+              textAlign: 'right',
+            }}
+          >
+            {text}
+          </div>
+          {subText ? (
+            <>
+              <div
+                style={{
+                  height: 1,
+                  background:
+                    'linear-gradient(90deg, rgba(0,0,0,0) 0%, rgba(148,163,184,0.7) 50%, rgba(0,0,0,0) 100%)',
+                }}
+              />
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 3,
+                  marginTop: subTextOffsetY,
+                }}
+              >
+                <svg
+                  width={15}
+                  height={15}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  style={{ flex: '0 0 auto' }}
+                >
+                  <defs>
+                    <linearGradient id="dropGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" style={{ stopColor: '#60a5fa', stopOpacity: 1 }} />
+                      <stop offset="100%" style={{ stopColor: '#3b82f6', stopOpacity: 1 }} />
+                    </linearGradient>
+                  </defs>
+                  <path
+                    d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"
+                    fill="url(#dropGradient)"
+                    style={{ filter: 'drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3))' }}
+                  />
+                  <circle cx="9" cy="12" r="1.5" fill="rgba(255, 255, 255, 0.5)" />
+                </svg>
+                <div
+                  style={{
+                    fontSize: subFontSize,
+                    fontFamily: 'Inter, Arial, sans-serif',
+                    fontWeight: 400,
+                    color: subTextColor,
+                    lineHeight: '1',
+                    whiteSpace: 'nowrap',
+                    textAlign: 'right',
+                  }}
+                >
+                  {subText}
+                </div>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </div>
 
-      <Group x={shapeX} y={centerY} rotation={rotation}>
-        <Line
-          points={[
-            0 +5, -triangleSize / 2,
-            triangleSize, 0,
-            0 +5, triangleSize / 2,
-          ]}
-          closed
-          fill="#000"
-          stroke="#000"
-          strokeWidth={1}
-        />
-
-        <Line
-          points={[triangleSize, 0, triangleSize + lineLength, 0]}
-          stroke="#000"
-          strokeWidth={2}
-        />
-      </Group>
-    </Group>
+      <div
+        style={{
+          width: triangleSize + lineLength,
+          height: triangleSize,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transform: `rotate(${rotation}deg)`,
+          transformOrigin: 'center',
+        }}
+      >
+        <svg
+          width={triangleSize + lineLength}
+          height={triangleSize}
+          viewBox={`0 0 ${triangleSize + lineLength} ${triangleSize}`}
+        >
+          <polygon
+            points={`5,0 ${triangleSize},${triangleSize / 2} 5,${triangleSize}`}
+            fill="#000"
+            stroke="#000"
+            strokeWidth="1"
+          />
+          <line
+            x1={triangleSize}
+            y1={triangleSize / 2}
+            x2={triangleSize + lineLength}
+            y2={triangleSize / 2}
+            stroke="#000"
+            strokeWidth="2"
+          />
+        </svg>
+      </div>
+    </div>
   )
 }

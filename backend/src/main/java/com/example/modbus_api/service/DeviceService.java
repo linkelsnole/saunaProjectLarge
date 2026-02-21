@@ -9,6 +9,7 @@ import com.example.modbus_api.dto.FanFlowData;
 import com.example.modbus_api.dto.RecuperatorStatusDto;
 import com.example.modbus_api.dto.ManualSettingsDto;
 import com.example.modbus_api.dto.TempSettingsDto;
+import com.example.modbus_api.dto.RecuperatorSettingsDto;
 
 import java.util.Map;
 import java.util.List;
@@ -17,6 +18,9 @@ import java.util.ArrayList;
 import java.io.IOException;
 
 import static com.example.modbus_api.service.ModbusConstants.*;
+import com.example.modbus_api.modbus.ModbusAPIClient;
+import com.example.modbus_api.modbus.legacy.ArchESSEvent;
+import com.example.modbus_api.modbus.legacy.IntegerList;
 
 
 @Service
@@ -42,7 +46,7 @@ public class DeviceService {
 		}
 		
 		Integer currentState = modbusClient.readRegister(SAUNA_PLC, REG_R_STATE);
-		String stateName = currentState != null ? SYSTEM_STATES.getOrDefault(currentState, "Неизвестно (" + currentState + ")") : "Неизвестно";
+		String stateName = resolveRecuperatorStateName(currentState);
 		System.out.println("DEBUG: Команда включения отправлена, текущее состояние: " + currentState + " - " + stateName);
 	}
 
@@ -56,13 +60,35 @@ public class DeviceService {
 		}
 		
 		Integer currentState = modbusClient.readRegister(SAUNA_PLC, REG_R_STATE);
-		String stateName = currentState != null ? SYSTEM_STATES.getOrDefault(currentState, "Неизвестно (" + currentState + ")") : "Неизвестно";
+		String stateName = resolveRecuperatorStateName(currentState);
 		System.out.println("DEBUG: Команда выключения отправлена, текущее состояние: " + currentState + " - " + stateName);
 	}
 
-	public DashboardData getDashboardData() throws IOException {
+	public List<ArchESSEvent> getSystemEvents(int lastMinutes) throws IOException {
+		modbusClient.ensureConnection();
 
-		List<Integer> allRegs = new ArrayList<>(Arrays.asList(
+		IntegerList types = new IntegerList();
+		types.add(16); // EventPLC - Сообщения модуля управления
+		types.add(3);  // EventExternal
+		types.add(4);  // EventSystem
+		types.add(6);  // EventFailure (Аварии)
+
+		ArrayList<ArchESSEvent> events = new ModbusAPIClient.APICall<ArrayList<ArchESSEvent>>() {
+			@Override
+			public retrofit2.Call<ArrayList<ArchESSEvent>> apiFun() {
+				return modbusClient.getApi().getEventsList(
+					modbusClient.getSessionToken(),
+					lastMinutes,
+					types
+				);
+			}
+		}.call();
+
+		return events != null ? events : new ArrayList<>();
+	}
+
+	public DashboardData getDashboardData() throws IOException {
+		List<Integer> tempRegs = Arrays.asList(
 			// --- ТЕМПЕРАТУРА (тип 1) ---
 			REG_T_BT3,    // T1
 			REG_T_BT11,    // T2
@@ -77,6 +103,17 @@ public class DeviceService {
 			REG_T_BT24,
 			REG_T_BT27,
 
+			// --- ТЕМПЕРАТУРЫ ЗОН ---
+			REG_T_ZONE1,
+			REG_T_ZONE2
+		);
+
+		List<Integer> allRegs = new ArrayList<>(tempRegs);
+		for (Integer reg : tempRegs) {
+			allRegs.add(reg + OFFSET_HUMID);
+		}
+
+		allRegs.addAll(Arrays.asList(
 			// --- ДАВЛЕНИЕ (Вентиляторы) ---
 			REG_P_BF11,  // вентилятор 1
 			REG_P_BF12,  // внетилятор 2
@@ -115,10 +152,6 @@ public class DeviceService {
 			REG_F_G21,
 			REG_F_G22,
 
-			// --- ТЕМПЕРАТУРЫ ЗОН ---
-			REG_T_ZONE1,
-			REG_T_ZONE2,
-
 			// --- РЕКУПЕРАТОР ---
 			REG_R_RECUP_SPEED,
 			REG_R_CURRENT,
@@ -155,7 +188,12 @@ public class DeviceService {
 			REG_VALVE_OPEN_PROC1,
 			REG_VALVE_HEAT_POS2,
 			REG_VALVE_COOL_POS2,
-			REG_VALVE_OPEN_PROC2
+			REG_VALVE_OPEN_PROC2,
+
+
+			REG_R_TARGET_RPM_MIN,
+			REG_R_TARGET_RPM_MAX,
+			REG_R_TARGET_RPM_STEP
 		));
 
 		Map<Integer, Integer> data =  modbusClient.readRegisters(SAUNA_PLC, allRegs);
@@ -234,16 +272,17 @@ public class DeviceService {
 
 		// --- РЕКУПЕРАТОР ---
 		Integer recupSpeed = getValidOrNull(data.get(REG_R_RECUP_SPEED));
-		// Integer recupCurrentRaw = data.get(REG_R_CURRENT);
-		// Integer recupCurrent = (recupCurrentRaw != null && recupCurrentRaw != INVALID_VALUE) ? recupCurrentRaw / 10 : null; 
 		Integer recupCurrent = getValidScaled(data.get(REG_R_CURRENT), 10); 
 		System.out.println("DEBUG: recupCurrent: " + recupCurrent);
 		List<SensorData> recuperator = Arrays.asList(
 			createSensor("R_EFFICIENCY", "КПД", data.get(REG_R_EFFICIENCY), "%", 1.0)
 		);
 
+		//  -- РЕКУПЕРАТОР ШАГ и БЫСТРАЯ СМЕНА РЕЖИМА --
+		
+
 		Integer stateCode = data.get(REG_R_STATE);
-		String stateName = stateCode != null ? SYSTEM_STATES.getOrDefault(stateCode, "Неизвестно") : "Неизвестно";
+		String stateName = resolveRecuperatorStateName(stateCode);
 		boolean isEffectivelyOff = stateCode == null || stateCode == 0 || (stateCode & 1) != 0 || stateCode == 128;
 		
 		RecuperatorStatusDto recuperatorStatus = RecuperatorStatusDto.builder()
@@ -300,6 +339,13 @@ public class DeviceService {
 		Double recupCurrentRpm = getValidScaled(data.get(CURRENT_R_REG), 100.0); // Обороты вала
 		Double recupSpeedRpm = getValidScaled(data.get(SPEED_R_REG), 10.0);      // Скорость вращения
 		
+		// --- УСТАВКИ РЕКУПЕРАТОРА (25.01.2026) ---
+		RecuperatorSettingsDto recuperatorSettings = RecuperatorSettingsDto.builder()
+			.targetRpmMin(getValidScaled(data.get(REG_R_TARGET_RPM_MIN), 10.0))   // Минимальные обороты (об/мин)
+			.targetRpmMax(getValidScaled(data.get(REG_R_TARGET_RPM_MAX), 10.0))   // Максимальные обороты (об/мин)
+			.targetRpmStep(getValidScaled(data.get(REG_R_TARGET_RPM_STEP), 10.0))  // Шаг калибровки (об/мин)
+			.build();
+		
 		TempSettingsDto tempSettings = TempSettingsDto.builder()
 			.targetZone1(targetZone1)
 			.targetZone2(targetZone2)
@@ -332,6 +378,7 @@ public class DeviceService {
 			.vManualDProcOut(vManualDProcOut)
 			.manualSettings(manualSettings)
 			.tempSettings(tempSettings)
+			.recuperatorSettings(recuperatorSettings)
 			.debugValveSensors(debugValveSensors) //22.01.2026
 			.damperSupply(damperSupply)
 			.damperExhaust(damperExhaust)
@@ -362,7 +409,7 @@ public class DeviceService {
 			.id(id)
 			.label(label)
 			.temperature(temp != null ? temp.doubleValue() : null)
-			.humidity(humid != null ? humid.doubleValue() : null)
+			.humidity(getValidScaled(humid, 10.0))
 			.build();
 	}
 
@@ -373,7 +420,7 @@ public class DeviceService {
 		
 		return FanFlowData.builder()
 			.type(type)
-			.pressure(getValidScaled(pressureRaw, 10.0))
+			.pressure(getValidScaled(pressureRaw, 1.0))
 			.speedPerc(isValid(speedPercRaw) ? (int)(speedPercRaw / 100.0) : null)
 			.vm(getValidOrNull(vmRaw))
 			.targetAirFlow(targetFlow)
@@ -409,5 +456,26 @@ public class DeviceService {
 
 	private Integer getValidScaled(Integer value, int divisor) {
 		return isValid(value) ? value / divisor : null;
+	}
+
+	private String resolveRecuperatorStateName(Integer stateCode) {
+		if (stateCode == null) {
+			return "Неизвестно";
+		}
+		
+		String direct = SYSTEM_STATES.get(stateCode);
+		if (direct != null) {
+			return direct;
+		}
+		
+		if ((stateCode & MASK_STATE_VENTILATION) != 0) {
+			return SYSTEM_STATES.getOrDefault(MASK_STATE_VENTILATION, "Вентилирование");
+		}
+		
+		if ((stateCode & MASK_STATE_ALARM) != 0) {
+			return SYSTEM_STATES.getOrDefault(MASK_STATE_ALARM, "Отключение по сбою");
+		}
+		
+		return "Неизвестно (" + stateCode + ")";
 	}
 }

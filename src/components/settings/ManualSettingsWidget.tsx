@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
 import { useUpdateManualSettings } from '@/api/hooks';
-import { Input } from '@/shared/ui/input';
+import { GlassCard } from '@/shared/ui/GlassCard';
+import { NeoInput } from '@/shared/ui/NeoInput';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ManualInputProps {
@@ -46,12 +47,17 @@ const ManualInput = ({ label, value, onChange, unit = '%', readOnly = false }: M
   };
 
   return (
-    <div className="flex flex-col gap-2 p-4 bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
-      <span className="text-xs text-slate-500 font-semibold uppercase tracking-wider">
-        {label}
-      </span>
-      <div className="relative">
-        <Input
+    <GlassCard className="p-5 flex flex-col justify-between h-32 hover:translate-y-[-2px] transition-transform duration-300">
+      <div className="flex justify-between items-start">
+        <span className="text-[11px] text-slate-500 font-bold uppercase tracking-widest opacity-80">
+          {label}
+        </span>
+        {!readOnly && (
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-400/50 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
+        )}
+      </div>
+      <div className="relative mt-auto">
+        <NeoInput
           type="number"
           step="0.1"
           value={localValue}
@@ -67,13 +73,13 @@ const ManualInput = ({ label, value, onChange, unit = '%', readOnly = false }: M
             if (readOnly) e.currentTarget.blur();
           }}
           tabIndex={readOnly ? -1 : 0}
-          className="pr-10 font-mono text-2xl font-bold border-transparent hover:border-slate-300 focus:border-blue-500 bg-transparent h-12 text-slate-800"
+          className={readOnly ? "text-slate-500 shadow-none bg-transparent" : "text-slate-800"}
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium">
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium pointer-events-none">
           {unit}
         </span>
       </div>
-    </div>
+    </GlassCard>
   );
 };
 
@@ -90,8 +96,8 @@ export const ManualSettingsWidget = () => {
   const boostPercent = data?.manualSettings?.boostPercent;
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Скорость вентилирования ПВ */}
         <ManualInput
           label="Скорость вентилирования ПВ"

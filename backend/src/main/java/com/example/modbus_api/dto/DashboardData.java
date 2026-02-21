@@ -37,6 +37,7 @@ public class DashboardData {
     
     private ManualSettingsDto manualSettings;
     private TempSettingsDto tempSettings;
+    private RecuperatorSettingsDto recuperatorSettings;
 
     private Boolean damperSupply;
     private Boolean damperExhaust;

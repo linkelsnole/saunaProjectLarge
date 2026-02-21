@@ -1,13 +1,19 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { Layer, Line, Stage, Group, Text } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import { useDashboardData } from '../api/useDashboard';
 import { PressureBlock } from './PressureBlock';
 import { SquareBlock } from './SquareBlock';
 import { TemperatureBlock } from './TemperatureBlock';
+import { TemperatureBlockIcon } from './TemperatureBlockIcon';
 import { DiagonalBlock } from './DiagonalBlock';
 import { TriangleBlock } from './TriangleBlock';
-
+import { TriangleBlockIcon } from './TriangleBlockIcon';
+import { CanvasIcon } from './CanvasIcon';
+import { DeltaPBlock } from './DeltaPBlock';
+import { Pipe } from './Pipe';
+import { StatusLine } from './StatusLine';
+import { StatusBarBlock } from './StatusBarBlock';
 import { ControlButton } from '@/shared/ui/control-button';
 import { toggleRecuperator } from '@/api/deviceApi';
 import { toast } from 'sonner';
@@ -18,10 +24,29 @@ const LoadingOverlay = () => (
 	<div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-[10px]">
 		<div className="flex flex-col items-center gap-3 p-6 bg-white/80 rounded-2xl shadow-lg">
 			<Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-			<span className="text-sm font-medium text-gray-600">Получение данных...</span>
+			<span className="text-sm text-gray-600">Получение данных...</span>
 		</div>
 	</div>
 );
+
+const GlassBackground = ({ scale }: { scale: number }) => {
+	const style: CSSProperties = {
+		top: 220 * scale,
+		left: -10,
+		width: 610 * scale,
+		height: 400 * scale,
+		borderRadius: 30 * scale,
+	};
+
+	return (
+		<div
+			className="absolute backdrop-blur-xl bg-white/60 border border-white/50 shadow-xl z-0 pointer-events-none transition-all duration-100 ease-linear"
+			style={style}
+		>
+			<div className="absolute inset-0 rounded-[inherit] bg-gradient-to-br from-white/40 to-transparent opacity-50" />
+		</div>
+	);
+};
 
 const Schema = () => {
 	const { data, isLoading, refetch } = useDashboardData();
@@ -35,9 +60,8 @@ const Schema = () => {
 	const defaultColor = '#000';
 	const canToggleRecuperator = role === 'ROLE_ADMIN' || role === 'ROLE_USER';
 
-
 	const lastNotifiedErrorCode = useRef<number | null>(null);
-	
+
 	useEffect(() => {
         const status = data?.recuperatorStatus;
         if (!status || status.stateCode == null) return;
@@ -99,6 +123,9 @@ const Schema = () => {
 		return data?.wSensors?.find(s => s.id === id);
 	};
 
+	const getPressureSensor = (id: string) => {
+		return data?.pressureSensors?.find(s => s.id === id);
+	};
 
 	const getValve = (id: string) => {
 		return data?.valves?.find(s => s.id === id);
@@ -114,12 +141,27 @@ const Schema = () => {
 		return temp != null ? `${temp.toFixed(1)} °C` : '-- °C';
 	};
 
+	const formatHumidity = (id: string): string => {
+		const sensor = getClimate(id);
+		const humid = sensor?.humidity;
+		return humid != null ? `${humid.toFixed(1)} %` : '-- %';
+	};
+
 	const formatPressure = (id: string): string => {
 		const sensor = getWSensor(id);
 		const value = sensor?.value;
 		return value != null ? `${value} Па` : '-- Па';
 	};
 
+	const formatPressureSensor = (id: string): string => {
+		const sensor = getPressureSensor(id);
+		const value = sensor?.value;
+		if (value != null) {
+			const intValue = Math.round(parseFloat(value));
+			return `${intValue} Па`;
+		}
+		return '-- Па';
+	};
 
 	const formatValveLabel = (valveId: string, tempId: string): string => {
 		const valve = getValve(valveId);
@@ -127,12 +169,14 @@ const Schema = () => {
 		
 		const valveValue = valve?.value;
 		const tempValue = temp?.temperature;
+		const humidValue = temp?.humidity;
 		
 		const valveInt = valveValue != null ? Math.round(parseFloat(valveValue)) : null;
-		const valveStr = valveInt != null ? `${valveInt} % (клапан)` : '-- % (клапан)';
+		const valveStr = valveInt != null ? `${valveInt} %` : '-- %';
 		const tempStr = tempValue != null ? `${tempValue.toFixed(1)} °C` : '-- °C';
+		const humidStr = humidValue != null ? `${humidValue.toFixed(1)} %` : '-- %';
 		
-		return `${valveStr}\n${tempStr}`;
+		return `${valveStr}\n${tempStr}\n${humidStr}`;
 	};
 
 	const formatFanLabel = (id: string, bottomValue: 'vm1' | 'vm2' | 'formula' | 'vmanual' = 'vm2'): string => {
@@ -176,6 +220,7 @@ const Schema = () => {
 		return temp != null ? `${temp.toFixed(1)} °C` : '-- °C';
 	};
 
+
 	const getRecuperator = (id: string) => {
 		return data?.recuperator?.find(s => s.id === id);
 	};
@@ -186,8 +231,8 @@ const Schema = () => {
 			return speed != null ? `${speed} об/мин` : '-- об/мин';
 		}
 		if (id === 'R_CURRENT') {
-			const current = data?.recupCurrent;
-			return current != null ? `${current} об/мин` : '-- об/мин';
+			const current = data?.recupTargetRpm; // было recupCurrent(0x2C0), заменил пока что 22.01.26
+			return current != null ? `${Number(current).toFixed(1)} об/мин` : '-- об/мин';
 		}
 		const sensor = getRecuperator(id);
 		const value = sensor?.value;
@@ -247,13 +292,12 @@ const Schema = () => {
     <div
 		className='relative w-full h-full flex flex-col'
 		ref={containerRef}
-		style={{ backgroundImage: `url(/bg2.jpg)` }}
+		style={{ backgroundColor: 'transparent' }}
 	>
 		{/* Loading overlay */}
 		{showLoadingOverlay && <LoadingOverlay />}
-		
       <div className='flex-1 flex items-center justify-center'>
-        <div className="absolute inset-0 z-0">
+	  <div className="absolute inset-0 z-0">
 					<div 
 						className="absolute inset-0 w-full h-full"
 						style={{
@@ -266,19 +310,36 @@ const Schema = () => {
 						}}
 					/>
         </div>
-
-        <Stage 
-          width={stageSize.width} 
-          height={stageSize.height} 
-          ref={stageRef}
-          scaleX={scale}
-          scaleY={scale}
-          style={{
-            position: 'absolute',
-            zIndex: 20
-          }}
-        >
-          <Layer scale={{x: 1, y: 1}}>
+		<div
+			style={{
+				position: 'relative',
+				width: stageSize.width,
+				height: stageSize.height,
+			}}
+		>
+			<GlassBackground scale={scale} />
+			<Stage 
+			  width={stageSize.width} 
+			  height={stageSize.height} 
+			  ref={stageRef}
+			  scaleX={scale}
+			  scaleY={scale}
+			  style={{
+				position: 'absolute',
+				top: -30,
+				left: 0,
+				zIndex: 20
+			  }}
+			>
+			  <Layer scale={{x: 1, y: 1}}>
+		  <Html>
+				<StatusBarBlock
+					x={165}
+					y={400}
+					width={500}
+					height={300}
+				/>
+		</Html>
 		  <Html>
 			  <div style={{ position: 'absolute', left: 218, top: 647 }}>
 				  <ControlButton
@@ -291,48 +352,62 @@ const Schema = () => {
 				  />
 			  </div>
 		  </Html>
-		  <Line points={[160, 695, 160, 50]}  strokeWidth={2.5} stroke="red" />
-		  <Line points={[395, 695, 395, 230]}  strokeWidth={2.5} stroke="#006AD2"/>
-		  <Line points={[310, 230, 400, 230]} strokeWidth={2.5} stroke="#006AD2"/>
-		  <Line points={[350, 230, 480, 230]} strokeWidth={2.5} stroke="#006AD2"/>
-		  <Line points={[310, 50, 310, 231]} strokeWidth={2.5} stroke="#006AD2"/>
-		  <Line points={[480, 50, 480, 231]} strokeWidth={2.5} stroke="#006AD2"/>
+		  <Html>
+			  <StatusLine
+				  x={165}
+				  y={600}
+				  text={`${data?.recuperatorStatus?.stateName ?? '—'}`}
+			  />
+		  </Html>
+		  <Pipe points={[160, 500, 160, 50]} type="hot" />
+		  <Pipe points={[160, 590, 160, 695]} type="hot" />
+		  <Pipe points={[395, 695, 395, 340]} type="cold" />
+		  <Pipe points={[395, 250, 395, 230]} type="cold" />
+		  <Pipe points={[310, 230, 400, 230]} type="cold" />
+		  <Pipe points={[350, 230, 480, 230]} type="cold" />
+		  <Pipe points={[310, 50, 310, 230]} type="cold" />
+		  <Pipe points={[480, 50, 480, 230]} type="cold" />
+		  
+
+
 
 		  {/* Линии до ΔP2*/}
-		  {/* <Line points={[90, 350, 160, 350]} stroke={defaultColor} strokeWidth={2.5} />
-		  <Line points={[90, 450, 160, 450]} stroke={defaultColor} strokeWidth={2.5} />
-		  <Line points={[90, 349, 90, 451]} stroke={defaultColor} strokeWidth={2.5} /> */}
+		  <Line points={[90, 391, 158, 391]} stroke={defaultColor} strokeWidth={2.5} />
+		  <Line points={[90, 480, 158, 480]} stroke={defaultColor} strokeWidth={2.5} />
+		  <Line points={[91, 391, 91, 481]} stroke={defaultColor} strokeWidth={2.5} />
 
-		   {/* BPCalib BP5 и BP10
+		   {/*BPCalib BP5 и BP10*/}
 		  <DeltaPBlock
 			x={90}
-			y={400}
+			y={435}
 			text="ΔP"
 			label={`${formatPressureSensor('BP5')}\n${formatPressureSensor('BP10')}`}
 			labelWidth={70}
 			labelOffsetX={-15}
 			labelOffsetY={-5}
-		  /> */}
-
-		{/* BP2 */}
-		  	<PressureBlock 
-				width={45}
-				height={45}
-				text={formatPressure('BP2')}
-				x={70}
-				y={220}
-			/>
-			{/* BP1 */}
+		  />
+		<Html>
+			{/* BP2 */}
 			<PressureBlock 
-				width={45}
-				height={45}
-				text={formatPressure('BP1')}
-				x={295}
-				y={460}
-				rotation={180}
-				labelWidth = {70}
-				labelOffsetX = {120}
-			/>
+					width={45}
+					height={45}
+					text={formatPressure('BP2')}
+					x={70}
+					y={270}
+				/>
+				{/* BP1 */}
+				<PressureBlock 
+					width={45}
+					height={45}
+					text={formatPressure('BP1')}
+					x={295}
+					y={510}
+					rotation={180}
+					labelWidth = {70}
+					labelOffsetX = {120}
+				/>
+			</Html>
+
 			{/* Группа слева + и -*/}
 			<Group x={285} y={150}>
 				<Html>
@@ -380,110 +455,167 @@ const Schema = () => {
 				</Html>
 			</Group>
 
-			<TemperatureBlock 
-				width={100}
-				height={25}
-				text={formatTemperature('BT2')}
-				x={36}
-				y={300}
-			/>
-			<TemperatureBlock
-				width={100}
-				height={25}
-				text={formatTemperature('BT3')}
-				x={372}
-				y={540}
-				rotation={-180}
-				labelWidth={70}
-				labelOffsetX={62}
-				labelOffsetY={0}
-			/>
-			<TemperatureBlock
-				width={100}
-				height={25}
-				text={formatTemperature('BT10')}
-				x={372}
-				y={340}
-				rotation={-180}
-				labelWidth={70}
-				labelOffsetX={62}
-				labelOffsetY={0}
-			/>
+			<Html>
+				<TemperatureBlock 
+					width={100}
+					height={25}
+					text={formatTemperature('BT2')}
+					subText={formatHumidity('BT2')}
+					x={2}
+					y={350}
+					labelWidth={40}
+					labelOffsetX={35}
+					labelOffsetY={-3}
+				/>
+			</Html>
+			<Html>
+				<TemperatureBlock
+					width={100}
+					height={25}
+					text={formatTemperature('BT3')}
+					subText={formatHumidity('BT3')}
+					x={291}
+					y={590}
+					rotation={-180}
+					labelWidth={70}
+					labelOffsetX={160}
+					labelOffsetY={0}
+				/>
+			</Html>
+			<Html>
+				<TemperatureBlock
+					width={100}
+					height={25}
+					text={formatTemperature('BT10')}
+					subText={formatHumidity('BT10')}
+					x={291}
+					y={350}
+					rotation={-180}
+					labelWidth={70}
+					labelOffsetX={160}
+					labelOffsetY={10}
+				/>
+			</Html>
 			{/* Слева под вентилятором */}
-			<TemperatureBlock 
-				width={100}
-				height={25}
-				text={formatTemperature('BT11')}
-				x={36}
-				y={610}
-			/>
+			<Html>
+				<TemperatureBlock 
+					width={100}
+					height={25}
+					text={formatTemperature('BT11')}
+					subText={formatHumidity('BT11')}
+					x={3}
+					y={600}
+					labelWidth={40}
+					labelOffsetX={35}
+					labelOffsetY={10}
+				/>
+			</Html>
 			{/* Справа над - */}
-			<TemperatureBlock
-				width={100}
-				height={25}
-				text={formatTemperature('BT21')}
-				x={456}
-				y={50}
-				rotation={-180}
-				labelWidth={70}
-				labelOffsetX={62}
-				labelOffsetY={0}
-			/>
+			<Html>
+				<TemperatureBlock
+					width={100}
+					height={25}
+					text={formatTemperature('BT21')}
+					subText={formatHumidity('BT21')}
+					x={376}
+					y={42}
+					rotation={-180}
+					labelWidth={70}
+					labelOffsetX={160}
+					labelOffsetY={0}
+				/>
+			</Html>
 			{/* Слева над - */}
-			<TemperatureBlock
-				width={100}
-				height={25}
-				text={formatTemperature('BT1')}
-				x={186}
-				y={50}
-				labelWidth={70}
-				labelOffsetX={0}
-				labelOffsetY={0}
-			/>
+			<Html>
+				<TemperatureBlock
+					width={100}
+					height={25}
+					text={formatTemperature('BT1')}
+					subText={formatHumidity('BT1')}
+					x={152}
+					y={42}
+					labelWidth={70}
+					labelOffsetX={35}
+					labelOffsetY={0}
+				/>
+			</Html>
 			
 			{/*MG2 MG1 - задвижки притока и вытяжки*/}
 			<Group y={640}>
-			<DiagonalBlock 
-				size={45}
-				x={373}
-				isOpen={data?.damperSupply}
-			/>
-			<DiagonalBlock 
-				size={45}
-				x={136}
-				isOpen={data?.damperExhaust}
-			/>
+				<Html>
+					<DiagonalBlock 
+						size={45}
+						x={373}
+						isOpen={data?.damperSupply}
+					/>
+				</Html>
+				<Html>
+					<DiagonalBlock 
+						size={45}
+						x={136}
+						isOpen={data?.damperExhaust}
+					/>
+				</Html>
 			</Group>
+
+
+			<Pipe points={[100, 590, 220, 590]} type="hot" />
+			<Pipe points={[100, 590, 100, 500]} type="hot" />
+			<Pipe points={[220, 590, 220, 500]} type="hot" />
+			<Pipe points={[100, 500, 220, 500]} type="hot" />
+
+			<Pipe points={[335, 250, 455, 250]} type="cold" />
+			<Pipe points={[335, 250, 335, 340]} type="cold" />
+			<Pipe points={[335, 340, 455, 340]} type="cold" />
+			<Pipe points={[455, 340, 455, 250]} type="cold" />
 			
-			{/*BF12 и BF11 - объединенный компонент*/}
-			<TriangleBlock 
-				size={45}
-				x={395}
-				y={285}
-				rotation={-90}
-				leftLabel={formatFanLabel('Вентилятор 1', 'vm1')}
-				rightLabel={formatFanLabel('Вентилятор 2', 'vmanual')}
-				labelWidth={150}
-				labelGap={30}
-				rightLabelOffsetX={-43}
-			/>
+			{/*BF12 и BF11 - объединенный компонент 2 вентиля сверху*/}
+			<Html>
+				<TriangleBlock 
+					size={45}
+					x={330}
+					y={292}
+					rotation={-90}
+					leftLabel={formatFanLabel('Вентилятор 1', 'vm1')}
+					labelWidth={150}
+					labelGap={5}
+				/>
+				<TriangleBlock 
+					size={45}
+					x={455}
+					y={292}
+					rotation={-90}
+					rightLabel={formatFanLabel('Вентилятор 2', 'vmanual')}
+					labelWidth={150}
+					labelGap={5}
+				/>
+			</Html>
 
 			{/*BF21 и BF22 - объединенный компонент*/}
-			<TriangleBlock 
-				size={45}
-				x={160}
-				y={528}
-				rotation={90}
-				leftLabel={formatFanLabel('Вентилятор 3', 'vm2')}
-				rightLabel={formatFanLabel('Вентилятор 4', 'formula')}
-				labelWidth={150}
-				labelGap={30}
-				rightLabelOffsetX={-43}
-			/>
+			<Html>
+				<TriangleBlock 
+					size={45}
+					x={100}
+					y={543}
+					rotation={90}
+					leftLabel={formatFanLabel('Вентилятор 3', 'vm2')}
+					labelWidth={150}
+					labelGap={5}
+				/>
+
+				<TriangleBlock 
+					size={45}
+					x={220}
+					y={543}
+					rotation={90}
+					rightLabel={formatFanLabel('Вентилятор 4', 'formula')}
+					labelWidth={150}
+					labelGap={5}
+				/>
+			</Html>
 
 
-
-			<Group x={120} y={380}>
+			<Group x={120} y={410}>
 				<Html>
 					<SquareBlock 
 						size={50}
@@ -500,8 +632,33 @@ const Schema = () => {
 						y={0}
 					/>
 				</Html>
-				<Line points={[60, 1, 250, 1]} stroke={defaultColor} strokeWidth={2} />
-				<Line points={[59, 48.7, 250, 48.7]} stroke={defaultColor} strokeWidth={2} />
+				<Line points={[50, 15, 270, 15]} stroke={defaultColor} strokeWidth={2} />
+				<Line points={[50, 37.7, 270, 37.7]} stroke={defaultColor} strokeWidth={2} />
+				<Line points={[190, 37.7, 190, 20]} stroke={defaultColor} strokeWidth={2} />
+
+				{/* <Text
+					text={formatRecuperator('R_CURRENT')}
+					x={70}
+					y={20}
+					fontSize={10}
+					fill="#000"
+				/> */}
+				<Text
+					text={formatRecuperator('R_EFFICIENCY')}
+					x={225}
+					y={42}
+					fontSize={11}
+					fill="#000"
+				/>
+				<Html>
+					<TriangleBlockIcon size={20} x={120} y={37} />
+				</Html>
+				<Html>
+					<TemperatureBlockIcon width={40} height={24} x={120} y={0} rotation={90} />
+				</Html>
+				<Html>
+					<CanvasIcon src="/iconc.png" x={190} y={18} size={50} />
+				</Html>
 			</Group>
 
 			<Group y={210} x={320}>
@@ -511,6 +668,7 @@ const Schema = () => {
 					y={0}
 					fontSize={13}
 					fill="green"
+					fontFamily="Inter, Arial, sans-serif"
 				/>
 				<Text
 					text={`${formatZoneTemperature('T_ZONE2')}`}
@@ -518,6 +676,7 @@ const Schema = () => {
 					y={0}
 					fontSize={13}
 					fill="green"
+					fontFamily="Inter, Arial, sans-serif"
 				/>
 			</Group>
 		    {/*РЕКУПЕРАТОР*/}
@@ -529,24 +688,16 @@ const Schema = () => {
 					fontSize={10}
 					fill="#000"
 				/> */}
-				{/* <Text
-					text={formatRecuperator('R_CURRENT')}
-					x={0}
-					y={15}
-					fontSize={10}
-					fill="#000"
-				/> */}
-				<Text
-					text={formatRecuperator('R_EFFICIENCY')}
-					x={0}
-					y={30}
-					fontSize={10}
-					fill="#000"
-				/>
+
 			</Group>
+
+
+
+			
 
           </Layer>
         </Stage>
+		</div>
       </div>
     </div>
   );

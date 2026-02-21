@@ -22,7 +22,8 @@ public class TempSettingsDto {
     private Double inflowWarnThreshold;
     private Double inflowFailThreshold;
     
-    // Режимы управления (только чтение): 0-нейтральная, 1-нагрев, 2-охлаждение
+    // Режимы управления (только чтение):
+    // 0-Off, 1-NeutralZone, 2-NZFromHeat, 3-NZFromCool, 4-NeedToCool, 5-Heating, 6-Average
     private Integer ctrlModeZone1;
     private Integer ctrlModeZone2;
 

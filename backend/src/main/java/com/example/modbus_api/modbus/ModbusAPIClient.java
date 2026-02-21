@@ -5,6 +5,10 @@ import retrofit2.Call;
 import retrofit2.Response;
 import retrofit2.http.*;
 
+import java.util.ArrayList;
+import com.example.modbus_api.modbus.legacy.ArchESSEvent;
+
+
 
 public class ModbusAPIClient {
     public final static int HTTPTimeOut=60;                     // Тайм-аут клиента
@@ -61,5 +65,14 @@ public class ModbusAPIClient {
         /** Прочитать регистры device по заданному списку */
         @POST("/api/ess2/register/list/logunit/read")
         Call<IntegerList> readESS2RegisterListByLogUnit(@Header("SessionToken") String token, @Query("logName") String deviceName,@Body UnitRegisterList list);
+
+        /** Прочитать список событий */
+        @POST("/api/ess2/events/list")
+        Call<ArrayList<ArchESSEvent>> getEventsList(
+            @Header("SessionToken") String token, 
+            @Query("lastminutes") int lastminutes, 
+            @Body com.example.modbus_api.modbus.legacy.IntegerList types
+        );
+        
         }
 }

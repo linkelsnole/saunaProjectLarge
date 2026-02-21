@@ -90,6 +90,8 @@ public class ModbusConstants {
 	
 	public static final int REG_R_TARGET = 0x0084;
 	public static final int REG_R_STATE = 0x0010;
+	public static final int MASK_STATE_ALARM = 0x0004;
+	public static final int MASK_STATE_VENTILATION = 0x0040;
 	
 	// Объем прокачки
 	public static final int REG_F_VM1 = 0x0047;
@@ -112,7 +114,8 @@ public class ModbusConstants {
 	public static final int REG_T_INFLOW_FAIL = 0x00C6; // авария
 	
 	// Режимы управления (только чтение)
-	public static final int REG_T_CTRL_MODE_ZONE1 = 0x0032; // 0-нейтральная, 1-нагрев, 2-охлаждение
+	// 0-Off, 1-NeutralZone, 2-NZFromHeat, 3-NZFromCool, 4-NeedToCool, 5-Heating, 6-Average
+	public static final int REG_T_CTRL_MODE_ZONE1 = 0x0032;
 	public static final int REG_T_CTRL_MODE_ZONE2 = 0x0033;
 	
 	// Команда быстрой смены режима
@@ -151,5 +154,11 @@ public class ModbusConstants {
     public static final int REG_VALVE_COOL_POS2 = 0x00AE;   // ValveCoolPos2
     public static final int REG_VALVE_OPEN_PROC2 = 0x00BA;  // ValveOpenProc2
 
+	//Рекуператор 25.01.2026 (плавающая точка, об/мин, быстрая смена режима)
+    public static final int REG_R_TARGET_RPM_MIN = 0x005D;  // (мин) (сейчас 0 или 0.5 оборотов)
+    public static final int REG_R_TARGET_RPM_MAX = 0x005E;  // (макс) (сейчас от 1 до 7 оборотов может стоять)
+    public static final int REG_R_TARGET_RPM_STEP = 0x0065;  // 0x0065 - шаг калибровки (сейчас 0.1 или 0.3 оборота)
+
+	
 }
 

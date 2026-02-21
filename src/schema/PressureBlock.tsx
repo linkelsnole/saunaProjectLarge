@@ -1,5 +1,3 @@
-import { Group, Rect, Text, Line } from 'react-konva'
-
 interface PressureBlockProps {
 	width: number
 	height: number
@@ -25,55 +23,81 @@ export function PressureBlock({
 	labelWidth = 60,
 	labelOffsetX = 0,
 	labelOffsetY = 0,
-	labelFontSize = 16,
-	labelColor = '#000',
+	labelFontSize = 13, // Чуть уменьшил для аккуратности
+	labelColor = '#0F172A', // Slate-900
 	labelAlign = 'right',
 }: PressureBlockProps) {
-	const rectX = labelWidth + 8
-	const labelY = height / 2 - labelFontSize / 2 + labelOffsetY
-	const shapeOffsetX = -width / 2
-	const shapeOffsetY = -height / 2
-	const shapeX = rectX + width / 2
-	const shapeY = height / 2
+	
+	// Отступ между текстом и блоком
+	const gap = 8 
 
 	return (
-		<Group x={x} y={y}>
-			<Text
-				text={text}
-				x={labelOffsetX}
-				y={labelY}
-				width={labelWidth}
-				align={labelAlign}
-				fontSize={labelFontSize}
-				fontStyle="normal"
-				fill={labelColor}
-			/>
+		<div
+			style={{
+				position: 'absolute',
+				left: x,
+				top: y,
+				display: 'flex',
+				alignItems: 'center',
+				// Если нужно, чтобы текст был справа, поменяй на 'row-reverse'
+				flexDirection: 'row', 
+				zIndex: 10,
+			}}
+		>
+			{/* 1. ТЕКСТ */}
+			<div
+				style={{
+					width: labelWidth,
+					marginRight: gap,
+					fontSize: labelFontSize,
+					lineHeight: '1.2',
+					color: labelColor,
+					fontFamily: 'ui-monospace, SFMono-Regular, Menlo, sans-serif',
+					fontWeight: 400,
+					textAlign: labelAlign,
+					whiteSpace: 'pre-line',
+					userSelect: 'none',
+					// Ручная коррекция позиции текста, если нужна
+					transform: `translate(${labelOffsetX}px, ${labelOffsetY}px)`,
+				}}
+			>
+				{text}
+			</div>
 
-			<Group x={shapeX} y={shapeY} rotation={rotation}>
-				<Rect
-					x={shapeOffsetX}
-					y={shapeOffsetY}
-					width={width}
-					height={height}
-					stroke="#000"
-					strokeWidth={2}
-					fill="#fff"
-				/>
-
-				<Line
-					points={[
-						width * 0.025 + shapeOffsetX, height * 0.01 + shapeOffsetY,
-						width * 0.25 + shapeOffsetX, height * 0.95 + shapeOffsetY,
-						width * 0.5 + shapeOffsetX, height * 0.05 + shapeOffsetY,
-						width * 0.75 + shapeOffsetX, height * 0.95 + shapeOffsetY,
-						width * 0.975 + shapeOffsetX, height * 0.01 + shapeOffsetY
-					]}
-					stroke="#000"
-					strokeWidth={3}
-					lineCap="round"
-					lineJoin="round"
-				/>
-			</Group>
-		</Group>
+			{/* 2. БЛОК С "W" */}
+			<div
+				style={{
+					width: width,
+					height: height,
+					backgroundColor: '#FFFFFF',
+					border: '1px solid #E2E8F0',
+					borderRadius: '14px', 
+					boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+					// ----------------------
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					// Вращаем САМ БЛОК, текст остается на месте
+					transform: `rotate(${rotation}deg)`, 
+				}}
+			>
+				<svg
+					width={width * 0.8} // Отступы внутри
+					height={height * 0.9}
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="#0F172A" // Темно-синий/черный
+					strokeWidth="2"
+					strokeLinecap="round" 
+					strokeLinejoin="round" // ВАЖНО: Скругляет острые углы зигзага
+				>
+					{/* Рисуем "W" (или две галочки вниз).
+                        Точки: Верх -> Низ -> Верх -> Низ -> Верх
+                        Это повторяет геометрию твоего Konva Line
+                    */}
+					<polyline points="2 2 7 22 12 2 17 22 22 2" />
+				</svg>
+			</div>
+		</div>
 	)
 }

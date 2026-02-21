@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { updateManualSettings, updateTempSettings } from './deviceApi';
-import type { DashboardData } from './typesApi';
+import { updateManualSettings, updateTempSettings, updateRecuperatorSettings } from './deviceApi';
+import type { DashboardData, UpdateRecuperatorSettingsRequest, RecuperatorSettingsDto } from './typesApi';
 import { toast } from 'sonner';
 
 export const deviceKeys = {
@@ -126,6 +126,53 @@ export const useUpdateTempSettings = () => {
         queryClient.setQueryData(dashboardKey, context.previousDashboard);
       }
       toast.error('Не удалось сохранить температурные уставки');
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: dashboardKey });
+    },
+  });
+};
+
+export const useUpdateRecuperatorSettings = () => {
+  const queryClient = useQueryClient();
+  const dashboardKey = deviceKeys.dashboard();
+
+  return useMutation({
+    mutationFn: async (payload: UpdateRecuperatorSettingsRequest) => {
+      return updateRecuperatorSettings(payload);
+    },
+
+    onMutate: async (newSettings) => {
+      await queryClient.cancelQueries({ queryKey: dashboardKey });
+      const previousDashboard = queryClient.getQueryData<DashboardData>(dashboardKey);
+
+      queryClient.setQueryData<DashboardData>(dashboardKey, (old) => {
+        if (!old || !old.recuperatorSettings) return old;
+
+        const newData = { ...old };
+        const recuperator = {
+          targetRpmMin: newSettings.targetRpmMin !== undefined ? (newSettings.targetRpmMin ?? null) : old.recuperatorSettings.targetRpmMin,
+          targetRpmMax: newSettings.targetRpmMax !== undefined ? (newSettings.targetRpmMax ?? null) : old.recuperatorSettings.targetRpmMax,
+          targetRpmStep: newSettings.targetRpmStep !== undefined ? (newSettings.targetRpmStep ?? null) : old.recuperatorSettings.targetRpmStep,
+        } as RecuperatorSettingsDto;
+
+        newData.recuperatorSettings = recuperator;
+        return newData;
+      });
+
+      return { previousDashboard };
+    },
+
+    onSuccess: () => {
+      toast.success('Уставки рекуператора сохранены');
+    },
+
+    onError: (_err, _newSettings, context) => {
+      if (context?.previousDashboard) {
+        queryClient.setQueryData(dashboardKey, context.previousDashboard);
+      }
+      toast.error('Не удалось сохранить уставки рекуператора');
     },
 
     onSettled: () => {

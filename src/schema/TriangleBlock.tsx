@@ -1,6 +1,3 @@
-import { Group, Circle, Line, Text } from 'react-konva'
-import { Html } from 'react-konva-utils'
-
 interface TriangleBlockProps {
 	size: number
 	x?: number
@@ -10,15 +7,12 @@ interface TriangleBlockProps {
 	leftLabel?: string
 	rightLabel?: string
 	labelSide?: 'left' | 'right'
-	labelOffsetX?: number
-	rightLabelOffsetX?: number
-	labelOffsetY?: number
 	labelGap?: number
 	labelWidth?: number
 	labelFontSize?: number
 	labelLineHeight?: number
 	labelColor?: string
-	labelAlign?: 'left' | 'center' | 'right'
+	labelOffsetY?: number 
 }
 
 export function TriangleBlock({
@@ -30,98 +24,118 @@ export function TriangleBlock({
 	leftLabel,
 	rightLabel,
 	labelSide = 'left',
-	labelOffsetX = 0,
-	rightLabelOffsetX = 0,
-	labelOffsetY = -45,
-	labelGap = 30,
-	labelWidth = 140,
-	labelFontSize = 14,
+	labelGap = 16,
+	labelWidth = 200,
+	labelFontSize = 13,
 	labelLineHeight = 16,
-	labelColor = '#000',
-	labelAlign,
+	labelColor = '#0F172A',
+	labelOffsetY = 0,
 }: TriangleBlockProps) {
-	const radius = size / 2
-	const centerX = radius
-	const centerY = radius
-	const isLabelLeft = labelSide === 'left'
-	const labelX = isLabelLeft
-		? -labelGap - labelWidth + labelOffsetX
-		: size + labelGap + labelOffsetX
-	const effectiveLabelAlign = labelAlign ?? (isLabelLeft ? 'right' : 'left')
-	
-	const leftLabelX = -labelGap - labelWidth + labelOffsetX
-	const rightLabelX = size + labelGap + rightLabelOffsetX
-	
-	const renderLabel = (labelText: string, xPos: number, align: 'left' | 'center' | 'right') => {
-		if (labelText.includes('<span')) {
-			return (
-				<Html>
-					<div
-						style={{
-							position: 'absolute',
-							left: xPos,
-							top: centerY - labelFontSize / 2 + labelOffsetY,
-							width: labelWidth,
-							fontSize: labelFontSize,
-							lineHeight: labelLineHeight / labelFontSize,
-							color: labelColor,
-							textAlign: align === 'center' ? 'center' : align === 'right' ? 'right' : 'left',
-							whiteSpace: 'pre-line',
-							userSelect: 'none',
-						}}
-						dangerouslySetInnerHTML={{ __html: labelText.replace(/\n/g, '<br />') }}
-					/>
-				</Html>
-			)
-		} else {
-			return (
-				<Text
-					text={labelText}
-					x={xPos}
-					y={centerY - labelFontSize / 2 + labelOffsetY}
-					width={labelWidth}
-					align={align}
-					fontSize={labelFontSize}
-					lineHeight={labelLineHeight / labelFontSize}
-					fill={labelColor}
-				/>
-			)
+
+	const commonLabelStyle: React.CSSProperties = {
+		position: 'absolute',
+		width: labelWidth,
+		fontSize: labelFontSize,
+		lineHeight: `${labelLineHeight}px`,
+		color: labelColor,
+		fontFamily: 'ui-monospace, SFMono-Regular, Menlo, sans-serif',
+		fontWeight: 400,
+		whiteSpace: 'pre-line',
+		userSelect: 'none',
+		top: '50%', 
+		transform: `translateY(calc(-50% + ${labelOffsetY}px))`,
+		display: 'flex',
+		flexDirection: 'column',
+		justifyContent: 'center',
+		zIndex: 20,
+	}
+
+	const renderLabel = (text: string, side: 'left' | 'right' | 'center') => {
+		const style: React.CSSProperties = {
+			...commonLabelStyle,
+			textAlign: side === 'center' ? 'center' : side === 'left' ? 'right' : 'left',
 		}
+
+		if (side === 'left') {
+			style.right = '100%';
+			style.marginRight = `${labelGap}px`;
+		} else if (side === 'right') {
+			style.left = '100%';
+			style.marginLeft = `${labelGap}px`;
+		} else {
+             if (labelSide === 'left') {
+                style.right = '100%';
+                style.marginRight = `${labelGap}px`;
+                style.textAlign = 'right';
+             } else {
+                style.left = '100%';
+                style.marginLeft = `${labelGap}px`;
+                style.textAlign = 'left';
+             }
+        }
+
+		return (
+			<div
+				style={style}
+				dangerouslySetInnerHTML={{ __html: text.replace(/\n/g, '<br />') }}
+			/>
+		)
 	}
 
 	return (
-		<Group x={x} y={y}>
-			<Group rotation={rotation} offsetX={radius} offsetY={radius}>
-				<Circle
-					x={centerX}
-					y={centerY}
-					radius={radius}
-					stroke="#000"
-					strokeWidth={3}
-					fill="#d3d3d3"
-				/>
+		<div
+			style={{
+				position: 'absolute',
+				left: x, 
+				top: y,
+				width: size,
+				height: size,
+				transform: 'translate(-50%, -50%)',
+				display: 'flex',
+				alignItems: 'center',
+				justifyContent: 'center',
+				zIndex: 10,
+			}}
+		>
+			<div
+				style={{
+					width: size,
+					height: size,
+					borderRadius: '50%',
+					backgroundColor: '#FFFFFF',
+					border: '1px solid #E2E8F0',
+					boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04)',
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					transform: `rotate(${rotation}deg)`, 
+				}}
+			>
 
-				<Line
-					points={[
-						centerX - radius * 0.39, centerY - radius * 0.86, // Левая верхняя точка
-						centerX + radius * 0.95, centerY, // Правая точка (вершина)
-						centerX - radius * 0.39, centerY + radius * 0.87 // Левая нижняя точка
-					]}
-					closed={true}
-					fill="white"
-					stroke="black"
-					strokeWidth={1}
-				/>
-			</Group>
+				<svg
+					width={size * 0.88} 
+					height={size * 0.88}
+					viewBox="0 0 24 24"
+					fill="#F1F5F9"    
+					stroke="#334155"  
+					strokeWidth="1.4"   
+					strokeLinejoin="round" 
+					strokeLinecap="round"
+					style={{ transform: 'translateY(0px)' }} 
+				>
+					{/* Твои точки */}
+					<polygon points="5.2 2.5 23.8 12.1 5.2 22.2" />
+				</svg>
+			</div>
 
-			{leftLabel && rightLabel ? (
+			{(leftLabel != null || rightLabel != null) ? (
 				<>
-					{renderLabel(leftLabel, leftLabelX, 'right')}
-					{renderLabel(rightLabel, rightLabelX, 'left')}
+					{leftLabel != null && leftLabel !== '' ? renderLabel(leftLabel, 'left') : null}
+					{rightLabel != null && rightLabel !== '' ? renderLabel(rightLabel, 'right') : null}
 				</>
 			) : label ? (
-				renderLabel(label, labelX, effectiveLabelAlign)
+				renderLabel(label, 'center') 
 			) : null}
-		</Group>
+		</div>
 	)
 }

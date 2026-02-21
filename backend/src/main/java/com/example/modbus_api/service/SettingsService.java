@@ -97,6 +97,29 @@ public class SettingsService {
 		performFastModeChange();
 	}
 
+	public void updateRecuperatorSettings(
+		Double targetRpmMin,
+		Double targetRpmMax,
+		Double targetRpmStep
+	) throws IOException {
+		if (targetRpmMin != null) {
+			int rawValue = (int) Math.round(targetRpmMin * 10);
+			modbusClient.writeRegister(SAUNA_PLC, REG_R_TARGET_RPM_MIN, rawValue);
+		}
+
+		if (targetRpmMax != null) {
+			int rawValue = (int) Math.round(targetRpmMax * 10);
+			modbusClient.writeRegister(SAUNA_PLC, REG_R_TARGET_RPM_MAX, rawValue);
+		}
+
+		if (targetRpmStep != null) {
+			int rawValue = (int) Math.round(targetRpmStep * 10);
+			modbusClient.writeRegister(SAUNA_PLC, REG_R_TARGET_RPM_STEP, rawValue);
+		}
+
+		performFastModeChange();
+	}
+
 	public void performFastModeChange() throws IOException {
 		System.out.println("DEBUG: performFastModeChange вызван, отправка команды " + CMD_FAST_MODE_CHANGE);
 		sendAggregateCommand(CMD_FAST_MODE_CHANGE);
