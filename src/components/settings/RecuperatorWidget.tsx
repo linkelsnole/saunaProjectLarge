@@ -13,6 +13,13 @@ const RecuperatorRow = ({ label, value, unit = 'об/мин' }: { label: string;
   </div>
 );
 
+const RecuperatorTextRow = ({ label, value }: { label: string; value: string }) => (
+  <div className="flex justify-between items-center py-3 px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+    <span className="text-sm text-slate-600 font-medium">{label}</span>
+    <span className="font-mono text-lg font-bold text-slate-800">{value}</span>
+  </div>
+);
+
 interface RecuperatorInputProps {
   label: string;
   value: number | null | undefined;
@@ -90,21 +97,43 @@ export const RecuperatorWidget = () => {
 
   const recuperatorSettings = data?.recuperatorSettings;
 
+  const getRecupStateColor = (code: number | null | undefined) => {
+    if (code == null) return 'bg-slate-100/70 text-slate-500';
+    switch (code) {
+      case 0: return 'bg-slate-100/70 text-slate-600';
+      case 1: return 'bg-emerald-100/70 text-emerald-700';
+      case 2: return 'bg-amber-100/70 text-amber-700';
+      case 3: return 'bg-blue-100/70 text-blue-700';
+      case 4: return 'bg-orange-100/70 text-orange-700';
+      default: return 'bg-slate-100/70 text-slate-500';
+    }
+  };
+
   return (
     <div className="space-y-6 pb-6">
       {/* === СЕКЦИЯ 1: МОНИТОРИНГ РЕКУПЕРАТОРА === */}
       <div className="space-y-3">
+        <div className="flex justify-between items-center py-3 px-4 rounded-lg border border-slate-200 bg-white">
+          <span className="text-sm text-slate-600 font-medium">Состояние рекуператора</span>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${getRecupStateColor(data?.recupStateCode)}`}
+          >
+            {data?.recupStateName ?? '—'}
+          </span>
+        </div>
         <RecuperatorRow 
-          label="Обороты вала рекуператора (целевые)" 
-          value={data?.recupTargetRpm} 
+          label="Проценты клапана" 
+          value={data?.recupTargetPercent ?? undefined} 
+          unit="%"
+        />
+        <RecuperatorTextRow 
+          label="Насос рекуператора" 
+          value={data?.pumpActive ? 'Вкл' : 'Выкл'} 
         />
         <RecuperatorRow 
-          label="Обороты вала" 
-          value={data?.recupCurrentRpm} 
-        />
-        <RecuperatorRow 
-          label="Скорость вращения" 
-          value={data?.recupSpeedRpm} 
+          label="Температура теплоносителя (BT6)" 
+          value={data?.recupTempBt6 ?? undefined} 
+          unit="°C"
         />
       </div>
 

@@ -154,13 +154,11 @@ public class DeviceService {
 
 			// --- РЕКУПЕРАТОР ---
 			REG_R_RECUP_SPEED,
-			REG_R_CURRENT,
+			SPEED_R_REG,   // 0x0082 скорость вращения
 			REG_R_TARGET,
-			REG_R_EFFICIENCY,
 			REG_R_STATE,
 			TARGET_R_REG,  // Обороты вала рекуператора (целевые) - делить на 100
 			CURRENT_R_REG, // Обороты вала - делить на 100
-			SPEED_R_REG,   // Скорость вращения - делить на 10
 
 			// --- MANUAL PROC ---
 			REG_V_VManualProcIn,
@@ -176,6 +174,7 @@ public class DeviceService {
 
 			//Задвижки
 			REG_Z_WORKSTATE,
+			REG_Z_WORKSTATE2,
 
 			// --- НОВЫЕ РЕГИСТРЫ (22.01.2026) ---
 			REG_T_NEUTRAL_ZONE,
@@ -193,7 +192,10 @@ public class DeviceService {
 
 			REG_R_TARGET_RPM_MIN,
 			REG_R_TARGET_RPM_MAX,
-			REG_R_TARGET_RPM_STEP
+			REG_R_TARGET_RPM_STEP,
+
+			REG_R_TEMP,   // 0x02C0 температура рекуператора (BT6)
+			REG_RECUP_STATE  // 0x00A4 RecupState — текущее состояние рекуператора
 		));
 
 		Map<Integer, Integer> data =  modbusClient.readRegisters(SAUNA_PLC, allRegs);
@@ -239,16 +241,16 @@ public class DeviceService {
 
 		// --- ДАВЛЕНИЕ (W)  ---
 		List<SensorData> wSensors = Arrays.asList(
-			createSensor("BP1", "Давление \"W right\"", data.get(REG_P_BP1), "Pa"),
-			createSensor("BP2", "Давление \"W left\"", data.get(REG_P_BP2), "Pa")
+			createSensor("BP1", "Давление \"W right\"", data.get(REG_P_BP1), "Pa", 1.0),
+			createSensor("BP2", "Давление \"W left\"", data.get(REG_P_BP2), "Pa", 1.0)
 		);
 
 		
 
 		// --- ДАВЛЕНИЕ (Рекуп)  ---
 		List<SensorData> pressureSensors = Arrays.asList(
-			createSensor("BP5", "Давление \"слева от рекупа\"", data.get(REG_P_BP5), "Pa"),
-			createSensor("BP10", "Давление \"справа от рекупа\"", data.get(REG_P_BP10), "Pa")
+			createSensor("BP5", "Давление \"слева от рекупа\"", data.get(REG_P_BP5), "Pa", 1.0),
+			createSensor("BP10", "Давление \"справа от рекупа\"", data.get(REG_P_BP10), "Pa", 1.0)
 		);
 
 		// --- КЛАПАНЫ ---
@@ -271,11 +273,10 @@ public class DeviceService {
 		
 
 		// --- РЕКУПЕРАТОР ---
-		Integer recupSpeed = getValidOrNull(data.get(REG_R_RECUP_SPEED));
-		Integer recupCurrent = getValidScaled(data.get(REG_R_CURRENT), 10); 
-		System.out.println("DEBUG: recupCurrent: " + recupCurrent);
+		Integer recupSpeed = getValidSignedOrNull(data.get(REG_R_RECUP_SPEED));
+		Double efficiency = calcEfficiency(data);
 		List<SensorData> recuperator = Arrays.asList(
-			createSensor("R_EFFICIENCY", "КПД", data.get(REG_R_EFFICIENCY), "%", 1.0)
+			createSensor("R_EFFICIENCY", "КПД", efficiency, "%")
 		);
 
 		//  -- РЕКУПЕРАТОР ШАГ и БЫСТРАЯ СМЕНА РЕЖИМА --
@@ -331,13 +332,22 @@ public class DeviceService {
 			System.out.println("Задвижка ОВ (MG2) = " + (((workStateRaw & MASK_DAMPER_EXHAUST) > 0) ? 1 : 0));
 		}
 
+		// Workstate2: бит 14 — насос рекуператора (команда)
+		Integer workState2Raw = data.get(REG_Z_WORKSTATE2);
+		Boolean pumpActive = workState2Raw != null && (workState2Raw & MASK_PUMP_WORKSTATE) != 0;
+
+		// целые значения 0, 1, 2, 3, 4
+		Integer recupStateRaw = data.get(REG_RECUP_STATE);
+		Integer recupStateCode = (recupStateRaw != null && recupStateRaw >= 0 && recupStateRaw <= 4) ? recupStateRaw : null;
+		String recupStateName = recupStateCode != null ? RECUP_STATES.get(recupStateCode) : (recupStateRaw != null ? "Неизвестно (" + recupStateRaw + ")" : null);
+
 		//Логи
 		System.out.println("DEBUG: текущее состояние агрегата: " + stateCode + " - " + stateName);
 		
 		// --- НОВЫЕ РЕГИСТРЫ РЕКУПЕРАТОРА ---
 		Double recupTargetRpm = getValidScaled(data.get(TARGET_R_REG), 100.0);  // Обороты вала рекуператора (целевые)
 		Double recupCurrentRpm = getValidScaled(data.get(CURRENT_R_REG), 100.0); // Обороты вала
-		Double recupSpeedRpm = getValidScaled(data.get(SPEED_R_REG), 10.0);      // Скорость вращения
+		Double recupSpeedRpm = getValidScaledSigned(data.get(SPEED_R_REG), 10.0); // Скорость вращения 0x0082 (signed 16-bit)
 		Integer rawTempBt6 = data.get(REG_R_TEMP);
 		Double recupTempBt6 = isValid(rawTempBt6) ? ((short) rawTempBt6.intValue()) / 10.0 : null;
 
@@ -346,7 +356,7 @@ public class DeviceService {
 		if (recupTargetRpm != null && recupTargetRpmMax != null && recupTargetRpmMax > 0) {
 			recupTargetPercent = (int) Math.round((recupTargetRpm / recupTargetRpmMax) * 100);
 		}
-		
+
 		// --- УСТАВКИ РЕКУПЕРАТОРА (25.01.2026) ---
 		RecuperatorSettingsDto recuperatorSettings = RecuperatorSettingsDto.builder()
 			.targetRpmMin(getValidScaled(data.get(REG_R_TARGET_RPM_MIN), 10.0))   // Минимальные обороты (об/мин)
@@ -381,7 +391,6 @@ public class DeviceService {
 			.vm2(vm2)
 			.vm1(vm1)
 			.recupSpeed(recupSpeed)
-			.recupCurrent(recupCurrent)
 			.vManualProcIn(vManualProcIn)
 			.vManualDProcOut(vManualDProcOut)
 			.manualSettings(manualSettings)
@@ -390,6 +399,9 @@ public class DeviceService {
 			.debugValveSensors(debugValveSensors) //22.01.2026
 			.damperSupply(damperSupply)
 			.damperExhaust(damperExhaust)
+			.pumpActive(pumpActive)
+			.recupStateCode(recupStateCode)
+			.recupStateName(recupStateName)
 			.recupTargetRpm(recupTargetRpm)
 			.recupCurrentRpm(recupCurrentRpm)
 			.recupSpeedRpm(recupSpeedRpm)
@@ -448,7 +460,7 @@ public class DeviceService {
 	}
 
 	private SensorData createSensor(String id, String name, Integer rawValue, String unit) {
-		return createSensor(id, name, rawValue, unit, 1.0);
+		return createSensor(id, name, rawValue, unit, 10.0);
 	}
 
 	// == HELPER METHODS
@@ -466,6 +478,21 @@ public class DeviceService {
 
 	private Integer getValidScaled(Integer value, int divisor) {
 		return isValid(value) ? value / divisor : null;
+	}
+
+	/** Для 16-битных знаковых значений (температура, скорость и т.п.) — каст к short перед делением */
+	private Double getValidScaledSigned(Integer value, double divisor) {
+		return isValid(value) ? ((short) value.intValue()) / divisor : null;
+	}
+
+	/** Signed 16-bit → Integer (без деления) */
+	private Integer getValidSignedOrNull(Integer value) {
+		return isValid(value) ? (int) (short) value.intValue() : null;
+	}
+
+	/** Signed 16-bit → Integer (с целочисленным делением) */
+	private Integer getValidScaledSignedInt(Integer value, int divisor) {
+		return isValid(value) ? ((short) value.intValue()) / divisor : null;
 	}
 
 	private String resolveRecuperatorStateName(Integer stateCode) {
@@ -487,5 +514,29 @@ public class DeviceService {
 		}
 		
 		return "Неизвестно (" + stateCode + ")";
+	}
+
+	private SensorData createSensor(String id, String name, Double value, String unit) {
+		return SensorData.builder()
+			.id(id)
+			.name(name)
+			.value(value != null ? String.valueOf(value) : null)
+			.unit(unit)
+			.build();
+	}
+
+	private Double calcEfficiency(Map<Integer, Integer> data) {
+		Double bt3 = getTempFromReg(data, REG_T_BT3);
+		Double bt10 = getTempFromReg(data, REG_T_BT10);
+		Double bt2 = getTempFromReg(data, REG_T_BT2);
+		if (bt3 == null || bt10 == null || bt2 == null) return null;
+		double denom = Math.abs(bt3 - bt2);
+		if (denom < 1e-6) return null;
+		return 100.0 * Math.abs(bt3 - bt10) / denom;
+	}
+
+	private Double getTempFromReg(Map<Integer, Integer> data, int reg) {
+		Integer raw = data.get(reg + OFFSET_TEMP);
+		return isValid(raw) ? ((short) raw.intValue()) / 10.0 : null;
 	}
 }

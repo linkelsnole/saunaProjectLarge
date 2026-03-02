@@ -197,14 +197,14 @@ const Schema = () => {
 		
 		const valveValue = valve?.value;
 		const tempValue = temp?.temperature;
-		const humidValue = temp?.humidity;
+		// const humidValue = temp?.humidity;
 		
 		const valveInt = valveValue != null ? Math.round(parseFloat(valveValue)) : null;
 		const valveStr = valveInt != null ? `${valveInt} %` : '-- %';
 		const tempStr = tempValue != null ? `${tempValue.toFixed(1)} °C` : '-- °C';
-		const humidStr = humidValue != null ? `${humidValue.toFixed(1)} %` : '-- %';
+		// const humidStr = humidValue != null ? `${humidValue.toFixed(1)} %` : '-- %';
 		
-		return `${valveStr}\n${tempStr}\n${humidStr}`;
+		return `${valveStr}\n${tempStr}`;
 	};
 
 	const formatFanLabel = (id: string): string => {
@@ -611,7 +611,7 @@ const Schema = () => {
 			<Html>
 				<TriangleBlock 
 					size={45}
-					x={330}
+					x={335}
 					y={292}
 					rotation={-90}
 					leftLabel={formatFanLabel('Вентилятор 1')}
@@ -693,7 +693,7 @@ const Schema = () => {
 					fill="#000"
 				/>
 				<Html>
-					<TriangleBlockIcon size={20} x={120} y={37} />
+					<TriangleBlockIcon size={20} x={120} y={37} rotation={180} isActive={data?.pumpActive ?? false} />
 				</Html>
 				<Html>
 					<FanBottomLabel x={90} y={-32} text={formatRecupTempBt6()} />

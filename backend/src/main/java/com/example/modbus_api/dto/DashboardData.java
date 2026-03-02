@@ -27,7 +27,6 @@ public class DashboardData {
     private Integer vm1;
     private Integer vm2;
     private Integer recupSpeed;
-    private Integer recupCurrent; 
     
     @JsonProperty("vManualProcIn")
     private Double vManualProcIn;
@@ -41,7 +40,10 @@ public class DashboardData {
 
     private Boolean damperSupply;
     private Boolean damperExhaust;
-    
+    private Boolean pumpActive;  // Workstate2 бит 14 — насос рекуператора (команда)
+    private Integer recupStateCode;  // RecupState 0x00A4
+    private String recupStateName;   // Отключен, Макс. обороты, Настройка, Стабилизация, Врем. остановка
+
     // Новые регистры рекуператора
     private Double recupTargetRpm;   // Обороты вала рекуператора (целевые), об/мин
     private Double recupCurrentRpm;   // Обороты вала, об/мин

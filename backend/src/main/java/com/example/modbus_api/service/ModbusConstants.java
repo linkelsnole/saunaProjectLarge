@@ -62,7 +62,7 @@ public class ModbusConstants {
 	public static final int REG_P_BP1 = 0x0210;
 	public static final int REG_P_BP2 = 0x0220;
 
-	public static final int REG_P_BP5 = 0x00AA;  // Давление "слева от рекупа"
+	public static final int REG_P_BP5 = 0x0230;  // Давление "слева от рекупа"
 	public static final int REG_P_BP10 = 0x00A9;   // Давление "справа от рекупа"
 
 	public static final int REG_P_VM11 = 0x00A3; //обороты вентилятора 1
@@ -77,16 +77,16 @@ public class ModbusConstants {
 	public static final int REG_F_VC1 = 0x00AC; //клапан - справа
 	public static final int REG_F_VH2 = 0x00AD; //клапан + справа
 	public static final int REG_F_VC2 = 0x00AE; //клапан - справа
-
+	
 	// ТЕМПЕРАТУРЫ ЗОН
 	public static final int REG_T_ZONE1 = 0x0025;
 	public static final int REG_T_ZONE2 = 0x00CE;
 
-	public static final int REG_R_RECUP_SPEED = 0x00B8;
-	// public static final int REG_R_CURRENT = 0x0082; // заменил на время, потом вернуть
-	public static final int REG_R_CURRENT = 0x2C0; // заменил на время, потом вернуть
+	public static final int REG_R_RECUP_SPEED = 0x00B8; // обороты вала
+	public static final int SPEED_R_REG = 0x0082; // скорость вращения
+
 	
-	public static final int REG_R_EFFICIENCY = 0x008A;
+	// public static final int REG_R_EFFICIENCY = 0x008A;  // КПД теперь считаем: abs(BT3-BT10)/abs(BT3-BT2) навсегда
 	
 	public static final int REG_R_TARGET = 0x0084;
 	public static final int REG_R_STATE = 0x0010;
@@ -127,6 +127,9 @@ public class ModbusConstants {
 	public static final int MASK_DAMPER_SUPPLY = 0x0001;  // бит 0 - задвижка притока
 	public static final int MASK_DAMPER_EXHAUST = 0x0002; // бит 1 - задвижка вытяжки
 
+	public static final int REG_Z_WORKSTATE2 = 0x009F;    // Workstate2
+	public static final int MASK_PUMP_WORKSTATE = 0x4000; // бит 14 - насос рекуператора (команда)
+
 
 	// Проверка на 32768
 	public static final int INVALID_VALUE = 0x8000;
@@ -135,7 +138,7 @@ public class ModbusConstants {
 	//Целевые обороты (Все в оборотах в минуту измеряются)
 	public static final int TARGET_R_REG = 0x0081; // делить на 100
 	public static final int CURRENT_R_REG = 0x0080;// Обороты вала (делить на 100)
-	public static final int SPEED_R_REG = 0x2C0; //Скорость вращения (делить на 10)
+
 	
 	
 
@@ -161,6 +164,19 @@ public class ModbusConstants {
 
 
 	public static final int REG_R_TEMP = 0x02C0; //температура рекуператора (BT6)
-	
+
+	// RecupState (MEStateRegister) 0x00A4 — текущее состояние рекуператора
+	public static final int REG_RECUP_STATE = 0x00BB;
+
+	public static final Map<Integer, String> RECUP_STATES;
+	static {
+		Map<Integer, String> m = new HashMap<>();
+		m.put(0, "Отключен");
+		m.put(1, "Макс. обороты");
+		m.put(2, "Настройка");
+		m.put(3, "Стабилизация");
+		m.put(4, "Врем. остановка");
+		RECUP_STATES = Collections.unmodifiableMap(m);
+	}
 }
 

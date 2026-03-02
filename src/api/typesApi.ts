@@ -68,7 +68,6 @@ export interface DashboardData {
   vm1: number | null;
   vm2: number | null;
   recupSpeed: number | null;
-  recupCurrent: number | null; //повторение, исправить
   vManualProcIn: number | null;
   vManualDProcOut: number | null;
   manualSettings: ManualSettingsDto;
@@ -76,6 +75,9 @@ export interface DashboardData {
   recuperatorSettings?: RecuperatorSettingsDto;
   damperSupply: boolean | null;   // задвижка притока
   damperExhaust: boolean | null;   // задвижка вытяжки
+  pumpActive?: boolean | null;     // Workstate2 бит 14 — насос рекуператора (команда)
+  recupStateCode?: number | null;  // RecupState 0x00A4
+  recupStateName?: string | null;  // Отключен, Макс. обороты, Настройка, Стабилизация, Врем. остановка
 
   debugValveSensors?: SensorData[];
   
