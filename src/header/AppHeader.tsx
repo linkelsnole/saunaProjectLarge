@@ -8,7 +8,9 @@ import {
 	Settings,
 	LogOut,
 	RefreshCcw,
+	SlidersHorizontal,
 } from "lucide-react"
+import { useSettingsSheet } from "@/contexts/SettingsSheetContext"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu"
 import { useAuth } from "@/contexts/AuthContext"
 import { triggerReconnect } from "@/api/connectionApi"
@@ -18,6 +20,7 @@ interface AppHeaderProps {
 
 const AppHeader: React.FC<AppHeaderProps> = () => {
 	const { username, role, logout } = useAuth()
+	const settingsSheet = useSettingsSheet()
 	const navigate = useNavigate()
 	const isAdmin = role === 'ROLE_ADMIN'
 
@@ -41,6 +44,18 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 	return (
 		<header className="flex h-8 min-[360px]:h-12 items-center gap-4 bg-transparent w-full">
 			<div className="flex items-center gap-4 lg:gap-6 w-full">
+				{/* Кнопка уставок — только на мобилке */}
+				{settingsSheet && (
+					<Button
+						variant="ghost"
+						size="icon"
+						className="md:hidden shrink-0"
+						onClick={() => settingsSheet.openSettings()}
+						aria-label="Уставки"
+					>
+						<SlidersHorizontal className="h-5 w-5" />
+					</Button>
+				)}
 				<div className="flex items-center gap-3 ml-auto">
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
