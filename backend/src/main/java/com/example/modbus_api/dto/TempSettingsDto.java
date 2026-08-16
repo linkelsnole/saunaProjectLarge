@@ -32,5 +32,12 @@ public class TempSettingsDto {
     private Double waterMinTNoWork;
     private Double waterMinTWork;
     private Double radTempFail;
+
+    // п.1: 0x00E1 — положение вентилей при запуске
+    private Integer valveStartupPosition;
+    // п.2: 0x00DD — алгоритм управления
+    private Integer controlAlgorithm;
+    // п.3: 0x007E — интервал слежения по T
+    private Integer tempTrackingInterval;
 }
 

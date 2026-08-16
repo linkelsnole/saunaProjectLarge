@@ -14,4 +14,5 @@ public class RecuperatorSettingsDto {
     private Double targetRpmMin;   // Минимальные обороты (об/мин) - сейчас 0 или 0.5 оборотов
     private Double targetRpmMax;   // Максимальные обороты (об/мин) - сейчас от 1 до 7 оборотов может стоять
     private Double targetRpmStep;  // Шаг калибровки (об/мин) - сейчас 0.1 или 0.3 оборота
+    private Integer trackingIntervalRecup; // п.4 приоритета 0: 0x0064 — интервал слежения по рекуператору (REG_R_TRACK_INTERVAL), сырое
 }

@@ -11,6 +11,8 @@ public class UpdateRecupSettingsReq {
     private Double targetRpmMin;   // Минимальные обороты (об/мин)
     private Double targetRpmMax;   // Максимальные обороты (об/мин)
     private Double targetRpmStep;  // Шаг калибровки (об/мин)
+    /** 0x0064 интервал слежения по рекуператору — сырое int16, без powerproc */
+    private Integer trackingIntervalRecup;
 }
 
 

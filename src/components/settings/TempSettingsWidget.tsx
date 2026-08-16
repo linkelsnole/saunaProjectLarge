@@ -55,7 +55,7 @@ const TempInput = ({
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium uppercase tracking-wide px-1 truncate" title={label}>
+      <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium uppercase tracking-wide px-1 whitespace-normal break-words" title={label}>
         {label}
       </span>
       <div className="relative">
@@ -140,7 +140,8 @@ export const TempSettingsWidget = () => {
 
   return (
     <div className="space-y-6 pb-6">
-      
+
+
       {/* === СЕКЦИЯ 1: ЗОНЫ (Управление + Мониторинг) === */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* ЗОНА 1 */}
@@ -203,6 +204,39 @@ export const TempSettingsWidget = () => {
           </div>
         </GlassCard>
       </div>
+
+      <GlassCard className="p-4 w-full">
+        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-violet-400/80" />
+          Температура 
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <TempInput
+            label="Положение вентилей при запуске"
+            value={tempSettings?.valveStartupPosition ?? undefined}
+            onChange={(val) => mutate({ valveStartupPosition: Math.round(val) })}
+            unit=""
+            decimals={0}
+            readOnly={!canEditAll}
+          />
+          {/* <TempInput
+            label="Алгоритм управления (0x00DD)"
+            value={tempSettings?.controlAlgorithm ?? undefined}
+            onChange={(val) => mutate({ controlAlgorithm: Math.round(val) })}
+            unit=""
+            decimals={0}
+            readOnly={!canEditAll}
+          />
+          <TempInput
+            label="Интервал слежения по T (0x007E)"
+            value={tempSettings?.tempTrackingInterval ?? undefined}
+            onChange={(val) => mutate({ tempTrackingInterval: Math.round(val) })}
+            unit=""
+            decimals={0}
+            readOnly={!canEditAll}
+          /> */}
+        </div>
+      </GlassCard>
 
       {/* === СЕКЦИЯ 2: ПОРОГИ БЕЗОПАСНОСТИ (Вода и Приток) === */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

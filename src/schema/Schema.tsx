@@ -19,6 +19,7 @@ import { toggleRecuperator } from '@/api/deviceApi';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRecuperatorType } from '@/hooks/useRecuperatorType';
 
 const LoadingOverlay = () => (
 	<div className="absolute inset-0 z-50 flex items-center justify-center bg-white/50 backdrop-blur-[10px]">
@@ -79,6 +80,7 @@ const GlassBackground = ({ scale }: { scale: number }) => {
 const Schema = () => {
 	const { data, isLoading, refetch } = useDashboardData();
 	const { role } = useAuth();
+	const { type: recuperatorType } = useRecuperatorType();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const stageRef = useRef(null);
 	const [stageSize, setStageSize] = useState({width: 800, height: 550});
@@ -658,51 +660,61 @@ const Schema = () => {
 
 
 			<Group x={120} y={410}>
-				<Html>
-					<SquareBlock 
-						size={50}
-						sign="+"
-						x={250}
-						y={0}
-					/>
-				</Html>
-				<Html>
-					<SquareBlock 
-						size={50}
-						sign="-"
-						x={10}
-						y={0}
-					/>
-				</Html>
-				<Line points={[50, 15, 270, 15]} stroke={defaultColor} strokeWidth={2} />
-				<Line points={[50, 37.7, 270, 37.7]} stroke={defaultColor} strokeWidth={2} />
-				<Line points={[190, 37.7, 190, 20]} stroke={defaultColor} strokeWidth={2} />
-
-				{/* <Text
-					text={formatRecuperator('R_CURRENT')}
-					x={70}
-					y={20}
-					fontSize={10}
-					fill="#000"
-				/> */}
-				<Text
-					text={formatRecuperator('R_EFFICIENCY')}
-					x={225}
-					y={42}
-					fontSize={11}
-					fill="#000"
-				/>
-				<Html>
-					<TriangleBlockIcon size={20} x={120} y={37} rotation={180} isActive={data?.pumpActive ?? false} />
-				</Html>
-				<Html>
-					<FanBottomLabel x={90} y={-32} text={formatRecupTempBt6()} />
-					<TemperatureBlockIcon width={40} height={24} x={120} y={0} rotation={90} />
-				</Html>
-				<Html>
-					<FanBottomLabel x={173} y={-15} text={formatRecupFormula()} />
-					<CanvasIcon src="/iconc.png" x={190} y={18} size={50} />
-				</Html>
+				{recuperatorType === 1 ? (
+					<>
+						<Html>
+							<SquareBlock size={50} sign="+" x={250} y={0} />
+						</Html>
+						<Html>
+							<SquareBlock size={50} sign="-" x={10} y={0} />
+						</Html>
+						<Line points={[50, 15, 270, 15]} stroke={defaultColor} strokeWidth={2} />
+						<Line points={[50, 37.7, 270, 37.7]} stroke={defaultColor} strokeWidth={2} />
+						<Line points={[190, 37.7, 190, 20]} stroke={defaultColor} strokeWidth={2} />
+						<Text
+							text={formatRecuperator('R_EFFICIENCY')}
+							x={225}
+							y={42}
+							fontSize={11}
+							fill="#000"
+						/>
+						<Html>
+							<TriangleBlockIcon
+								size={20}
+								x={120}
+								y={37}
+								rotation={180}
+								isActive={data?.pumpActive ?? false}
+								isStopped={
+									data?.recupStateCode === 0 ||
+									data?.recupStateCode === 4 ||
+									data?.recuperatorStatus?.enabled === false
+								}
+							/>
+						</Html>
+						<Html>
+							<FanBottomLabel x={90} y={-32} text={formatRecupTempBt6()} />
+							<TemperatureBlockIcon width={40} height={24} x={120} y={0} rotation={90} />
+						</Html>
+						<Html>
+							<FanBottomLabel x={173} y={-15} text={formatRecupFormula()} />
+							<CanvasIcon src="/iconc.png" x={190} y={18} size={50} />
+						</Html>
+					</>
+				) : (
+					<>
+						<Html>
+							<SquareBlock size={50} sign="+" x={250} y={0} />
+						</Html>
+						<Html>
+							<SquareBlock size={50} sign="-" x={10} y={0} />
+						</Html>
+						<Line points={[50, 5, 270, 5]} stroke={defaultColor} strokeWidth={2} />
+						<Line points={[50, 47.7, 270, 47.7]} stroke={defaultColor} strokeWidth={2} />
+						<Text text={formatRecuperator('R_TARGET')} x={70} y={20} fontSize={10} fill="#000" />
+						<Text text={formatRecuperator('R_EFFICIENCY')} x={70} y={33} fontSize={10} fill="#000" />
+					</>
+				)}
 			</Group>
 
 			<Group y={210} x={320}>

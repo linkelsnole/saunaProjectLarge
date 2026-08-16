@@ -143,7 +143,17 @@ export const RecuperatorWidget = () => {
           <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span> 
           Уставки рекуператора
         </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="mb-4 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2">
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <RecuperatorInput
+            label="Интервал слежения по рекуператору (приоритет 0 п.4, 0x0064)"
+            value={recuperatorSettings?.trackingIntervalRecup ?? undefined}
+            onChange={(val) => mutate({ trackingIntervalRecup: Math.round(val) })}
+            unit=""
+            decimals={0}
+            readOnly={!isAdmin}
+          />
           <RecuperatorInput
             label="Минимальные обороты"
             value={recuperatorSettings?.targetRpmMin}

@@ -46,8 +46,29 @@ public class SettingsService {
 		Double neutralZoneT,
 		Double hotValveMinProc,
 		Double waterMinTNoWork,
-		Double waterMinTWork
+		Double waterMinTWork,
+		Integer valveStartupPosition,
+		Integer controlAlgorithm,
+		Integer tempTrackingInterval
 	) throws IOException {
+		/*
+		 * Порядок важен: сначала приоритет 0 по температуре (п.1–3), значения как в Modbus, без REG_POWERPROC:
+		 *   0x00E1 (REG_T_VALVE_START_POS) — положение вентилей при запуске,
+		 *   0x00DD (REG_T_CTRL_ALGORITHM) — алгоритм управления,
+		 *   0x007E (REG_T_TRACK_INTERVAL) — интервал слежения по T;
+		 * четвёртый регистр приоритета 0 — 0x0064 (интервал слежения по рекуператору) — в updateRecuperatorSettings.
+		 * Затем целевые температуры зон, пороги воды и ПВ, новые температурные уставки; в конце — performFastModeChange() → REG_AGGREGATE_CMD.
+		 */
+		if (valveStartupPosition != null) {
+			modbusClient.writeRegister(SAUNA_PLC, REG_T_VALVE_START_POS, clampToInt16(valveStartupPosition));
+		}
+		if (controlAlgorithm != null) {
+			modbusClient.writeRegister(SAUNA_PLC, REG_T_CTRL_ALGORITHM, clampToInt16(controlAlgorithm));
+		}
+		if (tempTrackingInterval != null) {
+			modbusClient.writeRegister(SAUNA_PLC, REG_T_TRACK_INTERVAL, clampToInt16(tempTrackingInterval));
+		}
+
 		// Целевые температуры зон (не делятся на 10)
 		if (targetZone1 != null) {
 			modbusClient.writeRegister(SAUNA_PLC, REG_T_TARGET_ZONE1, targetZone1.intValue());
@@ -100,8 +121,14 @@ public class SettingsService {
 	public void updateRecuperatorSettings(
 		Double targetRpmMin,
 		Double targetRpmMax,
-		Double targetRpmStep
+		Double targetRpmStep,
+		Integer trackingIntervalRecup
 	) throws IOException {
+		// п.4 приоритета 0: 0x0064 (REG_R_TRACK_INTERVAL) — интервал слежения по рекуператору; запись до min/max/step и до команды смены режима
+		if (trackingIntervalRecup != null) {
+			modbusClient.writeRegister(SAUNA_PLC, REG_R_TRACK_INTERVAL, clampToInt16(trackingIntervalRecup));
+		}
+
 		if (targetRpmMin != null) {
 			int rawValue = (int) Math.round(targetRpmMin * 10);
 			modbusClient.writeRegister(SAUNA_PLC, REG_R_TARGET_RPM_MIN, rawValue);
@@ -128,6 +155,10 @@ public class SettingsService {
 
 	private void sendAggregateCommand(int command) throws IOException {
 		modbusClient.writeRegister(SAUNA_PLC, REG_AGGREGATE_CMD, command);
+	}
+
+	private static int clampToInt16(int v) {
+		return Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, v));
 	}
 }
 

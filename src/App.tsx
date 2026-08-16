@@ -10,47 +10,88 @@ import { PublicRoute } from "@/components/auth/PublicRoute";
 import { ManualSettingsWidget } from "@/components/settings/ManualSettingsWidget";
 import { TempSettingsWidget } from "@/components/settings/TempSettingsWidget";
 import { RecuperatorWidget } from "@/components/settings/RecuperatorWidget";
+import { ConfiguratorWidget } from "@/components/settings/ConfiguratorWidget";
 import { SystemEventsWidget } from "@/components/logs/SystemEventsWidget";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/shared/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import { SettingsSheetProvider, useSettingsSheet } from "@/contexts/SettingsSheetContext";
+import { RecuperatorTypeProvider } from "@/hooks/useRecuperatorType";
+import { SettingsPanelBoundsProvider } from "@/contexts/SettingsPanelBoundsContext";
 import { cn } from "@/shared/lib/utils";
 
 const SWIPE_THRESHOLD = 60;
 
-const SettingsTabs = ({ isAdmin, compact }: { isAdmin: boolean; compact?: boolean }) => (
-	<Tabs defaultValue="volume" className="h-full flex flex-col min-h-0">
-		<TabsList className={cn(
-			isAdmin ? "grid w-full grid-cols-2 md:grid-cols-4 mb-4" : "grid w-full grid-cols-2 md:grid-cols-3 mb-4",
-			compact && "mb-4 flex w-full flex-nowrap justify-start overflow-x-auto"
-		)}>
-			<TabsTrigger value="volume" className={compact ? "flex-none px-4" : ""}>Объем</TabsTrigger>
-			<TabsTrigger value="temperature" className={compact ? "flex-none px-4" : ""}>Температура</TabsTrigger>
-			<TabsTrigger value="recuperator" className={compact ? "flex-none px-4" : ""}>Рекуператор</TabsTrigger>
-			{isAdmin && <TabsTrigger value="logs" className={compact ? "flex-none px-4" : ""}>Логи</TabsTrigger>}
-		</TabsList>
-		<TabsContent value="volume" className="flex-1 overflow-y-auto">
-			<ManualSettingsWidget />
-		</TabsContent>
-		<TabsContent value="temperature" className="flex-1 overflow-y-auto">
-			<TempSettingsWidget />
-		</TabsContent>
-		<TabsContent value="recuperator" className="flex-1 overflow-y-auto">
-			<RecuperatorWidget />
-		</TabsContent>
-		{isAdmin && (
-			<TabsContent value="logs" className="flex-1 overflow-hidden">
-				<SystemEventsWidget />
+const settingsTabsGridClass = (tabCount: number) => {
+	if (tabCount <= 3) return "grid-cols-2 md:grid-cols-3";
+	if (tabCount === 4) return "grid-cols-2 md:grid-cols-4";
+	return "grid-cols-2 md:grid-cols-5";
+};
+
+const SettingsTabs = ({
+	isAdmin,
+	canSeeConfigurator,
+	compact,
+}: {
+	isAdmin: boolean;
+	canSeeConfigurator: boolean;
+	compact?: boolean;
+}) => {
+	const tabCount = 3 + (canSeeConfigurator ? 1 : 0) + (isAdmin ? 1 : 0);
+
+	return (
+		<Tabs defaultValue="volume" className="h-full flex flex-col min-h-0">
+			<TabsList
+				className={cn(
+					"grid w-full mb-4",
+					settingsTabsGridClass(tabCount),
+					compact && "mb-4 flex w-full flex-nowrap justify-start overflow-x-auto"
+				)}
+			>
+				<TabsTrigger value="volume" className={compact ? "flex-none px-4" : ""}>
+					Объем
+				</TabsTrigger>
+				<TabsTrigger value="temperature" className={compact ? "flex-none px-4" : ""}>
+					Температура
+				</TabsTrigger>
+				<TabsTrigger value="recuperator" className={compact ? "flex-none px-4" : ""}>
+					Рекуператор
+				</TabsTrigger>
+				{canSeeConfigurator && (
+					<TabsTrigger value="config" className={compact ? "flex-none px-4" : ""}>
+						Редактор
+					</TabsTrigger>
+				)}
+				{isAdmin && <TabsTrigger value="logs" className={compact ? "flex-none px-4" : ""}>Логи</TabsTrigger>}
+			</TabsList>
+			<TabsContent value="volume" className="flex-1 overflow-y-auto">
+				<ManualSettingsWidget />
 			</TabsContent>
-		)}
-	</Tabs>
-);
+			<TabsContent value="temperature" className="flex-1 overflow-y-auto">
+				<TempSettingsWidget />
+			</TabsContent>
+			<TabsContent value="recuperator" className="flex-1 overflow-y-auto">
+				<RecuperatorWidget />
+			</TabsContent>
+			{canSeeConfigurator && (
+				<TabsContent value="config" className="flex-1 overflow-y-auto">
+					<ConfiguratorWidget />
+				</TabsContent>
+			)}
+			{isAdmin && (
+				<TabsContent value="logs" className="flex-1 overflow-hidden">
+					<SystemEventsWidget />
+				</TabsContent>
+			)}
+		</Tabs>
+	);
+};
 
 const MainDashboard = () => {
 	const { role } = useAuth();
 	const sheet = useSettingsSheet();
 	const isAdmin = role === "ROLE_ADMIN";
+	const canSeeConfigurator = role === "ROLE_ADMIN" || role === "ROLE_CONFIG";
 	const touchStartX = useRef(0);
 
 	const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -81,10 +122,12 @@ const MainDashboard = () => {
 					</Card>
 					
 					{/* Правая часть - десктоп */}
-					<div className='hidden md:block h-full overflow-hidden'>
-						<Card className="h-full rounded-[24px] border border-slate-200 bg-white">
-							<CardContent className="p-4 lg:p-5 xl:p-6 h-full">
-								<SettingsTabs isAdmin={isAdmin} compact={false} />
+					<div className='hidden md:block h-full min-h-0 overflow-hidden'>
+						<Card className="h-full min-h-0 flex flex-col rounded-[24px] border border-slate-200 bg-white">
+							<CardContent className="flex flex-1 flex-col min-h-0 p-4 lg:p-5 xl:p-6">
+								<SettingsPanelBoundsProvider>
+									<SettingsTabs isAdmin={isAdmin} canSeeConfigurator={canSeeConfigurator} compact={false} />
+								</SettingsPanelBoundsProvider>
 							</CardContent>
 						</Card>
 					</div>
@@ -98,8 +141,10 @@ const MainDashboard = () => {
 					<SheetHeader className="border-b border-slate-100 px-5 pr-12 pt-5 pb-4 shrink-0">
 						<SheetTitle className="text-lg">Уставки</SheetTitle>
 					</SheetHeader>
-					<div className="flex-1 min-h-0 overflow-y-auto px-5 py-4 pb-8">
-						<SettingsTabs isAdmin={isAdmin} compact />
+					<div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4 pb-8">
+						<SettingsPanelBoundsProvider>
+							<SettingsTabs isAdmin={isAdmin} canSeeConfigurator={canSeeConfigurator} compact />
+						</SettingsPanelBoundsProvider>
 					</div>
 				</SheetContent>
 			</Sheet>
@@ -124,21 +169,23 @@ const App = () => {
 					path="/"
 					element={
 						<ProtectedRoute>
-							<SettingsSheetProvider>
-								<div 
-									className="flex flex-1 flex-col w-full h-screen overflow-hidden"
-									style={{ overscrollBehavior: 'none' }}
-								>
-									<div className="flex items-center px-4 py-2">
-										<AppHeader/>
-									</div>
-									<div className="flex flex-1 overflow-hidden">
-										<div className="px-4 lg:px-6 w-full h-full">
-											<MainDashboard />
+							<RecuperatorTypeProvider>
+								<SettingsSheetProvider>
+									<div
+										className="flex flex-1 flex-col w-full h-screen overflow-hidden"
+										style={{ overscrollBehavior: 'none' }}
+									>
+										<div className="flex items-center px-4 py-2">
+											<AppHeader />
+										</div>
+										<div className="flex flex-1 overflow-hidden">
+											<div className="px-4 lg:px-6 w-full h-full">
+												<MainDashboard />
+											</div>
 										</div>
 									</div>
-								</div>
-							</SettingsSheetProvider>
+								</SettingsSheetProvider>
+							</RecuperatorTypeProvider>
 						</ProtectedRoute>
 					}
 				/>

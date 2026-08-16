@@ -49,12 +49,18 @@ export interface TempSettingsDto {
   
   // Новые поля (Только чтение)
   radTempFail?: number | null;       // TRadFzFail
+
+  /** Прямое чтение Modbus, без powerproc (приоритет 0) */
+  valveStartupPosition?: number | null;   // 0x00E1 положение вентилей при запуске
+  controlAlgorithm?: number | null;       // 0x00DD алгоритм управления
+  tempTrackingInterval?: number | null;  // 0x007E интервал слежения по T
 }
 
 export interface RecuperatorSettingsDto {
   targetRpmMin: number | null;   // Минимальные обороты (об/мин) - сейчас 0 или 0.5 оборотов
   targetRpmMax: number | null;   // Максимальные обороты (об/мин) - сейчас от 1 до 7 оборотов может стоять
   targetRpmStep: number | null;  // Шаг калибровки (об/мин) - сейчас 0.1 или 0.3 оборота
+  trackingIntervalRecup?: number | null; // 0x0064 интервал слежения по рекуператору, сырое
 }
 
 export interface DashboardData {
@@ -93,6 +99,8 @@ export interface UpdateRecuperatorSettingsRequest {
   targetRpmMin?: number;
   targetRpmMax?: number;
   targetRpmStep?: number;
+  /** п.4: 0x0064 интервал слежения по рекуператору, сырое */
+  trackingIntervalRecup?: number;
 }
 
 export interface LegacyDateTime {

@@ -114,6 +114,12 @@ public class DeviceService {
 		}
 
 		allRegs.addAll(Arrays.asList(
+			// Приоритет 0 (Сауна): 0xE1, 0xDD, 0x7E (темп.) + 0x64 (рекуп) — см. ModbusConstants
+			REG_T_VALVE_START_POS,
+			REG_T_CTRL_ALGORITHM,
+			REG_T_TRACK_INTERVAL,
+			REG_R_TRACK_INTERVAL,
+
 			// --- ДАВЛЕНИЕ (Вентиляторы) ---
 			REG_P_BF11,  // вентилятор 1
 			REG_P_BF12,  // внетилятор 2
@@ -359,12 +365,16 @@ public class DeviceService {
 
 		// --- УСТАВКИ РЕКУПЕРАТОРА (25.01.2026) ---
 		RecuperatorSettingsDto recuperatorSettings = RecuperatorSettingsDto.builder()
-			.targetRpmMin(getValidScaled(data.get(REG_R_TARGET_RPM_MIN), 10.0))   // Минимальные обороты (об/мин)
-			.targetRpmMax(getValidScaled(data.get(REG_R_TARGET_RPM_MAX), 10.0))   // Максимальные обороты (об/мин)
-			.targetRpmStep(getValidScaled(data.get(REG_R_TARGET_RPM_STEP), 10.0))  // Шаг калибровки (об/мин)
+			.targetRpmMin(getValidScaled(data.get(REG_R_TARGET_RPM_MIN), 10.0))   // Минимальные целевые обороты вала рекуператора в оборотах в минуту (масштаб ×10 в регистре)
+			.targetRpmMax(getValidScaled(data.get(REG_R_TARGET_RPM_MAX), 10.0))   // Максимальные целевые обороты вала рекуператора в оборотах в минуту (масштаб ×10 в регистре)
+			.targetRpmStep(getValidScaled(data.get(REG_R_TARGET_RPM_STEP), 10.0))  // Шаг калибровки целевых оборотов рекуператора в оборотах в минуту (масштаб ×10 в регистре)
+			.trackingIntervalRecup(getValidOrNull(data.get(REG_R_TRACK_INTERVAL))) // п.4 приоритета 0: 0x0064 интервал слежения по рекуператору, сырое
 			.build();
 		
 		TempSettingsDto tempSettings = TempSettingsDto.builder()
+			.valveStartupPosition(getValidOrNull(data.get(REG_T_VALVE_START_POS)))       // п.1: 0x00E1 положение вентилей при запуске
+			.controlAlgorithm(getValidOrNull(data.get(REG_T_CTRL_ALGORITHM)))           // п.2: 0x00DD алгоритм управления
+			.tempTrackingInterval(getValidOrNull(data.get(REG_T_TRACK_INTERVAL)))       // п.3: 0x007E интервал слежения по T
 			.targetZone1(targetZone1)
 			.targetZone2(targetZone2)
 			.waterWarnThreshold(waterWarn)
@@ -532,7 +542,8 @@ public class DeviceService {
 		if (bt3 == null || bt10 == null || bt2 == null) return null;
 		double denom = Math.abs(bt3 - bt2);
 		if (denom < 1e-6) return null;
-		return 100.0 * Math.abs(bt3 - bt10) / denom;
+		double efficiency = 100.0 * Math.abs(bt3 - bt10) / denom;
+		return Math.min(efficiency, 100.0); // не может быть больше 100%
 	}
 
 	private Double getTempFromReg(Map<Integer, Integer> data, int reg) {

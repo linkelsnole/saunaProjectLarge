@@ -100,6 +100,22 @@ public class ModbusConstants {
 	public static final int REG_V_VManualProcIn = 0x00D5;
 	public static final int REG_V_VManualDProcOut = 0x00D6;
 	
+	/*
+	 * Приоритет 0 (Сауна ПЛК): эти четыре регистра — первые в логике опроса/записи (см. DeviceService, SettingsService).
+	 * В API отдаём сырое значение из Modbus (без REG_POWERPROC и без масштабирования x10).
+	 *
+	 * Температура (updateTempSettings, порядок записи 0xE1 -> 0xDD -> 0x7E):
+	 *   0x00E1 — положение вентилей при запуске
+	 *   0x00DD — алгоритм управления
+	 *   0x007E — интервал слежения по T
+	 * Рекуператор (updateRecuperatorSettings, до min/max/step):
+	 *   0x0064 — интервал слежения по рекуператору
+	 */
+	public static final int REG_T_VALVE_START_POS = 0x00E1;   // п.1: положение вентилей при запуске
+	public static final int REG_T_CTRL_ALGORITHM = 0x00DD;   // п.2: алгоритм управления
+	public static final int REG_T_TRACK_INTERVAL = 0x007E;   // п.3: интервал слежения по T
+	public static final int REG_R_TRACK_INTERVAL = 0x0064;   // п.4: интервал слежения по рекуператору
+
 	// --- ТЕМПЕРАТУРНЫЕ УСТАВКИ ---
 	// Целевые температуры зон
 	public static final int REG_T_TARGET_ZONE1 = 0x0025; // T manual

@@ -24,6 +24,10 @@ interface UpdateTempSettingsRequest {
   hotValveMinProc?: number;
   waterMinTNoWork?: number;
   waterMinTWork?: number;
+
+  valveStartupPosition?: number;
+  controlAlgorithm?: number;
+  tempTrackingInterval?: number;
 }
 
 export const useUpdateManualSettings = () => {
@@ -110,6 +114,10 @@ export const useUpdateTempSettings = () => {
         if (newSettings.waterMinTNoWork !== undefined) temp.waterMinTNoWork = newSettings.waterMinTNoWork;
         if (newSettings.waterMinTWork !== undefined) temp.waterMinTWork = newSettings.waterMinTWork;
 
+        if (newSettings.valveStartupPosition !== undefined) temp.valveStartupPosition = newSettings.valveStartupPosition ?? null;
+        if (newSettings.controlAlgorithm !== undefined) temp.controlAlgorithm = newSettings.controlAlgorithm ?? null;
+        if (newSettings.tempTrackingInterval !== undefined) temp.tempTrackingInterval = newSettings.tempTrackingInterval ?? null;
+
         newData.tempSettings = temp;
         return newData;
       });
@@ -155,6 +163,10 @@ export const useUpdateRecuperatorSettings = () => {
           targetRpmMin: newSettings.targetRpmMin !== undefined ? (newSettings.targetRpmMin ?? null) : old.recuperatorSettings.targetRpmMin,
           targetRpmMax: newSettings.targetRpmMax !== undefined ? (newSettings.targetRpmMax ?? null) : old.recuperatorSettings.targetRpmMax,
           targetRpmStep: newSettings.targetRpmStep !== undefined ? (newSettings.targetRpmStep ?? null) : old.recuperatorSettings.targetRpmStep,
+          trackingIntervalRecup:
+            newSettings.trackingIntervalRecup !== undefined
+              ? (newSettings.trackingIntervalRecup ?? null)
+              : old.recuperatorSettings.trackingIntervalRecup,
         } as RecuperatorSettingsDto;
 
         newData.recuperatorSettings = recuperator;
