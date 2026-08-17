@@ -56,13 +56,20 @@ function buildHeaders(options: RequestInit, token: string | null): HeadersInit {
   };
 }
 
+// Бэкенд отдаёт 401 на защищённых эндпоинтах и 403 на /api/v1/auth/** — оба означают протухший токен
+const isAuthFailureStatus = (status: number) => status === 401 || status === 403;
+
+const isAuthEndpoint = (url: string) =>
+  url.includes('/auth/login') || url.includes('/auth/refresh') || url.includes('/auth/logout');
+
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   const response = await fetch(url, {
+    credentials: 'include',
     ...options,
     headers: buildHeaders(options, getAccessToken()),
   });
 
-  if (response.status !== 401) {
+  if (!isAuthFailureStatus(response.status) || isAuthEndpoint(url)) {
     return response;
   }
 
@@ -70,6 +77,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   const refreshed = await refreshSession();
   if (refreshed) {
     return fetch(url, {
+      credentials: 'include',
       ...options,
       headers: buildHeaders(options, refreshed.accessToken),
     });
