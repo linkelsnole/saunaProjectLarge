@@ -57,7 +57,8 @@ public class SecurityConfig {
                 .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .antMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/v1/auth/logout", "/api/v1/auth/register").permitAll()
                 .antMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
-                .antMatchers("/", "/index.html", "/assets/**", "/static/**", "/*.js", "/*.css", "/*.svg", "/*.jpeg", "/*.jpg", "/*.png", "/*.ico", "/bg.jpeg", "/bg2.jpg").permitAll()
+                // /login — маршрут SPA: при перезагрузке страницы браузер запрашивает его у сервера
+                .antMatchers(HttpMethod.GET, "/", "/login", "/index.html", "/favicon.ico", "/assets/**", "/static/**", "/**/*.js", "/**/*.css", "/**/*.svg", "/**/*.jpeg", "/**/*.jpg", "/**/*.png", "/**/*.ico", "/**/*.woff", "/**/*.woff2").permitAll()
                 .antMatchers("/api/v1/devices/**").authenticated()
                 .anyRequest().authenticated()
             .and()
