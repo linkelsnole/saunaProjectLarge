@@ -105,6 +105,12 @@ const getModeLabel = (mode: number | null | undefined): string => {
     case 4: return 'Охлаждение';
     case 5: return 'Нагрев';
     case 6: return 'Усреднение по T';
+    case 7: return 'Вытяжка';
+    case 8: return 'Шаг 0';
+    case 9: return 'Настройка';
+    case 10: return 'Стабилизация';
+    case 11: return 'Без нагрева';
+    case 12: return 'Недост. нагрев';
     default: return 'Неизвестно';
   }
 };
@@ -119,6 +125,12 @@ const getModeColor = (mode: number | null | undefined): string => {
     case 4: return 'bg-blue-100/70 text-blue-700';
     case 5: return 'bg-red-100/70 text-red-700';
     case 6: return 'bg-violet-100/70 text-violet-700';
+    case 7: return 'bg-teal-100/70 text-teal-700';
+    case 8: return 'bg-slate-100/70 text-slate-600';
+    case 9: return 'bg-amber-100/70 text-amber-700';
+    case 10: return 'bg-emerald-100/70 text-emerald-700';
+    case 11: return 'bg-slate-100/70 text-slate-600';
+    case 12: return 'bg-orange-100/70 text-orange-700';
     default: return 'bg-slate-100/70 text-slate-500';
   }
 };

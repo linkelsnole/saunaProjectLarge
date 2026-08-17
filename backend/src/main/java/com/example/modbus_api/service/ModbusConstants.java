@@ -130,7 +130,8 @@ public class ModbusConstants {
 	public static final int REG_T_INFLOW_FAIL = 0x00C6; // авария
 	
 	// Режимы управления (только чтение)
-	// 0-Off, 1-NeutralZone, 2-NZFromHeat, 3-NZFromCool, 4-NeedToCool, 5-Heating, 6-Average
+	// 0-Off, 1-NeutralZone, 2-NZFromHeat, 3-NZFromCool, 4-NeedToCool, 5-Heating, 6-Average,
+	// 7-Hood, 8-Alg2Step0, 9-Alg2Driving, 10-Alg2Stabilise, 11-Alg2HeatOff, 12-Alg2HeatInsuff
 	public static final int REG_T_CTRL_MODE_ZONE1 = 0x0032;
 	public static final int REG_T_CTRL_MODE_ZONE2 = 0x0033;
 	

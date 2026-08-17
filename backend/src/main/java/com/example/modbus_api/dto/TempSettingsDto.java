@@ -23,7 +23,8 @@ public class TempSettingsDto {
     private Double inflowFailThreshold;
     
     // Режимы управления (только чтение):
-    // 0-Off, 1-NeutralZone, 2-NZFromHeat, 3-NZFromCool, 4-NeedToCool, 5-Heating, 6-Average
+    // 0-Off, 1-NeutralZone, 2-NZFromHeat, 3-NZFromCool, 4-NeedToCool, 5-Heating, 6-Average,
+    // 7-Hood, 8-Alg2Step0, 9-Alg2Driving, 10-Alg2Stabilise, 11-Alg2HeatOff, 12-Alg2HeatInsuff
     private Integer ctrlModeZone1;
     private Integer ctrlModeZone2;
 
