@@ -1,38 +1,99 @@
-export function getAuthToken(): string | null {
-  return localStorage.getItem('auth_token');
+import type { AuthResponse, AuthUser } from './authTypes';
+
+// Access-токен живёт только в памяти вкладки, в storage ничего не пишем
+let accessToken: string | null = null;
+
+export function getAccessToken(): string | null {
+  return accessToken;
 }
 
-export function getAuthHeaders(): HeadersInit {
-  const token = getAuthToken();
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
-  
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
+export function setAccessToken(token: string | null): void {
+  accessToken = token;
+}
+
+export function clearAccessToken(): void {
+  accessToken = null;
+}
+
+async function requestRefresh(): Promise<AuthResponse | null> {
+  const response = await fetch('/api/v1/auth/refresh', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!response.ok) {
+    return null;
   }
-  
-  return headers;
+
+  const data: AuthResponse = await response.json();
+  if (typeof data?.accessToken === 'string' && data.accessToken.length > 0) {
+    setAccessToken(data.accessToken);
+    return data;
+  }
+  return null;
+}
+
+let refreshPromise: Promise<AuthResponse | null> | null = null;
+
+// Один параллельный refresh на все одновременные 401
+export function refreshSession(): Promise<AuthResponse | null> {
+  if (!refreshPromise) {
+    refreshPromise = requestRefresh()
+      .catch(() => null)
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+function buildHeaders(options: RequestInit, token: string | null): HeadersInit {
+  return {
+    'Content-Type': 'application/json',
+    ...(options.headers as Record<string, string> | undefined),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
 }
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-  const headers = getAuthHeaders();
-  
   const response = await fetch(url, {
     ...options,
-    headers: {
-      ...headers,
-      ...options.headers,
-    },
+    headers: buildHeaders(options, getAccessToken()),
   });
 
-  if (response.status === 401) {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_username');
-    localStorage.removeItem('auth_role');
-    window.location.href = '/login';
+  if (response.status !== 401) {
+    return response;
   }
 
+  // Пробуем обновить access-токен по refresh-cookie и повторить запрос один раз
+  const refreshed = await refreshSession();
+  if (refreshed) {
+    return fetch(url, {
+      ...options,
+      headers: buildHeaders(options, refreshed.accessToken),
+    });
+  }
+
+  clearAccessToken();
+  if (window.location.pathname !== '/login') {
+    window.location.href = '/login';
+  }
   return response;
 }
 
+export async function getCurrentUser(): Promise<AuthUser> {
+  const response = await fetchWithAuth('/api/v1/auth/me');
+  if (!response.ok) {
+    throw new Error('Failed to get current user');
+  }
+  return response.json();
+}
+
+export async function logoutRequest(): Promise<void> {
+  await fetch('/api/v1/auth/logout', {
+    method: 'POST',
+    credentials: 'include',
+    headers: buildHeaders({}, getAccessToken()),
+  });
+}

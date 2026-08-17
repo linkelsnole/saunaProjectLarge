@@ -7,7 +7,11 @@ interface PublicRouteProps {
 }
 
 export function PublicRoute({ children }: PublicRouteProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return null;
+  }
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -15,4 +19,3 @@ export function PublicRoute({ children }: PublicRouteProps) {
 
   return <>{children}</>;
 }
-

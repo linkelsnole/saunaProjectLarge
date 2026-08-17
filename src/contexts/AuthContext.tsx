@@ -1,66 +1,37 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import i18n from '@/shared/config/i18n/i18n';
-import type { AuthState, AuthRequest, AuthResponse } from '@/api/authTypes';
+import type { AuthRequest, AuthResponse, AuthUser } from '@/api/authTypes';
+import { clearAccessToken, logoutRequest, refreshSession, setAccessToken } from '@/api/authApi';
 
-interface AuthContextType extends AuthState {
+interface AuthContextType {
+  user: AuthUser | null;
+  username: string | null;
+  role: string | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
   login: (credentials: AuthRequest) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const TOKEN_KEY = 'auth_token';
-const USERNAME_KEY = 'auth_username';
-const ROLE_KEY = 'auth_role';
-
-function isTokenExpired(token: string): boolean {
-  try {
-    const payloadBase64 = token.split('.')[1];
-    const decodedJson = atob(payloadBase64);
-    const decoded = JSON.parse(decodedJson) as { exp: number };
-    const exp = decoded.exp * 1000;
-    return Date.now() >= exp;
-  } catch (e) {
-    return true;
-  }
-}
-
-function getInitialState(): AuthState {
-  const token = localStorage.getItem(TOKEN_KEY);
-  const username = localStorage.getItem(USERNAME_KEY);
-  const role = localStorage.getItem(ROLE_KEY);
-  
-  if (token && !isTokenExpired(token)) {
-    return {
-      token,
-      username,
-      role,
-      isAuthenticated: true,
-    };
-  } else {
-    if (token) {
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USERNAME_KEY);
-      localStorage.removeItem(ROLE_KEY);
-    }
-    return {
-      token: null,
-      username: null,
-      role: null,
-      isAuthenticated: false,
-    };
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [authState, setAuthState] = useState<AuthState>(getInitialState);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const bootstrapStartedRef = useRef(false);
 
-  const login = async (credentials: AuthRequest) => {
+  const clearAuthState = useCallback(() => {
+    clearAccessToken();
+    setUser(null);
+  }, []);
+
+  const login = useCallback(async (credentials: AuthRequest) => {
     let response: Response;
-    
+
     try {
       response = await fetch('/api/v1/auth/login', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -74,49 +45,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({
         error: 'UNKNOWN_ERROR',
-        message: i18n.t('login.error')
+        message: i18n.t('login.error'),
       }));
       throw new Error(errorData.message || i18n.t('login.error'));
     }
 
     const data: AuthResponse = await response.json();
-    
-    localStorage.setItem(TOKEN_KEY, data.token);
-    localStorage.setItem(USERNAME_KEY, data.username);
-    localStorage.setItem(ROLE_KEY, data.role);
+    setAccessToken(data.accessToken);
+    setUser(data.user);
+  }, []);
 
-    setAuthState({
-      token: data.token,
-      username: data.username,
-      role: data.role,
-      isAuthenticated: true,
-    });
-  };
+  const logout = useCallback(async () => {
+    try {
+      await logoutRequest();
+    } finally {
+      clearAuthState();
+    }
+  }, [clearAuthState]);
 
-  const logout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USERNAME_KEY);
-    localStorage.removeItem(ROLE_KEY);
-    
-    setAuthState({
-      token: null,
-      username: null,
-      role: null,
-      isAuthenticated: false,
-    });
-  };
+  // Bootstrap: пробуем восстановить сессию по refresh-cookie до показа формы логина
+  useEffect(() => {
+    if (bootstrapStartedRef.current) {
+      return;
+    }
+    bootstrapStartedRef.current = true;
 
-  return (
-    <AuthContext.Provider
-      value={{
-        ...authState,
-        login,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+    const bootstrap = async () => {
+      try {
+        const refreshed = await refreshSession();
+        if (refreshed) {
+          setUser(refreshed.user);
+        } else {
+          clearAuthState();
+        }
+      } catch (_error) {
+        clearAuthState();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void bootstrap();
+  }, [clearAuthState]);
+
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user,
+      username: user?.username ?? null,
+      role: user?.role ?? null,
+      isAuthenticated: Boolean(user),
+      isLoading,
+      login,
+      logout,
+    }),
+    [isLoading, login, logout, user]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
@@ -126,4 +111,3 @@ export function useAuth() {
   }
   return context;
 }
-
