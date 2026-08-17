@@ -6,6 +6,8 @@ import com.example.modbus_api.security.model.AppUser;
 import com.example.modbus_api.security.model.Role;
 import com.example.modbus_api.security.repository.UserRepository;
 import com.example.modbus_api.security.service.JwtUtils;
+import com.example.modbus_api.logging.ActionType;
+import com.example.modbus_api.service.UserActionLogService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
@@ -44,6 +46,9 @@ public class AuthController {
     @Autowired
     private JwtUtils jwtUtils;
 
+    @Autowired
+    private UserActionLogService userActionLogService;
+
     @Operation(summary = "Вход в систему (получение токена)")
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody AuthRequest authRequest) {
@@ -75,6 +80,7 @@ public class AuthController {
 
             if (Boolean.FALSE.equals(userExists)) {
                 logger.warn("Пользователь {} не найден в базе данных", authRequest.getUsername());
+                userActionLogService.logAs(authRequest.getUsername(), ActionType.AUTH, "Вход в систему", false, "Неверный логин или пароль");
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(new ErrorResponse("USER_NOT_FOUND", "Пользователь с таким именем не найден"));
             }
@@ -91,6 +97,7 @@ public class AuthController {
             String role = userDetails.getAuthorities().iterator().next().getAuthority();
 
             logger.info("Успешный вход пользователя: {} с ролью: {}", authRequest.getUsername(), role);
+            userActionLogService.logAs(authRequest.getUsername(), ActionType.AUTH, "Вход в систему", true, null);
             return ResponseEntity.ok(AuthResponse.builder()
                     .token(jwt)
                     .username(userDetails.getUsername())
@@ -98,10 +105,12 @@ public class AuthController {
                     .build());
         } catch (BadCredentialsException e) {
             logger.warn("Неверный пароль для пользователя: {}", authRequest.getUsername());
+            userActionLogService.logAs(authRequest.getUsername(), ActionType.AUTH, "Вход в систему", false, "Неверный логин или пароль");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse("INVALID_PASSWORD", "Неверный пароль"));
         } catch (UsernameNotFoundException e) {
             logger.warn("Пользователь не найден: {}", e.getMessage());
+            userActionLogService.logAs(authRequest.getUsername(), ActionType.AUTH, "Вход в систему", false, "Неверный логин или пароль");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(new ErrorResponse("USER_NOT_FOUND", "Пользователь не найден"));
         } catch (DataAccessException e) {

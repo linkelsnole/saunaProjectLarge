@@ -1,6 +1,21 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { updateManualSettings, updateTempSettings, updateRecuperatorSettings } from './deviceApi';
-import type { DashboardData, UpdateRecuperatorSettingsRequest, RecuperatorSettingsDto } from './typesApi';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  updateManualSettings,
+  updateTempSettings,
+  updateRecuperatorSettings,
+  getServerState,
+  getUpgradeStoredUrl,
+  setUpgradeStoredUrl,
+  getUpgradeLoadStatus,
+  startUpgradeDownload,
+  getUpgradeInstallStatus,
+  startUpgradeInstall,
+  getLogSettings,
+  updateLogSettings,
+  getUserActionLogs,
+  downloadReadingsFile,
+} from './deviceApi';
+import type { DashboardData, UpdateRecuperatorSettingsRequest, RecuperatorSettingsDto, UserActionEntry } from './typesApi';
 import { toast } from 'sonner';
 
 export const deviceKeys = {
@@ -138,6 +153,112 @@ export const useUpdateTempSettings = () => {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: dashboardKey });
+    },
+  });
+};
+
+export const useServerState = (enabled: boolean) => {
+  return useQuery({
+    queryKey: ['server-state'],
+    queryFn: getServerState,
+    enabled,
+    staleTime: 60_000,
+  });
+};
+
+export const useUpgradeStoredUrl = (enabled: boolean) => {
+  return useQuery({
+    queryKey: ['upgrade-stored-url'],
+    queryFn: getUpgradeStoredUrl,
+    enabled,
+  });
+};
+
+export const useSaveUpgradeStoredUrl = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: setUpgradeStoredUrl,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['upgrade-stored-url'] });
+    },
+  });
+};
+
+export const useUpgradeLoadStatus = () => {
+  return useMutation({
+    mutationFn: (url?: string) => getUpgradeLoadStatus(url),
+    onError: () => {
+      toast.error('Ошибка проверки статуса загрузки обновления');
+    },
+  });
+};
+
+export const useStartUpgradeDownload = () => {
+  return useMutation({
+    mutationFn: (url?: string) => startUpgradeDownload(url),
+    onError: () => {
+      toast.error('Ошибка запуска загрузки обновления');
+    },
+  });
+};
+
+export const useUpgradeInstallStatus = () => {
+  return useMutation({
+    mutationFn: getUpgradeInstallStatus,
+    onError: () => {
+      toast.error('Ошибка проверки статуса установки обновления');
+    },
+  });
+};
+
+export const useStartUpgradeInstall = () => {
+  return useMutation({
+    mutationFn: () => startUpgradeInstall(),
+    onError: () => {
+      toast.error('Ошибка запуска установки обновления');
+    },
+  });
+};
+
+export const useLogSettings = () => {
+  return useQuery({
+    queryKey: ['logs', 'settings'],
+    queryFn: getLogSettings,
+    staleTime: 30000,
+  });
+};
+
+export const useUpdateLogSettings = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (intervalMinutes: number) => updateLogSettings(intervalMinutes),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['logs', 'settings'] });
+      toast.success('Интервал записи сохранен');
+    },
+    onError: () => {
+      toast.error('Не удалось сохранить интервал записи');
+    },
+  });
+};
+
+export const useUserActionLogs = (minutes: number, type: string) => {
+  return useQuery({
+    queryKey: ['logs', 'actions', minutes, type],
+    queryFn: () => getUserActionLogs(minutes, type),
+    refetchInterval: 15000,
+    placeholderData: (prev: UserActionEntry[] | undefined) => prev,
+  });
+};
+
+export const useDownloadReadings = () => {
+  return useMutation({
+    mutationFn: ({ from, to }: { from: number; to: number }) => downloadReadingsFile(from, to),
+    onSuccess: () => {
+      toast.success('Файл с показаниями скачан');
+    },
+    onError: () => {
+      toast.error('Не удалось скачать файл показаний');
     },
   });
 };

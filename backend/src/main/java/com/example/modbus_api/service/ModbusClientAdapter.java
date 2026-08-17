@@ -385,6 +385,165 @@ public class ModbusClientAdapter {
 				System.err.println("[SCHEDULED RECONNECT] Ошибка при выполнении запроса: " + e.getMessage() + ". Возможно, сессия уже истекла");
 			}
 		}
+	private ErrorList normalizeErrorList(ErrorList result) {
+		if (result == null) {
+			return new ErrorList(new java.util.ArrayList<String>(), new java.util.ArrayList<String>());
+		}
+		if (result.getErrors() == null) {
+			result.setErrors(new java.util.ArrayList<String>());
+		}
+		if (result.getInfo() == null) {
+			result.setInfo(new java.util.ArrayList<String>());
+		}
+		return result;
+	}
+
+	private java.util.ArrayList<com.example.modbus_api.modbus.legacy.ArchESSEvent> performGetEvents(
+			int lastMinutes, com.example.modbus_api.modbus.legacy.IntegerList types) throws IOException {
+		java.util.ArrayList<com.example.modbus_api.modbus.legacy.ArchESSEvent> events =
+				new ModbusAPIClient.APICall<java.util.ArrayList<com.example.modbus_api.modbus.legacy.ArchESSEvent>>() {
+					@Override
+					public retrofit2.Call<java.util.ArrayList<com.example.modbus_api.modbus.legacy.ArchESSEvent>> apiFun() {
+						return api.getEventsList(sessionToken, lastMinutes, types);
+					}
+				}.call();
+		return events != null ? events : new java.util.ArrayList<>();
+	}
+
+	public java.util.ArrayList<com.example.modbus_api.modbus.legacy.ArchESSEvent> getEvents(int lastMinutes) throws IOException {
+		ensureConnection();
+		com.example.modbus_api.modbus.legacy.IntegerList types = new com.example.modbus_api.modbus.legacy.IntegerList();
+		types.add(16); // EventPLC - Сообщения модуля управления
+		types.add(3);  // EventExternal
+		types.add(4);  // EventSystem
+		types.add(6);  // EventFailure (Аварии)
+		try {
+			return performGetEvents(lastMinutes, types);
+		} catch (Exception e) {
+			if (isConnectionOrAuthError(e)) {
+				reconnect();
+				return performGetEvents(lastMinutes, types);
+			}
+			throw new IOException("Ошибка получения журнала событий: " + e.getMessage(), e);
+		}
+	}
+
+	public String readUpgradeStoredUrl() throws IOException {
+		ensureConnection();
+		try {
+			return performReadUpgradeUrl();
+		} catch (Exception e) {
+			if (isConnectionOrAuthError(e)) {
+				reconnect();
+				return performReadUpgradeUrl();
+			}
+			throw new IOException("Ошибка чтения URL обновления: " + e.getMessage(), e);
+		}
+	}
+
+	private String performReadUpgradeUrl() throws IOException {
+		JString js = new ModbusAPIClient.APICall<JString>() {
+			@Override
+			public retrofit2.Call<JString> apiFun() {
+				return api.readUpgradeURL(sessionToken);
+			}
+		}.call();
+		if (js == null || js.getValue() == null) {
+			return "";
+		}
+		return js.getValue();
+	}
+
+	public void writeUpgradeStoredUrl(String url) throws IOException {
+		String value = url != null ? url : "";
+		ensureConnection();
+		try {
+			performWriteUpgradeUrl(value);
+		} catch (Exception e) {
+			if (isConnectionOrAuthError(e)) {
+				reconnect();
+				performWriteUpgradeUrl(value);
+			} else {
+				throw new IOException("Ошибка записи URL обновления: " + e.getMessage(), e);
+			}
+		}
+	}
+
+	private void performWriteUpgradeUrl(String url) throws IOException {
+		new ModbusAPIClient.APICall<JEmpty>() {
+			@Override
+			public retrofit2.Call<JEmpty> apiFun() {
+				return api.writeUpgradeURL(sessionToken, url);
+			}
+		}.call();
+	}
+
+	public ErrorList upgradeLoad(String url, boolean force) throws IOException {
+		ensureConnection();
+		try {
+			return performUpgradeLoad(url, force);
+		} catch (Exception e) {
+			if (isConnectionOrAuthError(e)) {
+				reconnect();
+				return performUpgradeLoad(url, force);
+			}
+			throw new IOException("Ошибка загрузки обновления: " + e.getMessage(), e);
+		}
+	}
+
+	private ErrorList performUpgradeLoad(String url, boolean force) throws IOException {
+		return normalizeErrorList(new ModbusAPIClient.APICall<ErrorList>() {
+			@Override
+			public retrofit2.Call<ErrorList> apiFun() {
+				return api.upgradeLoad(sessionToken, url, force);
+			}
+		}.call());
+	}
+
+	public ErrorList upgradeExecute(boolean force, boolean self) throws IOException {
+		ensureConnection();
+		try {
+			return performUpgradeExecute(force, self);
+		} catch (Exception e) {
+			if (isConnectionOrAuthError(e)) {
+				reconnect();
+				return performUpgradeExecute(force, self);
+			}
+			throw new IOException("Ошибка установки обновления: " + e.getMessage(), e);
+		}
+	}
+
+	private ErrorList performUpgradeExecute(boolean force, boolean self) throws IOException {
+		return normalizeErrorList(new ModbusAPIClient.APICall<ErrorList>() {
+			@Override
+			public retrofit2.Call<ErrorList> apiFun() {
+				return api.upgradeExecute(sessionToken, force, self);
+			}
+		}.call());
+	}
+
+	public ServerState getServerState() throws IOException {
+		ensureConnection();
+		try {
+			return performGetServerState();
+		} catch (Exception e) {
+			if (isConnectionOrAuthError(e)) {
+				reconnect();
+				return performGetServerState();
+			}
+			throw new IOException("Ошибка получения состояния сервера: " + e.getMessage(), e);
+		}
+	}
+
+	private ServerState performGetServerState() throws IOException {
+		return new ModbusAPIClient.APICall<ServerState>() {
+			@Override
+			public retrofit2.Call<ServerState> apiFun() {
+				return api.serverState(sessionToken);
+			}
+		}.call();
+	}
+
 	public void reconnectButton() throws IOException {
 		try {
 			reconnect();

@@ -54,4 +54,6 @@ public class DashboardData {
 
     @JsonProperty("recupTargetPercent")
     private Integer recupTargetPercent; // recupTargetRpm / targetRpmMax * 100, %
+
+    private CalibrationData calibration; // бит 32 REG_R_STATE — идёт калибровка агрегата
 }

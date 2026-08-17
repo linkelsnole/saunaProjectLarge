@@ -11,12 +11,14 @@ export const useSystemEvents = (minutes: number) => {
       return response.json();
     },
     refetchInterval: 15000,
+    placeholderData: (prev) => prev,
   });
 
   return {
     data: query.data,
     isLoading: query.isLoading,
     error: query.error,
+    isError: query.isError,
     refetch: query.refetch,
     isFetching: query.isFetching,
   };

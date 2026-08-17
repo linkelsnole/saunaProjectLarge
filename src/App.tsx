@@ -11,7 +11,9 @@ import { ManualSettingsWidget } from "@/components/settings/ManualSettingsWidget
 import { TempSettingsWidget } from "@/components/settings/TempSettingsWidget";
 import { RecuperatorWidget } from "@/components/settings/RecuperatorWidget";
 import { ConfiguratorWidget } from "@/components/settings/ConfiguratorWidget";
-import { SystemEventsWidget } from "@/components/logs/SystemEventsWidget";
+import SystemEventsJournal from "@/components/logs/SystemEventsJournal";
+import DashboardLogs from "@/components/logs/DashboardLogs";
+import UpdateSettings from "@/components/settings/UpdateSettings";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/shared/ui/tabs";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/shared/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,7 +27,8 @@ const SWIPE_THRESHOLD = 60;
 const settingsTabsGridClass = (tabCount: number) => {
 	if (tabCount <= 3) return "grid-cols-2 md:grid-cols-3";
 	if (tabCount === 4) return "grid-cols-2 md:grid-cols-4";
-	return "grid-cols-2 md:grid-cols-5";
+	if (tabCount === 5) return "grid-cols-2 md:grid-cols-5";
+	return "grid-cols-3 md:grid-cols-7";
 };
 
 const SettingsTabs = ({
@@ -37,7 +40,7 @@ const SettingsTabs = ({
 	canSeeConfigurator: boolean;
 	compact?: boolean;
 }) => {
-	const tabCount = 3 + (canSeeConfigurator ? 1 : 0) + (isAdmin ? 1 : 0);
+	const tabCount = 3 + (canSeeConfigurator ? 1 : 0) + (isAdmin ? 3 : 0);
 
 	return (
 		<Tabs defaultValue="volume" className="h-full flex flex-col min-h-0">
@@ -62,7 +65,9 @@ const SettingsTabs = ({
 						Редактор
 					</TabsTrigger>
 				)}
+				{isAdmin && <TabsTrigger value="errors" className={compact ? "flex-none px-4" : ""}>Ошибки</TabsTrigger>}
 				{isAdmin && <TabsTrigger value="logs" className={compact ? "flex-none px-4" : ""}>Логи</TabsTrigger>}
+				{isAdmin && <TabsTrigger value="update" className={compact ? "flex-none px-4" : ""}>Обновление</TabsTrigger>}
 			</TabsList>
 			<TabsContent value="volume" className="flex-1 overflow-y-auto">
 				<ManualSettingsWidget />
@@ -79,8 +84,18 @@ const SettingsTabs = ({
 				</TabsContent>
 			)}
 			{isAdmin && (
-				<TabsContent value="logs" className="flex-1 overflow-hidden">
-					<SystemEventsWidget />
+				<TabsContent value="errors" className="flex-1 overflow-y-auto">
+					<SystemEventsJournal />
+				</TabsContent>
+			)}
+			{isAdmin && (
+				<TabsContent value="logs" className="flex-1 overflow-y-auto">
+					<DashboardLogs />
+				</TabsContent>
+			)}
+			{isAdmin && (
+				<TabsContent value="update" className="flex-1 overflow-y-auto">
+					<UpdateSettings />
 				</TabsContent>
 			)}
 		</Tabs>

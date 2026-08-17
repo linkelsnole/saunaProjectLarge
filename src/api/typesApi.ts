@@ -79,6 +79,7 @@ export interface DashboardData {
   manualSettings: ManualSettingsDto;
   tempSettings: TempSettingsDto;
   recuperatorSettings?: RecuperatorSettingsDto;
+  calibration?: { calibrating?: boolean };
   damperSupply: boolean | null;   // задвижка притока
   damperExhaust: boolean | null;   // задвижка вытяжки
   pumpActive?: boolean | null;     // Workstate2 бит 14 — насос рекуператора (команда)
@@ -126,4 +127,43 @@ export interface SystemEvent {
   packedValues?: string;
   logUnit?: number;
   facadeClass?: string;
+}
+
+export interface UpgradeStatusData {
+  errors: string[];
+  info: string[];
+}
+
+export interface ServerStateData {
+  serverRun: boolean;
+  locked: boolean;
+  requestNum: number;
+  sessionCount: number;
+  timeSum: number;
+  timeMin: number;
+  timeMax: number;
+  timeCount: number;
+  pid: number;
+  releaseNumber: number;
+  version: string;
+  totalGetCount: number;
+  inflowTarget: number | null;
+  outflowTarget: number | null;
+  status: string;
+  message: string;
+}
+
+export type UserActionType = 'POWER' | 'MODE' | 'SETPOINT' | 'AUTH' | 'OTHER';
+
+export interface UserActionEntry {
+  timestamp: number;
+  username: string;
+  actionType: UserActionType;
+  action: string;
+  success: boolean;
+  details: string | null;
+}
+
+export interface LogSettingsData {
+  intervalMinutes: number;
 }
