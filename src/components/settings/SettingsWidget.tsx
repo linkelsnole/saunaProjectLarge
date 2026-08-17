@@ -35,20 +35,20 @@ export const SettingsWidget = () => {
           )}
         </TabsList>
 
-        <TabsContent value="volume" className="flex-1 overflow-y-auto">
+        <TabsContent value="volume" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
           <ManualSettingsWidget />
         </TabsContent>
 
-        <TabsContent value="temperature" className="flex-1 overflow-y-auto">
+        <TabsContent value="temperature" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
           <TempSettingsWidget />
         </TabsContent>
 
-        <TabsContent value="recuperator" className="flex-1 overflow-y-auto">
+        <TabsContent value="recuperator" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
           <RecuperatorWidget />
         </TabsContent>
 
         {canSeeConfigurator && (
-          <TabsContent value="config" className="flex-1 overflow-y-auto">
+          <TabsContent value="config" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
             <ConfiguratorWidget />
           </TabsContent>
         )}

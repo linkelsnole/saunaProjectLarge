@@ -1,6 +1,36 @@
 @import "tailwindcss";
 @import "@/shared/styles/globals.css";
 
+/* место под скроллбар резервируется заранее, чтобы контент не дёргался
+   влево-вправо при его появлении */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* кастомный скроллбар: тонкий, скруглённый, в общей холодной гамме */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
 .no-spinner::-webkit-outer-spin-button,
 .no-spinner::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -9,6 +39,18 @@
 
 .no-spinner::-moz-number-spinbox {
   -moz-appearance: textfield;
+}
+
+/* числовые инпуты без стрелочек во всём приложении */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 /* короткий пульс при смене статуса, не бесконечный */

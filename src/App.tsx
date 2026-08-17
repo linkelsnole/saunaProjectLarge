@@ -71,32 +71,32 @@ const SettingsTabs = ({
 				{isAdmin && <TabsTrigger value="logs" className={compact ? "flex-none px-4" : ""}>{t('app.tabs.logs')}</TabsTrigger>}
 				{isAdmin && <TabsTrigger value="update" className={compact ? "flex-none px-4" : ""}>{t('app.tabs.update')}</TabsTrigger>}
 			</TabsList>
-			<TabsContent value="volume" className="flex-1 overflow-y-auto">
+			<TabsContent value="volume" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
 				<ManualSettingsWidget />
 			</TabsContent>
-			<TabsContent value="temperature" className="flex-1 overflow-y-auto">
+			<TabsContent value="temperature" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
 				<TempSettingsWidget />
 			</TabsContent>
-			<TabsContent value="recuperator" className="flex-1 overflow-y-auto">
+			<TabsContent value="recuperator" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
 				<RecuperatorWidget />
 			</TabsContent>
 			{canSeeConfigurator && (
-				<TabsContent value="config" className="flex-1 overflow-y-auto">
+				<TabsContent value="config" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
 					<ConfiguratorWidget />
 				</TabsContent>
 			)}
 			{isAdmin && (
-				<TabsContent value="errors" className="flex-1 overflow-y-auto">
+				<TabsContent value="errors" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
 					<SystemEventsJournal />
 				</TabsContent>
 			)}
 			{isAdmin && (
-				<TabsContent value="logs" className="flex-1 overflow-y-auto">
+				<TabsContent value="logs" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
 					<DashboardLogs />
 				</TabsContent>
 			)}
 			{isAdmin && (
-				<TabsContent value="update" className="flex-1 overflow-y-auto">
+				<TabsContent value="update" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
 					<UpdateSettings />
 				</TabsContent>
 			)}

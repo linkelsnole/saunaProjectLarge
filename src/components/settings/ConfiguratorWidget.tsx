@@ -105,11 +105,11 @@ export const ConfiguratorWidget = () => {
 						onClick={(e) => e.stopPropagation()}
 					>
 						<div className="p-5 border-b border-slate-100 bg-slate-50/80 flex justify-between items-center shrink-0">
-							<h3 className="font-bold text-slate-700 text-lg">{t('configurator.modalTitle', { value: draftType })}</h3>
+							<h3 className="font-semibold text-slate-700 text-lg">{t('configurator.modalTitle', { value: draftType })}</h3>
 						</div>
 
-						<div className="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
-							<div className="flex gap-4 text-xs font-bold text-slate-500 uppercase tracking-wide px-1">
+						<div className="p-6 space-y-4 overflow-y-auto flex-1">
+							<div className="flex gap-4 text-xs font-semibold text-slate-500 uppercase tracking-wide px-1">
 								<div className="w-[120px] shrink-0">{t('configurator.columns.address')}</div>
 								<div className="w-[80px] shrink-0">{t('configurator.columns.multiplier')}</div>
 								<div className="flex-1">{t('configurator.columns.name')}</div>
@@ -147,7 +147,7 @@ export const ConfiguratorWidget = () => {
 											<div className="text-slate-300">↔</div>
 
 											<Input
-												className="flex-1 text-sm bg-slate-50/50 cursor-default"
+												className="flex-1 text-sm bg-slate-50"
 												value={t(reg.nameKey)}
 												readOnly
 											/>
@@ -162,7 +162,7 @@ export const ConfiguratorWidget = () => {
 							</div>
 
 							<div className="mt-6 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-xs text-blue-600">
-								<span className="font-bold">{t('configurator.hintLabel')}</span> {t('configurator.hintBefore')}{" "}
+								<span className="font-semibold">{t('configurator.hintLabel')}</span> {t('configurator.hintBefore')}{" "}
 								<code className="font-mono bg-blue-100 px-1 rounded">0x9999</code>
 								{t('configurator.hintAfter')}
 							</div>
@@ -189,9 +189,9 @@ export const ConfiguratorWidget = () => {
 	return (
 		<>
 			<div className="space-y-6 pb-6">
-				<GlassCard className="p-4">
-					<h4 className="text-sm font-bold text-slate-700 tracking-wider mb-4 flex items-center gap-2">
-						<div className="w-2 h-2 bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
+				<GlassCard className="p-5 animate-in fade-in duration-500 motion-reduce:animate-none">
+					<h4 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+						<div className="w-2 h-2 bg-violet-500 rounded-full" />
 						{t('configurator.schemaTitle')}
 					</h4>
 					<p className="text-xs text-slate-500 mb-4">
@@ -201,7 +201,7 @@ export const ConfiguratorWidget = () => {
 					<div className="grid grid-cols-2 gap-4">
 						<div
 							onClick={() => handleTypeSelect(1)}
-							className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col items-center justify-center transition-all ${
+							className={`border-2 rounded-xl p-4 flex flex-col items-center justify-center transition-colors ${
 								type === 1
 									? "border-blue-500 bg-blue-50/50 shadow-sm"
 									: "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
@@ -210,14 +210,14 @@ export const ConfiguratorWidget = () => {
 							<div className="w-full h-24 bg-slate-100 rounded-md mb-3 flex items-center justify-center border border-dashed border-slate-300 text-slate-400 text-xs">
 								{t('configurator.imagePlaceholder', { value: 1 })}
 							</div>
-							<span className={`font-bold ${type === 1 ? "text-blue-600" : "text-slate-600"}`}>
+							<span className={`font-semibold ${type === 1 ? "text-blue-600" : "text-slate-600"}`}>
 								{t('configurator.type1')}
 							</span>
 						</div>
 
 						<div
 							onClick={() => handleTypeSelect(2)}
-							className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col items-center justify-center transition-all ${
+							className={`border-2 rounded-xl p-4 flex flex-col items-center justify-center transition-colors ${
 								type === 2
 									? "border-blue-500 bg-blue-50/50 shadow-sm"
 									: "border-slate-200 hover:border-blue-300 hover:bg-slate-50"
@@ -226,7 +226,7 @@ export const ConfiguratorWidget = () => {
 							<div className="w-full h-24 bg-slate-100 rounded-md mb-3 flex items-center justify-center border border-dashed border-slate-300 text-slate-400 text-xs">
 								{t('configurator.imagePlaceholder', { value: 2 })}
 							</div>
-							<span className={`font-bold ${type === 2 ? "text-blue-600" : "text-slate-600"}`}>
+							<span className={`font-semibold ${type === 2 ? "text-blue-600" : "text-slate-600"}`}>
 								{t('configurator.type2')}
 							</span>
 						</div>

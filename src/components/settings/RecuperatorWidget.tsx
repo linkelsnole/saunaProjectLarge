@@ -10,9 +10,9 @@ const RecuperatorRow = ({ label, value, unit }: { label: string; value: number |
   const unitLabel = unit ?? t('units.rpm');
 
   return (
-    <div className="flex justify-between items-center py-3 px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+    <div className="flex justify-between items-center py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors">
       <span className="text-sm text-slate-600 font-medium">{label}</span>
-      <span className="font-mono text-lg font-bold text-slate-800">
+      <span className="text-lg font-semibold tabular-nums text-slate-800">
         {value != null ? value.toFixed(1) : '-'} <span className="text-xs text-slate-400 font-normal ml-1">{unitLabel}</span>
       </span>
     </div>
@@ -20,9 +20,9 @@ const RecuperatorRow = ({ label, value, unit }: { label: string; value: number |
 };
 
 const RecuperatorTextRow = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex justify-between items-center py-3 px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+  <div className="flex justify-between items-center py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-colors">
     <span className="text-sm text-slate-600 font-medium">{label}</span>
-    <span className="font-mono text-lg font-bold text-slate-800">{value}</span>
+    <span className="text-lg font-semibold tabular-nums text-slate-800">{value}</span>
   </div>
 );
 
@@ -66,7 +66,7 @@ const RecuperatorInput = ({ label, value, onChange, unit, decimals = 1, readOnly
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium uppercase tracking-wide px-1 truncate" title={label}>
+      <span className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase tracking-wide px-1 truncate" title={label}>
         {label}
       </span>
       <div className="relative">
@@ -86,7 +86,7 @@ const RecuperatorInput = ({ label, value, onChange, unit, decimals = 1, readOnly
             if (readOnly) e.currentTarget.blur();
           }}
           tabIndex={readOnly ? -1 : 0}
-          className="pr-8 font-mono text-base sm:text-lg font-bold border-slate-200 hover:border-slate-300 focus:border-blue-500 h-9 sm:h-10 text-slate-800 bg-white"
+          className="no-spinner pr-8 text-base sm:text-lg font-semibold tabular-nums rounded-xl border-slate-200 hover:border-slate-300 h-9 sm:h-10 text-slate-800 bg-slate-50 focus:bg-white"
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">
           {unit ?? t('units.rpm')}
@@ -106,25 +106,25 @@ export const RecuperatorWidget = () => {
   const recuperatorSettings = data?.recuperatorSettings;
 
   const getRecupStateColor = (code: number | null | undefined) => {
-    if (code == null) return 'bg-slate-100/70 text-slate-500';
+    if (code == null) return 'bg-slate-100 text-slate-500';
     switch (code) {
-      case 0: return 'bg-slate-100/70 text-slate-600';
-      case 1: return 'bg-emerald-100/70 text-emerald-700';
-      case 2: return 'bg-amber-100/70 text-amber-700';
-      case 3: return 'bg-blue-100/70 text-blue-700';
-      case 4: return 'bg-orange-100/70 text-orange-700';
-      default: return 'bg-slate-100/70 text-slate-500';
+      case 0: return 'bg-slate-100 text-slate-600';
+      case 1: return 'bg-emerald-100 text-emerald-700';
+      case 2: return 'bg-amber-100 text-amber-700';
+      case 3: return 'bg-blue-100 text-blue-700';
+      case 4: return 'bg-orange-100 text-orange-700';
+      default: return 'bg-slate-100 text-slate-500';
     }
   };
 
   return (
     <div className="space-y-6 pb-6">
       {/* === СЕКЦИЯ 1: МОНИТОРИНГ РЕКУПЕРАТОРА === */}
-      <div className="space-y-3">
-        <div className="flex justify-between items-center py-3 px-4 rounded-lg border border-slate-200 bg-white">
+      <div className="space-y-3 animate-in fade-in fill-mode-backwards duration-500 motion-reduce:animate-none">
+        <div className="flex justify-between items-center py-3 px-4 rounded-xl border border-slate-200 bg-slate-50">
           <span className="text-sm text-slate-600 font-medium">{t('recuperatorWidget.state')}</span>
           <span
-            className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${getRecupStateColor(data?.recupStateCode)}`}
+            className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${getRecupStateColor(data?.recupStateCode)}`}
           >
             {data?.recupStateCode != null && data.recupStateCode >= 0 && data.recupStateCode <= 4
             ? t(`recuperatorStates.${data.recupStateCode}`)
@@ -148,13 +148,11 @@ export const RecuperatorWidget = () => {
       </div>
 
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 animate-in fade-in fill-mode-backwards duration-500 [animation-delay:80ms] motion-reduce:animate-none">
         <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
           {t('recuperatorWidget.setpoints')}
         </h4>
-        <div className="mb-4 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2">
-        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <RecuperatorInput
             label={t('recuperatorWidget.trackingIntervalRecup')}

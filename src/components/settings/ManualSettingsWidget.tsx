@@ -48,13 +48,13 @@ const ManualInput = ({ label, value, onChange, unit = '%', readOnly = false }: M
   };
 
   return (
-    <GlassCard className="p-5 flex flex-col justify-between h-32 hover:translate-y-[-2px] transition-transform duration-300">
+    <GlassCard className="p-5 flex flex-col justify-between h-32">
       <div className="flex justify-between items-start">
-        <span className="text-[11px] text-slate-500 font-bold uppercase tracking-widest opacity-80">
+        <span className="text-[11px] text-slate-500 font-semibold uppercase tracking-wide">
           {label}
         </span>
         {!readOnly && (
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-400/50 shadow-[0_0_8px_rgba(96,165,250,0.8)]" />
+          <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
         )}
       </div>
       <div className="relative mt-auto">
@@ -74,7 +74,7 @@ const ManualInput = ({ label, value, onChange, unit = '%', readOnly = false }: M
             if (readOnly) e.currentTarget.blur();
           }}
           tabIndex={readOnly ? -1 : 0}
-          className={readOnly ? "text-slate-500 shadow-none bg-transparent" : "text-slate-800"}
+          className={readOnly ? "text-slate-500 border-transparent bg-transparent" : "text-slate-800"}
         />
         <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-medium pointer-events-none">
           {unit}
@@ -101,20 +101,24 @@ export const ManualSettingsWidget = () => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Скорость вентилирования ПВ */}
-        <ManualInput
-          label={t('manualWidget.supplySpeed')}
-          value={supplySpeed}
-          onChange={(val) => mutate({ supplySpeed: val })}
-          readOnly={!canEditVentilation}
-        />
+        <div className="animate-in fade-in fill-mode-backwards duration-500 motion-reduce:animate-none">
+          <ManualInput
+            label={t('manualWidget.supplySpeed')}
+            value={supplySpeed}
+            onChange={(val) => mutate({ supplySpeed: val })}
+            readOnly={!canEditVentilation}
+          />
+        </div>
 
         {/* Процент наддува (ПВ-ОВ) */}
-        <ManualInput
-          label={t('manualWidget.boost')}
-          value={boostPercent}
-          onChange={(val) => mutate({ boostPercent: val })}
-          readOnly={!canEditVentilation}
-        />
+        <div className="animate-in fade-in fill-mode-backwards duration-500 [animation-delay:80ms] motion-reduce:animate-none">
+          <ManualInput
+            label={t('manualWidget.boost')}
+            value={boostPercent}
+            onChange={(val) => mutate({ boostPercent: val })}
+            readOnly={!canEditVentilation}
+          />
+        </div>
       </div>
     </div>
   );

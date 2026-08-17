@@ -56,7 +56,7 @@ const TempInput = ({
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium uppercase tracking-wide px-1 whitespace-normal break-words" title={label}>
+      <span className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase tracking-wide px-1 whitespace-normal break-words" title={label}>
         {label}
       </span>
       <div className="relative">
@@ -76,7 +76,7 @@ const TempInput = ({
             if (readOnly) e.currentTarget.blur();
           }}
           tabIndex={readOnly ? -1 : 0}
-          className={`${readOnly ? 'text-slate-500 shadow-none bg-transparent' : 'text-slate-800'} pr-9 text-base sm:text-lg h-10 ${inputClassName ?? ''}`}
+          className={`${readOnly ? 'text-slate-500 border-transparent bg-transparent' : 'text-slate-800'} pr-9 text-base sm:text-lg h-10 ${inputClassName ?? ''}`}
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium pointer-events-none">
           {unit}
@@ -88,9 +88,9 @@ const TempInput = ({
 
 // Компонент для отображения Read-Only данных (вентили)
 const ValveMonitorRow = ({ label, value, unit = '%' }: { label: string; value: string | null | undefined; unit?: string }) => (
-  <div className="flex justify-between items-center py-2 px-3 rounded-lg bg-white/40 border border-slate-200 mb-1 last:mb-0">
-    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wide">{label}</span>
-    <span className="font-mono text-sm font-bold text-slate-700 drop-shadow-sm">
+  <div className="flex justify-between items-center py-2 px-3 rounded-lg bg-white border border-slate-200 mb-1 last:mb-0">
+    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide">{label}</span>
+    <span className="text-sm font-semibold tabular-nums text-slate-800">
       {value ?? '-'} <span className="text-[10px] text-slate-400">{unit}</span>
     </span>
   </div>
@@ -117,22 +117,22 @@ const getModeLabelKey = (mode: number | null | undefined): string => {
 };
 
 const getModeColor = (mode: number | null | undefined): string => {
-  if (mode === null || mode === undefined) return 'bg-slate-100/70 text-slate-500';
+  if (mode === null || mode === undefined) return 'bg-slate-100 text-slate-500';
   switch (mode) {
-    case 0: return 'bg-slate-100/70 text-slate-600';
-    case 1: return 'bg-slate-100/70 text-slate-600';
-    case 2: return 'bg-orange-100/70 text-orange-700';
-    case 3: return 'bg-cyan-100/70 text-cyan-700';
-    case 4: return 'bg-blue-100/70 text-blue-700';
-    case 5: return 'bg-red-100/70 text-red-700';
-    case 6: return 'bg-violet-100/70 text-violet-700';
-    case 7: return 'bg-teal-100/70 text-teal-700';
-    case 8: return 'bg-slate-100/70 text-slate-600';
-    case 9: return 'bg-amber-100/70 text-amber-700';
-    case 10: return 'bg-emerald-100/70 text-emerald-700';
-    case 11: return 'bg-slate-100/70 text-slate-600';
-    case 12: return 'bg-orange-100/70 text-orange-700';
-    default: return 'bg-slate-100/70 text-slate-500';
+    case 0: return 'bg-slate-100 text-slate-600';
+    case 1: return 'bg-slate-100 text-slate-600';
+    case 2: return 'bg-orange-100 text-orange-700';
+    case 3: return 'bg-cyan-100 text-cyan-700';
+    case 4: return 'bg-blue-100 text-blue-700';
+    case 5: return 'bg-red-100 text-red-700';
+    case 6: return 'bg-violet-100 text-violet-700';
+    case 7: return 'bg-teal-100 text-teal-700';
+    case 8: return 'bg-slate-100 text-slate-600';
+    case 9: return 'bg-amber-100 text-amber-700';
+    case 10: return 'bg-emerald-100 text-emerald-700';
+    case 11: return 'bg-slate-100 text-slate-600';
+    case 12: return 'bg-orange-100 text-orange-700';
+    default: return 'bg-slate-100 text-slate-500';
   }
 };
 
@@ -157,16 +157,16 @@ export const TempSettingsWidget = () => {
 
 
       {/* === СЕКЦИЯ 1: ЗОНЫ (Управление + Мониторинг) === */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in fill-mode-backwards duration-500 motion-reduce:animate-none">
         {/* ЗОНА 1 */}
         <GlassCard className="flex flex-col h-full">
-          <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-white/20">
-            <h4 className="text-sm font-bold text-slate-700 tracking-wider flex items-center gap-2">
-              <div className="w-2 h-2 bg-slate-800 rounded-full shadow-lg" />
+          <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+            <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <div className="w-2 h-2 bg-slate-800 rounded-full" />
               {t('tempWidget.zone1')}
             </h4>
             <Badge
-              className={`${getModeColor(tempSettings?.ctrlModeZone1)} px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide backdrop-blur-md border border-slate-200 shadow-sm`}
+              className={`${getModeColor(tempSettings?.ctrlModeZone1)} px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide border border-slate-200`}
             >
               {t(getModeLabelKey(tempSettings?.ctrlModeZone1))}
             </Badge>
@@ -180,7 +180,7 @@ export const TempSettingsWidget = () => {
               readOnly={!canEditZones}
               inputClassName="h-16 text-3xl tracking-tight text-center"
             />
-            <div className="bg-slate-500/5 rounded-xl p-3 border border-slate-200 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
               <ValveMonitorRow label={t('tempWidget.hotValve')} value={getSensorVal('VHP1')} />
               <ValveMonitorRow label={t('tempWidget.coldValve')} value={getSensorVal('VCP1')} />
               <ValveMonitorRow label={t('tempWidget.hotValveExtra')} value={getSensorVal('VOP1')} />
@@ -190,13 +190,13 @@ export const TempSettingsWidget = () => {
 
         {/* ЗОНА 2 */}
         <GlassCard className="flex flex-col h-full">
-          <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-white/20">
-            <h4 className="text-sm font-bold text-slate-700 tracking-wider flex items-center gap-2">
-              <div className="w-2 h-2 bg-slate-800 rounded-full shadow-lg" />
+          <div className="p-4 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+            <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+              <div className="w-2 h-2 bg-slate-800 rounded-full" />
               {t('tempWidget.zone2')}
             </h4>
             <Badge
-              className={`${getModeColor(tempSettings?.ctrlModeZone2)} px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide backdrop-blur-md border border-slate-200 shadow-sm`}
+              className={`${getModeColor(tempSettings?.ctrlModeZone2)} px-3 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide border border-slate-200`}
             >
               {t(getModeLabelKey(tempSettings?.ctrlModeZone2))}
             </Badge>
@@ -210,7 +210,7 @@ export const TempSettingsWidget = () => {
               readOnly={!canEditZones}
               inputClassName="h-16 text-3xl tracking-tight text-center"
             />
-            <div className="bg-slate-500/5 rounded-xl p-3 border border-slate-200 shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200">
               <ValveMonitorRow label={t('tempWidget.hotValve')} value={getSensorVal('VHP2')} />
               <ValveMonitorRow label={t('tempWidget.coldValve')} value={getSensorVal('VCP2')} />
               <ValveMonitorRow label={t('tempWidget.hotValveExtra')} value={getSensorVal('VOP2')} />
@@ -219,9 +219,9 @@ export const TempSettingsWidget = () => {
         </GlassCard>
       </div>
 
-      <GlassCard className="p-4 w-full">
+      <GlassCard className="p-4 w-full animate-in fade-in fill-mode-backwards duration-500 [animation-delay:80ms] motion-reduce:animate-none">
         <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-violet-400/80" />
+          <span className="w-1.5 h-1.5 rounded-full bg-violet-400" />
           {t('tempWidget.temperatureSection')}
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -253,11 +253,11 @@ export const TempSettingsWidget = () => {
       </GlassCard>
 
       {/* === СЕКЦИЯ 2: ПОРОГИ БЕЗОПАСНОСТИ (Вода и Приток) === */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in fill-mode-backwards duration-500 [animation-delay:160ms] motion-reduce:animate-none">
         {/* Пороги Воды */}
         <GlassCard className="p-4">
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-400/70"></span> {t('tempWidget.waterThresholds')}
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span> {t('tempWidget.waterThresholds')}
           </h4>
           <div className="grid grid-cols-2 gap-3">
             <TempInput
@@ -278,7 +278,7 @@ export const TempSettingsWidget = () => {
         {/* Пороги Притока */}
         <GlassCard className="p-4">
           <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/70"></span> {t('tempWidget.supplyThresholds')}
+             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> {t('tempWidget.supplyThresholds')}
           </h4>
           <div className="grid grid-cols-2 gap-3">
             <TempInput
@@ -298,10 +298,10 @@ export const TempSettingsWidget = () => {
       </div>
 
       {/* === СЕКЦИЯ 3: ОТЛАДКА И НОВЫЕ ПАРАМЕТРЫ === */}
-      <GlassCard className="p-4">
+      <GlassCard className="p-4 animate-in fade-in fill-mode-backwards duration-500 [animation-delay:240ms] motion-reduce:animate-none">
         <div className="flex items-center gap-2 mb-4">
-           <div className="bg-yellow-400/80 w-1 h-4 rounded-full"></div>
-           <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wide">
+           <div className="bg-amber-400 w-1 h-4 rounded-full"></div>
+           <h4 className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
              {t('tempWidget.setpoints')}
            </h4>
         </div>
@@ -335,11 +335,11 @@ export const TempSettingsWidget = () => {
         </div>
 
         {/* Аварийный мониторинг радиатора */}
-        <div className="rounded-lg border border-slate-200 bg-white/40 px-3 py-2 flex justify-between items-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)]">
-            <span className="text-xs font-bold text-slate-700 uppercase">
+        <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 flex justify-between items-center">
+            <span className="text-xs font-semibold text-slate-700 uppercase">
               {t('tempWidget.radiatorFail')}
             </span>
-            <span className="font-mono text-base font-bold text-slate-700 bg-white/60 px-3 py-1 rounded shadow-sm border border-slate-200">
+            <span className="text-base font-semibold tabular-nums text-slate-800 bg-white px-3 py-1 rounded-lg border border-slate-200">
                {tempSettings?.radTempFail ?? '-'} °C
             </span>
         </div>
