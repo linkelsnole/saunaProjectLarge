@@ -11,6 +11,7 @@ import {
 	Upload,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/shared/ui/button'
 import { Input } from '@/shared/ui/input'
 import { cn } from '@/shared/lib/utils'
@@ -33,9 +34,6 @@ type StatusVariant = 'success' | 'warning' | 'error' | 'neutral'
 type FlowStep = 'IDLE' | 'CHECKING' | 'AVAILABLE' | 'DOWNLOADING' | 'READY_TO_INSTALL' | 'INSTALLING'
 
 const POLL_MS = 3000
-
-const INSTALL_BLOCKED_BY_CALIBRATION_MESSAGE =
-	'Идёт калибровка агрегата: установку обновления (force) запускать нельзя. Проверка статуса без force доступна.'
 
 const formatTimestamp = (value: Date | null) => {
 	if (!value) return ''
@@ -114,6 +112,7 @@ const cardClassName =
 	'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm animate-in fade-in fill-mode-backwards duration-500 motion-reduce:animate-none'
 
 const StatusMessages = ({ payload }: { payload: UpgradeStatusData | null }) => {
+	const { t } = useTranslation()
 	const groups = getStatusGroups(payload)
 	if (!groups.hasMessages) return null
 
@@ -123,21 +122,21 @@ const StatusMessages = ({ payload }: { payload: UpgradeStatusData | null }) => {
 		{
 			key: 'info',
 			icon: Info,
-			heading: 'Инфо',
+			heading: t('update.labels.info'),
 			items: groups.info,
 			headingClassName: 'text-sky-700',
 		},
 		{
 			key: 'warning',
 			icon: AlertTriangle,
-			heading: 'Предупреждение',
+			heading: t('update.labels.warning'),
 			items: groups.warnings,
 			headingClassName: 'text-amber-700',
 		},
 		{
 			key: 'error',
 			icon: AlertTriangle,
-			heading: 'Ошибки',
+			heading: t('update.labels.errors'),
 			items: groups.errors,
 			headingClassName: 'text-red-600',
 		},
@@ -191,14 +190,15 @@ const TimelineItem = ({
 	inProgress?: boolean
 	last?: boolean
 }) => {
+	const { t } = useTranslation()
 	const variant = getSummaryVariant(payload)
 	const badgeLabel = inProgress
-		? 'В процессе'
+		? t('update.labels.inProgress')
 		: variant === 'success'
-			? 'OK'
+			? t('update.labels.ok')
 			: variant === 'warning'
-				? 'Предупреждение'
-				: 'Ошибка'
+				? t('update.labels.warning')
+				: t('update.labels.error')
 
 	return (
 		<li className={cn('relative pl-6', !last && 'pb-5')}>
@@ -246,9 +246,10 @@ const TimelineItem = ({
 	)
 }
 
-const STEP_LABELS = ['Проверка', 'Загрузка', 'Готово к установке', 'Установлено']
+const STEP_KEYS = ['update.steps.check', 'update.steps.download', 'update.steps.ready', 'update.steps.installed']
 
 const UpdateSettings = () => {
+	const { t } = useTranslation()
 	const [loadResult, setLoadResult] = useState<UpgradeStatusData | null>(null)
 	const [installResult, setInstallResult] = useState<UpgradeStatusData | null>(null)
 	const [loadCheckedAt, setLoadCheckedAt] = useState<Date | null>(null)
@@ -376,7 +377,7 @@ const UpdateSettings = () => {
 
 	const handleInstall = () => {
 		if (installBlockedByCalibration) {
-			toast.error(INSTALL_BLOCKED_BY_CALIBRATION_MESSAGE)
+			toast.error(t('update.installBlockedCalibration'))
 			return
 		}
 		setStep('INSTALLING')
@@ -409,7 +410,7 @@ const UpdateSettings = () => {
 		})
 	}
 
-	const versionLabel = serverState?.version?.trim() || 'неизвестно'
+	const versionLabel = serverState?.version?.trim() || t('update.wizard.unknownVersion')
 	const releaseLabel =
 		typeof serverState?.releaseNumber === 'number' ? String(serverState.releaseNumber) : '—'
 
@@ -432,7 +433,7 @@ const UpdateSettings = () => {
 					</div>
 					<div className="min-w-0">
 						<p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-							Текущая версия
+							{t('update.wizard.currentVersion')}
 						</p>
 						{serverStateLoading ? (
 							<Loader2 className="mt-1 h-5 w-5 animate-spin text-slate-400" />
@@ -440,11 +441,11 @@ const UpdateSettings = () => {
 							<p className="truncate text-lg font-semibold text-slate-900">{versionLabel}</p>
 						)}
 						<p className="mt-0.5 text-xs text-slate-500">
-							Сборка {releaseLabel}
+							{t('update.wizard.build')} {releaseLabel}
 							<span className="mx-2 text-slate-300">•</span>
-							Версия веб-панели {__APP_VERSION__}{' '}
+							{t('update.wizard.webVersion')} {__APP_VERSION__}{' '}
 							<span className="text-slate-400">
-								(сборка от {__BUILD_DATE__})
+								({t('update.wizard.webBuild')} {__BUILD_DATE__})
 							</span>
 						</p>
 					</div>
@@ -453,11 +454,12 @@ const UpdateSettings = () => {
 				{/* Шаги */}
 				<div className={cn(cardClassName, '[animation-delay:80ms]')}>
 					<ol className="flex w-full">
-						{STEP_LABELS.map((label, index) => {
+						{STEP_KEYS.map((stepKey, index) => {
 							const isCompleted = index < stepIndex
 							const isCurrent = index === stepIndex
+							const label = t(stepKey)
 							return (
-								<li key={label} className="relative flex flex-1 flex-col items-center gap-2">
+								<li key={stepKey} className="relative flex flex-1 flex-col items-center gap-2">
 									{index > 0 && (
 										<span
 											className={cn(
@@ -493,13 +495,13 @@ const UpdateSettings = () => {
 				{/* URL сервера обновлений */}
 				<div className={cn(cardClassName, '[animation-delay:160ms]')}>
 					<label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-						URL сервера обновлений
+						{t('update.storedUrlLabel')}
 					</label>
 					<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
 						<Input
 							value={controllerUrl}
 							onChange={(event) => setControllerUrl(event.target.value)}
-							placeholder="http://172.16.7.109/Upgrade.smb"
+							placeholder={t('update.urlPlaceholder')}
 							disabled={storedUrlLoading || saveStoredUrlMutation.isPending}
 							className="h-11 rounded-xl border-slate-200 bg-slate-50 sm:flex-1"
 						/>
@@ -510,8 +512,8 @@ const UpdateSettings = () => {
 							disabled={storedUrlLoading || saveStoredUrlMutation.isPending}
 							onClick={() => {
 								saveStoredUrlMutation.mutate(controllerUrl.trim(), {
-									onSuccess: () => toast.success('URL записан на контроллер'),
-									onError: () => toast.error('Не удалось записать URL'),
+									onSuccess: () => toast.success(t('update.storedUrlSaved')),
+									onError: () => toast.error(t('update.storedUrlError')),
 								})
 							}}
 						>
@@ -520,34 +522,34 @@ const UpdateSettings = () => {
 							) : (
 								<Save className="h-4 w-4" />
 							)}
-							Изменить путь к серверу обновлений
+							{t('update.storedUrlSave')}
 						</Button>
 					</div>
 					<p className="mt-2 text-xs text-slate-500">
 						{storedUrlLoading
-							? 'Загрузка с контроллера…'
-							: 'Хранится на контроллере. Проверка и загрузка обновления идут по этому же адресу.'}
+							? t('update.storedUrlLoading')
+							: t('update.storedUrlHint')}
 					</p>
 				</div>
 
 				{/* Статус обновления */}
 				<div className={cn(cardClassName, '[animation-delay:240ms]')}>
-					<h3 className="text-sm font-semibold text-slate-800">Статус обновления</h3>
+					<h3 className="text-sm font-semibold text-slate-800">{t('update.status.title')}</h3>
 					<ol className="mt-4">
 						<TimelineItem
-							title="Ответ по загрузке"
-							subtitle="Сообщения от метода `/upgrade/load`."
+							title={t('update.results.downloadTitle')}
+							subtitle={t('update.results.downloadSubtitle')}
 							payload={loadResult}
 							timestamp={loadCheckedAt}
-							emptyLabel="Пока нет ответа по загрузке обновления."
+							emptyLabel={t('update.results.emptyDownload')}
 							inProgress={step === 'CHECKING' || step === 'DOWNLOADING'}
 						/>
 						<TimelineItem
-							title="Ответ по установке"
-							subtitle="Сообщения от метода `/upgrade/execute`."
+							title={t('update.results.installTitle')}
+							subtitle={t('update.results.installSubtitle')}
 							payload={installResult}
 							timestamp={installCheckedAt}
-							emptyLabel="Пока нет ответа по установке обновления."
+							emptyLabel={t('update.results.emptyInstall')}
 							inProgress={step === 'INSTALLING'}
 							last
 						/>
@@ -556,7 +558,7 @@ const UpdateSettings = () => {
 
 				{installBlockedByCalibration && (
 					<div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 animate-in fade-in duration-300 motion-reduce:animate-none">
-						{INSTALL_BLOCKED_BY_CALIBRATION_MESSAGE}
+						{t('update.installBlockedCalibration')}
 					</div>
 				)}
 
@@ -564,9 +566,9 @@ const UpdateSettings = () => {
 				{step === 'INSTALLING' ? (
 					<div className={cn(cardClassName, 'p-8 text-center')}>
 						<Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-slate-800" />
-						<h3 className="text-lg font-semibold text-slate-900">Идёт установка</h3>
+						<h3 className="text-lg font-semibold text-slate-900">{t('update.wizard.installingTitle')}</h3>
 						<p className="mt-2 text-sm text-slate-600">
-							Подождите. Через {installTimer ?? 0} с откроется страница входа.
+							{t('update.wizard.installingHint', { seconds: installTimer ?? 0 })}
 						</p>
 					</div>
 				) : (
@@ -579,7 +581,7 @@ const UpdateSettings = () => {
 								disabled={step === 'CHECKING'}
 							>
 								{step === 'CHECKING' ? <Loader2 className="animate-spin" /> : <Search className="h-4 w-4" />}
-								Проверить обновления
+								{t('update.wizard.checkUpdates')}
 							</Button>
 						)}
 						{(step === 'AVAILABLE' || step === 'DOWNLOADING') && (
@@ -595,7 +597,7 @@ const UpdateSettings = () => {
 									) : (
 										<Download className="h-4 w-4" />
 									)}
-									{step === 'DOWNLOADING' ? 'Загрузка обновления…' : 'Загрузить обновление'}
+									{step === 'DOWNLOADING' ? t('update.wizard.downloading') : t('update.wizard.downloadUpdate')}
 								</Button>
 								{step === 'AVAILABLE' && (
 									<Button
@@ -604,7 +606,7 @@ const UpdateSettings = () => {
 										className="h-12 rounded-xl px-5"
 										onClick={() => setStep('IDLE')}
 									>
-										Отмена
+										{t('update.wizard.cancel')}
 									</Button>
 								)}
 							</>
@@ -618,7 +620,7 @@ const UpdateSettings = () => {
 									disabled={installBlockedByCalibration}
 								>
 									<Upload className="h-4 w-4" />
-									Установить обновление
+									{t('update.actions.startInstall')}
 								</Button>
 								<Button
 									type="button"
@@ -626,7 +628,7 @@ const UpdateSettings = () => {
 									className="h-12 rounded-xl px-5"
 									onClick={() => setStep('IDLE')}
 								>
-									Отмена
+									{t('update.wizard.cancel')}
 								</Button>
 							</>
 						)}

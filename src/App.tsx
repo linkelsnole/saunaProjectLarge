@@ -1,5 +1,6 @@
 import { useRef, useCallback } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {Card,CardContent} from "@/shared/ui/card";
 
 import Schema from "@/schema/Schema";
@@ -40,6 +41,7 @@ const SettingsTabs = ({
 	canSeeConfigurator: boolean;
 	compact?: boolean;
 }) => {
+	const { t } = useTranslation();
 	const tabCount = 3 + (canSeeConfigurator ? 1 : 0) + (isAdmin ? 3 : 0);
 
 	return (
@@ -52,22 +54,22 @@ const SettingsTabs = ({
 				)}
 			>
 				<TabsTrigger value="volume" className={compact ? "flex-none px-4" : ""}>
-					Объем
+					{t('app.tabs.volume')}
 				</TabsTrigger>
 				<TabsTrigger value="temperature" className={compact ? "flex-none px-4" : ""}>
-					Температура
+					{t('app.tabs.temperature')}
 				</TabsTrigger>
 				<TabsTrigger value="recuperator" className={compact ? "flex-none px-4" : ""}>
-					Рекуператор
+					{t('app.tabs.recuperator')}
 				</TabsTrigger>
 				{canSeeConfigurator && (
 					<TabsTrigger value="config" className={compact ? "flex-none px-4" : ""}>
-						Редактор
+						{t('app.tabs.config')}
 					</TabsTrigger>
 				)}
-				{isAdmin && <TabsTrigger value="errors" className={compact ? "flex-none px-4" : ""}>Ошибки</TabsTrigger>}
-				{isAdmin && <TabsTrigger value="logs" className={compact ? "flex-none px-4" : ""}>Логи</TabsTrigger>}
-				{isAdmin && <TabsTrigger value="update" className={compact ? "flex-none px-4" : ""}>Обновление</TabsTrigger>}
+				{isAdmin && <TabsTrigger value="errors" className={compact ? "flex-none px-4" : ""}>{t('app.tabs.errors')}</TabsTrigger>}
+				{isAdmin && <TabsTrigger value="logs" className={compact ? "flex-none px-4" : ""}>{t('app.tabs.logs')}</TabsTrigger>}
+				{isAdmin && <TabsTrigger value="update" className={compact ? "flex-none px-4" : ""}>{t('app.tabs.update')}</TabsTrigger>}
 			</TabsList>
 			<TabsContent value="volume" className="flex-1 overflow-y-auto">
 				<ManualSettingsWidget />
@@ -104,6 +106,7 @@ const SettingsTabs = ({
 
 const MainDashboard = () => {
 	const { role } = useAuth();
+	const { t } = useTranslation();
 	const sheet = useSettingsSheet();
 	const isAdmin = role === "ROLE_ADMIN";
 	const canSeeConfigurator = role === "ROLE_ADMIN" || role === "ROLE_CONFIG";
@@ -154,7 +157,7 @@ const MainDashboard = () => {
 			<Sheet open={sheet.open} onOpenChange={sheet.setOpen}>
 				<SheetContent side="left" className="w-[92vw] max-w-[360px] md:hidden bg-white p-0 flex flex-col overflow-hidden">
 					<SheetHeader className="border-b border-slate-100 px-5 pr-12 pt-5 pb-4 shrink-0">
-						<SheetTitle className="text-lg">Уставки</SheetTitle>
+						<SheetTitle className="text-lg">{t('app.setpoints')}</SheetTitle>
 					</SheetHeader>
 					<div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4 pb-8">
 						<SettingsPanelBoundsProvider>

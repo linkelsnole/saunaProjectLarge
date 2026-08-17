@@ -1,0 +1,289 @@
+{
+  "app": {
+    "tabs": {
+      "volume": "Объем",
+      "temperature": "Температура",
+      "recuperator": "Рекуператор",
+      "config": "Редактор",
+      "errors": "Ошибки",
+      "logs": "Логи",
+      "update": "Обновление"
+    },
+    "tabsShort": {
+      "volume": "Объем",
+      "temperature": "Темп.",
+      "recuperator": "Рекуп.",
+      "config": "Редактор"
+    },
+    "setpoints": "Уставки"
+  },
+  "header": {
+    "myAccount": "Мой аккаунт",
+    "profile": "Профиль",
+    "reconnect": "Переподключение",
+    "settings": "Настройки",
+    "logout": "Выйти",
+    "roles": {
+      "admin": "Администратор",
+      "user": "Пользователь",
+      "readonly": "Только чтение"
+    }
+  },
+  "login": {
+    "title": "Вход в систему",
+    "description": "Введите ваши данные для входа",
+    "username": "Имя пользователя",
+    "usernamePlaceholder": "Введите имя пользователя",
+    "password": "Пароль",
+    "passwordPlaceholder": "Введите пароль",
+    "submit": "Войти",
+    "submitting": "Вход...",
+    "success": "Успешный вход",
+    "error": "Ошибка входа",
+    "serverUnavailable": "Сервер недоступен. Проверьте подключение к серверу."
+  },
+  "units": {
+    "pa": "Па",
+    "m3h": "м³/ч",
+    "rpm": "об/мин",
+    "seconds": "с"
+  },
+  "manualWidget": {
+    "supplySpeed": "Скорость вентилирования ПВ",
+    "boost": "Наддув (ПВ-ОВ)"
+  },
+  "tempWidget": {
+    "zone1": "Зона 1",
+    "zone2": "Зона 2",
+    "target": "Целевая температура",
+    "hotValve": "Вентиль ГВ",
+    "coldValve": "Вентиль ХВ",
+    "hotValveExtra": "Доп. открытие ГВ",
+    "temperatureSection": "Температура",
+    "valveStartupPosition": "Положение вентилей при запуске",
+    "waterThresholds": "Пороги температуры воды",
+    "supplyThresholds": "Пороги температуры ПВ",
+    "rpmReduction": "Снижение оборотов",
+    "failure": "Авария",
+    "setpoints": "Уставки",
+    "neutralZoneT": "Нейтральная зона T",
+    "hotValveMin": "Мин. % вентилей ГВ",
+    "waterMinTNoWork": "Мин. Т ГВ при неработающих вент.",
+    "waterMinTWork": "Мин. Т ГВ при работающих вент.",
+    "radiatorFail": "Т радиатора - авария (E2,E8)",
+    "modes": {
+      "off": "Отключено",
+      "neutralZone": "Нейтральная зона",
+      "nzAfterHeating": "НЗ после нагрева",
+      "nzAfterCooling": "НЗ после охлаждения",
+      "cooling": "Охлаждение",
+      "heating": "Нагрев",
+      "tAveraging": "Усреднение по T",
+      "hood": "Вытяжка",
+      "alg2Step0": "Шаг 0",
+      "alg2Tuning": "Настройка",
+      "alg2Stabilization": "Стабилизация",
+      "alg2HeatOff": "Без нагрева",
+      "alg2HeatInsuff": "Недост. нагрев",
+      "unknown": "Неизвестно",
+      "na": "N/A"
+    }
+  },
+  "recuperatorWidget": {
+    "state": "Состояние рекуператора",
+    "valvePercent": "Проценты клапана",
+    "pump": "Насос рекуператора",
+    "pumpOn": "Вкл",
+    "pumpOff": "Выкл",
+    "bt6": "Температура теплоносителя (BT6)",
+    "setpoints": "Уставки рекуператора",
+    "trackingIntervalRecup": "Интервал слежения по рекуператору (приоритет 0 п.4, 0x0064)",
+    "minRpm": "Минимальные обороты",
+    "maxRpm": "Максимальные обороты",
+    "calibrationStep": "Шаг калибровки"
+  },
+  "recuperatorStates": {
+    "0": "Отключен",
+    "1": "Макс. обороты",
+    "2": "Настройка",
+    "3": "Стабилизация",
+    "4": "Врем. остановка"
+  },
+  "configurator": {
+    "schemaTitle": "Схема рекуператора",
+    "currentActive": "Выберите тип схемы. Текущий активный:",
+    "type": "Тип {{value}}",
+    "type1": "Тип 1 (Полный)",
+    "type2": "Тип 2 (Упрощенный)",
+    "imagePlaceholder": "[Место под картинку Тип {{value}}]",
+    "modalTitle": "Окно настроек (Тип {{value}})",
+    "columns": {
+      "address": "Адрес",
+      "multiplier": "Множ.",
+      "name": "Наименование элемента"
+    },
+    "registers": {
+      "recupStatus": "Рекуператор Статус",
+      "targetRpm": "Целевые обороты",
+      "currentRpm": "Текущие обороты",
+      "fanSupply": "Вентилятор Приток",
+      "fanExhaust": "Вентилятор Вытяжка"
+    },
+    "hintLabel": "Подсказка:",
+    "hintBefore": "Введите адрес",
+    "hintAfter": ", чтобы сымитировать ошибку чтения (регистр покраснеет).",
+    "cancel": "Отмена",
+    "submit": "Ввод",
+    "readError": "Ошибка чтения некоторых регистров. Проверьте адреса.",
+    "readSuccess": "Регистры успешно прочитаны. Настройки применены."
+  },
+  "controlButton": {
+    "off": "Выключено",
+    "loading": "Загрузка",
+    "alarm": "Авария",
+    "starting": "Запуск",
+    "stopping": "Останов",
+    "on": "Включено"
+  },
+  "schemaView": {
+    "loading": "Получение данных...",
+    "alarmTitle": "Внимание! Авария агрегата",
+    "alarmDescription": "Статус: {{status}} (Код {{code}})",
+    "statusFallback": "Ошибка",
+    "normalTitle": "Система в норме",
+    "normalDescription": "Аварийные статусы сняты",
+    "unitStopped": "Останов агрегата",
+    "unitStarted": "Запуск агрегата",
+    "toggleError": "Ошибка при переключении рекуператора"
+  },
+  "toasts": {
+    "volumeSaved": "Настройки объема сохранены",
+    "saveError": "Не удалось сохранить настройки",
+    "tempSaved": "Температурные уставки сохранены",
+    "tempSaveError": "Не удалось сохранить температурные уставки",
+    "recupSaved": "Уставки рекуператора сохранены",
+    "recupSaveError": "Не удалось сохранить уставки рекуператора",
+    "upgradeLoadStatusError": "Ошибка проверки статуса загрузки обновления",
+    "upgradeDownloadError": "Ошибка запуска загрузки обновления",
+    "upgradeInstallStatusError": "Ошибка проверки статуса установки обновления",
+    "upgradeInstallError": "Ошибка запуска установки обновления",
+    "intervalSaved": "Интервал записи сохранен",
+    "intervalSaveError": "Не удалось сохранить интервал записи",
+    "readingsDownloaded": "Файл с показаниями скачан",
+    "readingsDownloadError": "Не удалось скачать файл показаний"
+  },
+  "update": {
+    "urlPlaceholder": "http://172.16.7.109/Upgrade.smb",
+    "storedUrlLabel": "URL сервера обновлений",
+    "storedUrlHint": "Хранится на контроллере. Проверка и загрузка обновления идут по этому же адресу.",
+    "storedUrlSave": "Изменить путь к серверу обновлений",
+    "storedUrlSaved": "URL записан на контроллер",
+    "storedUrlError": "Не удалось записать URL",
+    "storedUrlLoading": "Загрузка с контроллера…",
+    "installBlockedCalibration": "Идёт калибровка агрегата: установку обновления (force) запускать нельзя. Проверка статуса без force доступна.",
+    "actions": {
+      "startInstall": "Установить обновление"
+    },
+    "results": {
+      "downloadTitle": "Ответ по загрузке",
+      "downloadSubtitle": "Сообщения от метода `/upgrade/load`.",
+      "installTitle": "Ответ по установке",
+      "installSubtitle": "Сообщения от метода `/upgrade/execute`.",
+      "emptyDownload": "Пока нет ответа по загрузке обновления.",
+      "emptyInstall": "Пока нет ответа по установке обновления."
+    },
+    "labels": {
+      "ok": "OK",
+      "info": "Инфо",
+      "errors": "Ошибки",
+      "warning": "Предупреждение",
+      "error": "Ошибка",
+      "inProgress": "В процессе"
+    },
+    "steps": {
+      "check": "Проверка",
+      "download": "Загрузка",
+      "ready": "Готово к установке",
+      "installed": "Установлено"
+    },
+    "status": {
+      "title": "Статус обновления"
+    },
+    "wizard": {
+      "currentVersion": "Текущая версия",
+      "build": "Сборка",
+      "webVersion": "Версия веб-панели",
+      "webBuild": "сборка от",
+      "unknownVersion": "неизвестно",
+      "checkUpdates": "Проверить обновления",
+      "downloadUpdate": "Загрузить обновление",
+      "cancel": "Отмена",
+      "downloading": "Загрузка обновления…",
+      "installingTitle": "Идёт установка",
+      "installingHint": "Подождите. Через {{seconds}} с откроется страница входа."
+    }
+  },
+  "eventsJournal": {
+    "title": "Журнал событий",
+    "subtitle": "События контроллера и системы за выбранный период",
+    "filters": {
+      "all": "Все",
+      "critical": "Аварии",
+      "warning": "Предупр.",
+      "info": "Инфо"
+    },
+    "justNow": "только что",
+    "minutesAgo": "{{value}}м назад",
+    "hoursAgo": "{{value}}ч назад",
+    "empty": "За выбранный период событий нет",
+    "loadError": "Не удалось загрузить журнал событий",
+    "types": {
+      "t1": "Уведомление",
+      "t3": "Внешнее событие",
+      "t4": "Система",
+      "t6": "Авария",
+      "t16": "Контроллер (PLC)",
+      "unknown": "Тип"
+    }
+  },
+  "dashboardLogs": {
+    "units": {
+      "min": "мин",
+      "hour": "ч"
+    },
+    "actions": {
+      "title": "Журнал действий",
+      "subtitle": "Кто и что менял в системе и чем это закончилось",
+      "success": "Успех",
+      "error": "Ошибка",
+      "empty": "За выбранный период событий нет",
+      "loadError": "Не удалось загрузить журнал действий",
+      "filters": {
+        "all": "Все",
+        "power": "Включения",
+        "mode": "Режимы",
+        "setpoint": "Уставки",
+        "auth": "Вход",
+        "other": "Прочее"
+      },
+      "types": {
+        "power": "Включение",
+        "mode": "Режим",
+        "setpoint": "Уставка",
+        "auth": "Авторизация",
+        "other": "Прочее"
+      }
+    },
+    "readings": {
+      "title": "Показания приборов",
+      "subtitle": "Записываются в базу автоматически, файл Excel можно скачать за период",
+      "interval": "Интервал записи показаний",
+      "from": "Начало периода",
+      "to": "Конец периода",
+      "download": "Скачать файл",
+      "downloading": "Формируем файл…",
+      "hint": "Файл Excel с показаниями за выбранный период",
+      "invalidRange": "Конец периода должен быть позже начала"
+    }
+  }
+}

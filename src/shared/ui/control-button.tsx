@@ -1,5 +1,6 @@
 import { Button } from "@/shared/ui/button"
 import { Power, Loader2, AlertTriangle } from "lucide-react"
+import { useTranslation } from "react-i18next"
 import { cn } from "@/lib/utils"
 
 interface ControlButtonProps {
@@ -23,7 +24,8 @@ export function ControlButton({
   stateCode,
   isDataLoading = false,
 }: ControlButtonProps) {
-  let buttonText = "Выключено"
+  const { t } = useTranslation()
+  let buttonText = t("controlButton.off")
   let buttonColor = "bg-red-500 hover:bg-red-600"
   let showSpinner = false
   let isTransitioning = false
@@ -33,33 +35,33 @@ export function ControlButton({
   const isAlarm = stateCode != null && (stateCode & 6) !==0
 
   if (isDataLoading) {
-    buttonText = "Загрузка"
+    buttonText = t("controlButton.loading")
     buttonColor = "bg-gray-400"
     showSpinner = true
   } else if (isAlarm) {
-    buttonText = "Авария"
+    buttonText = t("controlButton.alarm")
     buttonColor = "bg-red-600 hover:bg-red-700" 
     Icon = AlertTriangle
     isTransitioning = true
   } else if (stateCode === 16) {
     // Начальный запуск
-    buttonText = "Запуск"
+    buttonText = t("controlButton.starting")
     buttonColor = "bg-green-600 hover:bg-green-700"
     showSpinner = true
     isTransitioning = true
   } else if (stateCode === 128) {
     // Останов агрегата
-    buttonText = "Останов"
+    buttonText = t("controlButton.stopping")
     buttonColor = "bg-red-500 hover:bg-red-600"
     showSpinner = true
     isTransitioning = true
   } else if (isActive) {
     // Включено (работает)
-    buttonText = "Включено"
+    buttonText = t("controlButton.on")
     buttonColor = "bg-green-600 hover:bg-green-700"
   } else {
     // Выключено
-    buttonText = "Выключено"
+    buttonText = t("controlButton.off")
     buttonColor = "bg-red-500 hover:bg-red-600"
   }
 

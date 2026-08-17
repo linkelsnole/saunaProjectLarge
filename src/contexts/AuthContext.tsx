@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
+import i18n from '@/shared/config/i18n/i18n';
 import type { AuthState, AuthRequest, AuthResponse } from '@/api/authTypes';
 
 interface AuthContextType extends AuthState {
@@ -67,15 +68,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch (error) {
       // Ошибка сети - сервер недоступен
-      throw new Error('Сервер недоступен. Проверьте подключение к серверу.');
+      throw new Error(i18n.t('login.serverUnavailable'));
     }
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ 
+      const errorData = await response.json().catch(() => ({
         error: 'UNKNOWN_ERROR',
-        message: 'Ошибка входа' 
+        message: i18n.t('login.error')
       }));
-      throw new Error(errorData.message || 'Ошибка входа');
+      throw new Error(errorData.message || i18n.t('login.error'));
     }
 
     const data: AuthResponse = await response.json();

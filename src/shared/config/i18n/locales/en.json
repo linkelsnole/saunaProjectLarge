@@ -1,0 +1,289 @@
+{
+  "app": {
+    "tabs": {
+      "volume": "Volume",
+      "temperature": "Temperature",
+      "recuperator": "Recuperator",
+      "config": "Editor",
+      "errors": "Errors",
+      "logs": "Logs",
+      "update": "Update"
+    },
+    "tabsShort": {
+      "volume": "Volume",
+      "temperature": "Temp.",
+      "recuperator": "Recup.",
+      "config": "Editor"
+    },
+    "setpoints": "Setpoints"
+  },
+  "header": {
+    "myAccount": "My account",
+    "profile": "Profile",
+    "reconnect": "Reconnect",
+    "settings": "Settings",
+    "logout": "Log out",
+    "roles": {
+      "admin": "Administrator",
+      "user": "User",
+      "readonly": "Read only"
+    }
+  },
+  "login": {
+    "title": "Sign in",
+    "description": "Enter your credentials to sign in",
+    "username": "Username",
+    "usernamePlaceholder": "Enter username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter password",
+    "submit": "Sign in",
+    "submitting": "Signing in...",
+    "success": "Signed in successfully",
+    "error": "Sign-in error",
+    "serverUnavailable": "Server unavailable. Check the server connection."
+  },
+  "units": {
+    "pa": "Pa",
+    "m3h": "m³/h",
+    "rpm": "rpm",
+    "seconds": "s"
+  },
+  "manualWidget": {
+    "supplySpeed": "Supply air fan speed",
+    "boost": "Boost (supply-exhaust)"
+  },
+  "tempWidget": {
+    "zone1": "Zone 1",
+    "zone2": "Zone 2",
+    "target": "Target temperature",
+    "hotValve": "HW valve",
+    "coldValve": "CW valve",
+    "hotValveExtra": "Extra HW opening",
+    "temperatureSection": "Temperature",
+    "valveStartupPosition": "Valve position at startup",
+    "waterThresholds": "Water temperature thresholds",
+    "supplyThresholds": "Supply air temperature thresholds",
+    "rpmReduction": "RPM reduction",
+    "failure": "Failure",
+    "setpoints": "Setpoints",
+    "neutralZoneT": "Neutral zone T",
+    "hotValveMin": "Min. HW valve %",
+    "waterMinTNoWork": "Min. HW temp, fans off",
+    "waterMinTWork": "Min. HW temp, fans running",
+    "radiatorFail": "Radiator temp - failure (E2,E8)",
+    "modes": {
+      "off": "Off",
+      "neutralZone": "Neutral zone",
+      "nzAfterHeating": "NZ after heating",
+      "nzAfterCooling": "NZ after cooling",
+      "cooling": "Cooling",
+      "heating": "Heating",
+      "tAveraging": "T averaging",
+      "hood": "Hood",
+      "alg2Step0": "Step 0",
+      "alg2Tuning": "Tuning",
+      "alg2Stabilization": "Stabilization",
+      "alg2HeatOff": "No heating",
+      "alg2HeatInsuff": "Insufficient heating",
+      "unknown": "Unknown",
+      "na": "N/A"
+    }
+  },
+  "recuperatorWidget": {
+    "state": "Recuperator state",
+    "valvePercent": "Valve opening",
+    "pump": "Recuperator pump",
+    "pumpOn": "On",
+    "pumpOff": "Off",
+    "bt6": "Heat carrier temperature (BT6)",
+    "setpoints": "Recuperator setpoints",
+    "trackingIntervalRecup": "Recuperator tracking interval (priority 0, item 4, 0x0064)",
+    "minRpm": "Minimum speed",
+    "maxRpm": "Maximum speed",
+    "calibrationStep": "Calibration step"
+  },
+  "recuperatorStates": {
+    "0": "Off",
+    "1": "Max RPM",
+    "2": "Setup",
+    "3": "Stabilization",
+    "4": "Suspended"
+  },
+  "configurator": {
+    "schemaTitle": "Recuperator diagram",
+    "currentActive": "Select the diagram type. Currently active:",
+    "type": "Type {{value}}",
+    "type1": "Type 1 (Full)",
+    "type2": "Type 2 (Simplified)",
+    "imagePlaceholder": "[Type {{value}} image placeholder]",
+    "modalTitle": "Settings window (Type {{value}})",
+    "columns": {
+      "address": "Address",
+      "multiplier": "Mult.",
+      "name": "Element name"
+    },
+    "registers": {
+      "recupStatus": "Recuperator Status",
+      "targetRpm": "Target RPM",
+      "currentRpm": "Current RPM",
+      "fanSupply": "Supply Fan",
+      "fanExhaust": "Exhaust Fan"
+    },
+    "hintLabel": "Hint:",
+    "hintBefore": "Enter address",
+    "hintAfter": " to simulate a read error (the register turns red).",
+    "cancel": "Cancel",
+    "submit": "Apply",
+    "readError": "Failed to read some registers. Check the addresses.",
+    "readSuccess": "Registers read successfully. Settings applied."
+  },
+  "controlButton": {
+    "off": "Off",
+    "loading": "Loading",
+    "alarm": "Alarm",
+    "starting": "Starting",
+    "stopping": "Stopping",
+    "on": "On"
+  },
+  "schemaView": {
+    "loading": "Fetching data...",
+    "alarmTitle": "Warning! Unit alarm",
+    "alarmDescription": "Status: {{status}} (code {{code}})",
+    "statusFallback": "Error",
+    "normalTitle": "System back to normal",
+    "normalDescription": "Alarm states cleared",
+    "unitStopped": "Stopping the unit",
+    "unitStarted": "Starting the unit",
+    "toggleError": "Failed to toggle the recuperator"
+  },
+  "toasts": {
+    "volumeSaved": "Volume settings saved",
+    "saveError": "Failed to save settings",
+    "tempSaved": "Temperature setpoints saved",
+    "tempSaveError": "Failed to save temperature setpoints",
+    "recupSaved": "Recuperator setpoints saved",
+    "recupSaveError": "Failed to save recuperator setpoints",
+    "upgradeLoadStatusError": "Failed to check update download status",
+    "upgradeDownloadError": "Failed to start update download",
+    "upgradeInstallStatusError": "Failed to check update install status",
+    "upgradeInstallError": "Failed to start update installation",
+    "intervalSaved": "Recording interval saved",
+    "intervalSaveError": "Failed to save recording interval",
+    "readingsDownloaded": "Readings file downloaded",
+    "readingsDownloadError": "Failed to download readings file"
+  },
+  "update": {
+    "urlPlaceholder": "http://172.16.7.109/Upgrade.smb",
+    "storedUrlLabel": "Update server URL",
+    "storedUrlHint": "Stored on the controller. Update check and download use this same address.",
+    "storedUrlSave": "Change update server path",
+    "storedUrlSaved": "URL saved on controller",
+    "storedUrlError": "Failed to save URL",
+    "storedUrlLoading": "Loading from controller…",
+    "installBlockedCalibration": "Fan calibration is running: update installation (force) is disabled. Status check without force is still allowed.",
+    "actions": {
+      "startInstall": "Install update"
+    },
+    "results": {
+      "downloadTitle": "Download response",
+      "downloadSubtitle": "Messages returned by `/upgrade/load`.",
+      "installTitle": "Install response",
+      "installSubtitle": "Messages returned by `/upgrade/execute`.",
+      "emptyDownload": "No download response yet.",
+      "emptyInstall": "No installation response yet."
+    },
+    "labels": {
+      "ok": "OK",
+      "info": "Info",
+      "errors": "Errors",
+      "warning": "Warning",
+      "error": "Error",
+      "inProgress": "In progress"
+    },
+    "steps": {
+      "check": "Check",
+      "download": "Download",
+      "ready": "Ready to install",
+      "installed": "Installed"
+    },
+    "status": {
+      "title": "Update status"
+    },
+    "wizard": {
+      "currentVersion": "Current version",
+      "build": "Build",
+      "webVersion": "Web panel version",
+      "webBuild": "built",
+      "unknownVersion": "unknown",
+      "checkUpdates": "Check for updates",
+      "downloadUpdate": "Download update",
+      "cancel": "Cancel",
+      "downloading": "Downloading update…",
+      "installingTitle": "Installing",
+      "installingHint": "Please wait. The login page will open in {{seconds}} s."
+    }
+  },
+  "eventsJournal": {
+    "title": "Event journal",
+    "subtitle": "Controller and system events for the selected period",
+    "filters": {
+      "all": "All",
+      "critical": "Alarms",
+      "warning": "Warnings",
+      "info": "Info"
+    },
+    "justNow": "just now",
+    "minutesAgo": "{{value}}m ago",
+    "hoursAgo": "{{value}}h ago",
+    "empty": "No events for the selected period",
+    "loadError": "Failed to load the event journal",
+    "types": {
+      "t1": "Notice",
+      "t3": "External event",
+      "t4": "System",
+      "t6": "Alarm",
+      "t16": "Controller (PLC)",
+      "unknown": "Type"
+    }
+  },
+  "dashboardLogs": {
+    "units": {
+      "min": "min",
+      "hour": "h"
+    },
+    "actions": {
+      "title": "Action log",
+      "subtitle": "Who changed what in the system and how it went",
+      "success": "Success",
+      "error": "Error",
+      "empty": "No events for the selected period",
+      "loadError": "Failed to load the action log",
+      "filters": {
+        "all": "All",
+        "power": "Power",
+        "mode": "Modes",
+        "setpoint": "Setpoints",
+        "auth": "Sign-in",
+        "other": "Other"
+      },
+      "types": {
+        "power": "Power",
+        "mode": "Mode",
+        "setpoint": "Setpoint",
+        "auth": "Sign-in",
+        "other": "Other"
+      }
+    },
+    "readings": {
+      "title": "Device readings",
+      "subtitle": "Saved to the database automatically, download an Excel file for any period",
+      "interval": "Recording interval",
+      "from": "Period start",
+      "to": "Period end",
+      "download": "Download file",
+      "downloading": "Preparing the file…",
+      "hint": "Excel file with readings for the selected period",
+      "invalidRange": "Period end must be after the start"
+    }
+  }
+}

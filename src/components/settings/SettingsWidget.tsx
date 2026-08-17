@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ManualSettingsWidget } from './ManualSettingsWidget';
 import { TempSettingsWidget } from './TempSettingsWidget';
 import { RecuperatorWidget } from './RecuperatorWidget';
@@ -7,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const SettingsWidget = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('volume');
   const { role } = useAuth();
   const canSeeConfigurator = role === 'ROLE_ADMIN' || role === 'ROLE_CONFIG';
@@ -18,17 +20,17 @@ export const SettingsWidget = () => {
           className={`grid w-full mb-4 shrink-0 ${canSeeConfigurator ? 'grid-cols-4' : 'grid-cols-3'}`}
         >
           <TabsTrigger value="volume" className="text-xs sm:text-sm">
-            Объем
+            {t('app.tabsShort.volume')}
           </TabsTrigger>
           <TabsTrigger value="temperature" className="text-xs sm:text-sm">
-            Темп.
+            {t('app.tabsShort.temperature')}
           </TabsTrigger>
           <TabsTrigger value="recuperator" className="text-xs sm:text-sm">
-            Рекуп.
+            {t('app.tabsShort.recuperator')}
           </TabsTrigger>
           {canSeeConfigurator && (
             <TabsTrigger value="config" className="text-xs sm:text-sm">
-              Редактор
+              {t('app.tabsShort.config')}
             </TabsTrigger>
           )}
         </TabsList>

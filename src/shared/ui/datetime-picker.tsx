@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { ru } from 'date-fns/locale'
+import { ru, enUS } from 'date-fns/locale'
+import { useTranslation } from 'react-i18next'
 import { CalendarDays, Clock } from 'lucide-react'
 import { cn } from '@/shared/lib/utils'
 import { Calendar } from '@/shared/ui/calendar'
@@ -15,8 +16,10 @@ type DateTimePickerProps = {
 }
 
 export const DateTimePicker = ({ value, onChange, className }: DateTimePickerProps) => {
+	const { i18n } = useTranslation()
 	const [open, setOpen] = useState(false)
 	const [timeDraft, setTimeDraft] = useState<string | null>(null)
+	const dateLocale = i18n.language.startsWith('en') ? enUS : ru
 	const timeValue = `${pad(value.getHours())}:${pad(value.getMinutes())}`
 
 	const applyDay = (day: Date | undefined) => {
@@ -56,7 +59,7 @@ export const DateTimePicker = ({ value, onChange, className }: DateTimePickerPro
 					)}
 				>
 					<CalendarDays className="h-4 w-4 shrink-0 text-slate-400" />
-					<span className="tabular-nums">{format(value, 'dd.MM.yyyy HH:mm', { locale: ru })}</span>
+					<span className="tabular-nums">{format(value, 'dd.MM.yyyy HH:mm', { locale: dateLocale })}</span>
 				</button>
 			</PopoverTrigger>
 			<PopoverContent
@@ -69,7 +72,7 @@ export const DateTimePicker = ({ value, onChange, className }: DateTimePickerPro
 					mode="single"
 					selected={value}
 					onSelect={applyDay}
-					locale={ru}
+					locale={dateLocale}
 					defaultMonth={value}
 					captionLayout="dropdown"
 					startMonth={new Date(2020, 0)}

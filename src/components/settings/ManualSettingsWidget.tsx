@@ -4,6 +4,7 @@ import { useUpdateManualSettings } from '@/api/hooks';
 import { GlassCard } from '@/shared/ui/GlassCard';
 import { NeoInput } from '@/shared/ui/NeoInput';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface ManualInputProps {
   label: string;
@@ -84,6 +85,7 @@ const ManualInput = ({ label, value, onChange, unit = '%', readOnly = false }: M
 };
 
 export const ManualSettingsWidget = () => {
+  const { t } = useTranslation();
   const { data } = useDashboardData();
   const { mutate } = useUpdateManualSettings();
   const { role } = useAuth();
@@ -100,7 +102,7 @@ export const ManualSettingsWidget = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         {/* Скорость вентилирования ПВ */}
         <ManualInput
-          label="Скорость вентилирования ПВ"
+          label={t('manualWidget.supplySpeed')}
           value={supplySpeed}
           onChange={(val) => mutate({ supplySpeed: val })}
           readOnly={!canEditVentilation}
@@ -108,7 +110,7 @@ export const ManualSettingsWidget = () => {
 
         {/* Процент наддува (ПВ-ОВ) */}
         <ManualInput
-          label="Наддув (ПВ-ОВ)"
+          label={t('manualWidget.boost')}
           value={boostPercent}
           onChange={(val) => mutate({ boostPercent: val })}
           readOnly={!canEditVentilation}

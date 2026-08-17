@@ -3,15 +3,21 @@ import { useDashboardData } from '@/api/useDashboard';
 import { useUpdateRecuperatorSettings } from '@/api/hooks';
 import { Input } from '@/shared/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
-const RecuperatorRow = ({ label, value, unit = 'об/мин' }: { label: string; value: number | null | undefined; unit?: string }) => (
-  <div className="flex justify-between items-center py-3 px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
-    <span className="text-sm text-slate-600 font-medium">{label}</span>
-    <span className="font-mono text-lg font-bold text-slate-800">
-      {value != null ? value.toFixed(1) : '-'} <span className="text-xs text-slate-400 font-normal ml-1">{unit}</span>
-    </span>
-  </div>
-);
+const RecuperatorRow = ({ label, value, unit }: { label: string; value: number | null | undefined; unit?: string }) => {
+  const { t } = useTranslation();
+  const unitLabel = unit ?? t('units.rpm');
+
+  return (
+    <div className="flex justify-between items-center py-3 px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
+      <span className="text-sm text-slate-600 font-medium">{label}</span>
+      <span className="font-mono text-lg font-bold text-slate-800">
+        {value != null ? value.toFixed(1) : '-'} <span className="text-xs text-slate-400 font-normal ml-1">{unitLabel}</span>
+      </span>
+    </div>
+  );
+};
 
 const RecuperatorTextRow = ({ label, value }: { label: string; value: string }) => (
   <div className="flex justify-between items-center py-3 px-4 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 transition-colors">
@@ -29,7 +35,8 @@ interface RecuperatorInputProps {
   readOnly?: boolean;
 }
 
-const RecuperatorInput = ({ label, value, onChange, unit = 'об/мин', decimals = 1, readOnly = false }: RecuperatorInputProps) => {
+const RecuperatorInput = ({ label, value, onChange, unit, decimals = 1, readOnly = false }: RecuperatorInputProps) => {
+  const { t } = useTranslation();
   const [localValue, setLocalValue] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
@@ -82,7 +89,7 @@ const RecuperatorInput = ({ label, value, onChange, unit = 'об/мин', decima
           className="pr-8 font-mono text-base sm:text-lg font-bold border-slate-200 hover:border-slate-300 focus:border-blue-500 h-9 sm:h-10 text-slate-800 bg-white"
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-medium">
-          {unit}
+          {unit ?? t('units.rpm')}
         </span>
       </div>
     </div>
@@ -90,6 +97,7 @@ const RecuperatorInput = ({ label, value, onChange, unit = 'об/мин', decima
 };
 
 export const RecuperatorWidget = () => {
+  const { t } = useTranslation();
   const { data } = useDashboardData();
   const { mutate } = useUpdateRecuperatorSettings();
   const { role } = useAuth();
@@ -114,25 +122,27 @@ export const RecuperatorWidget = () => {
       {/* === СЕКЦИЯ 1: МОНИТОРИНГ РЕКУПЕРАТОРА === */}
       <div className="space-y-3">
         <div className="flex justify-between items-center py-3 px-4 rounded-lg border border-slate-200 bg-white">
-          <span className="text-sm text-slate-600 font-medium">Состояние рекуператора</span>
+          <span className="text-sm text-slate-600 font-medium">{t('recuperatorWidget.state')}</span>
           <span
             className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${getRecupStateColor(data?.recupStateCode)}`}
           >
-            {data?.recupStateName ?? '—'}
+            {data?.recupStateCode != null && data.recupStateCode >= 0 && data.recupStateCode <= 4
+            ? t(`recuperatorStates.${data.recupStateCode}`)
+            : (data?.recupStateName ?? '—')}
           </span>
         </div>
-        <RecuperatorRow 
-          label="Проценты клапана" 
-          value={data?.recupTargetPercent ?? undefined} 
+        <RecuperatorRow
+          label={t('recuperatorWidget.valvePercent')}
+          value={data?.recupTargetPercent ?? undefined}
           unit="%"
         />
-        <RecuperatorTextRow 
-          label="Насос рекуператора" 
-          value={data?.pumpActive ? 'Вкл' : 'Выкл'} 
+        <RecuperatorTextRow
+          label={t('recuperatorWidget.pump')}
+          value={data?.pumpActive ? t('recuperatorWidget.pumpOn') : t('recuperatorWidget.pumpOff')}
         />
-        <RecuperatorRow 
-          label="Температура теплоносителя (BT6)" 
-          value={data?.recupTempBt6 ?? undefined} 
+        <RecuperatorRow
+          label={t('recuperatorWidget.bt6')}
+          value={data?.recupTempBt6 ?? undefined}
           unit="°C"
         />
       </div>
@@ -140,14 +150,14 @@ export const RecuperatorWidget = () => {
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
         <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4 flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span> 
-          Уставки рекуператора
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+          {t('recuperatorWidget.setpoints')}
         </h4>
         <div className="mb-4 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-2">
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <RecuperatorInput
-            label="Интервал слежения по рекуператору (приоритет 0 п.4, 0x0064)"
+            label={t('recuperatorWidget.trackingIntervalRecup')}
             value={recuperatorSettings?.trackingIntervalRecup ?? undefined}
             onChange={(val) => mutate({ trackingIntervalRecup: Math.round(val) })}
             unit=""
@@ -155,21 +165,21 @@ export const RecuperatorWidget = () => {
             readOnly={!isAdmin}
           />
           <RecuperatorInput
-            label="Минимальные обороты"
+            label={t('recuperatorWidget.minRpm')}
             value={recuperatorSettings?.targetRpmMin}
             onChange={(val) => mutate({ targetRpmMin: val })}
             decimals={1}
             readOnly={!isAdmin}
           />
           <RecuperatorInput
-            label="Максимальные обороты"
+            label={t('recuperatorWidget.maxRpm')}
             value={recuperatorSettings?.targetRpmMax}
             onChange={(val) => mutate({ targetRpmMax: val })}
             decimals={1}
             readOnly={!isAdmin}
           />
           <RecuperatorInput
-            label="Шаг калибровки"
+            label={t('recuperatorWidget.calibrationStep')}
             value={recuperatorSettings?.targetRpmStep}
             onChange={(val) => mutate({ targetRpmStep: val })}
             decimals={1}

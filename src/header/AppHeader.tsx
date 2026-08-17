@@ -14,12 +14,15 @@ import { useSettingsSheet } from "@/contexts/SettingsSheetContext"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu"
 import { useAuth } from "@/contexts/AuthContext"
 import { triggerReconnect } from "@/api/connectionApi"
+import { LanguageSwitcher } from "@/features/language-switcher/ui/LanguageSwitcher"
+import { useTranslation } from "react-i18next"
 
 interface AppHeaderProps {
 }
 
 const AppHeader: React.FC<AppHeaderProps> = () => {
 	const { username, role, logout } = useAuth()
+	const { t } = useTranslation()
 	const settingsSheet = useSettingsSheet()
 	const navigate = useNavigate()
 	const isAdmin = role === 'ROLE_ADMIN'
@@ -35,10 +38,10 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 	}
 
 	const getRoleDisplayName = (role: string | null) => {
-		if (!role) return 'Пользователь'
-		if (role === 'ROLE_ADMIN') return 'Администратор'
-		if (role === 'ROLE_READONLY') return 'Только чтение'
-		return 'Пользователь'
+		if (!role) return t('header.roles.user')
+		if (role === 'ROLE_ADMIN') return t('header.roles.admin')
+		if (role === 'ROLE_READONLY') return t('header.roles.readonly')
+		return t('header.roles.user')
 	}
 
 	return (
@@ -51,12 +54,13 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 						size="icon"
 						className="md:hidden shrink-0"
 						onClick={() => settingsSheet.openSettings()}
-						aria-label="Уставки"
+						aria-label={t('app.setpoints')}
 					>
 						<SlidersHorizontal className="h-5 w-5" />
 					</Button>
 				)}
 				<div className="flex items-center gap-3 ml-auto">
+					<LanguageSwitcher />
 					<DropdownMenu>
 						<DropdownMenuTrigger asChild>
 							<Button variant="ghost" className="avatar-wrapper relative h-9 px-1 flex items-center gap-2">
@@ -64,18 +68,18 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 									<AvatarFallback>{getInitials(username)}</AvatarFallback>
 								</Avatar>
 								<div className="hidden lg:flex flex-col items-start">
-									<span className="text-sm font-medium text-header-title">{username || 'Пользователь'}</span>
+									<span className="text-sm font-medium text-header-title">{username || t('header.roles.user')}</span>
 									<span className="text-xs text-muted-foreground">{getRoleDisplayName(role)}</span>
 								</div>
 								<ChevronDownIcon className="h-4 w-4 text-muted-foreground hidden lg:block" />
 							</Button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="w-56" sideOffset={5}>
-							<DropdownMenuLabel className="text-base">My Account</DropdownMenuLabel>
+							<DropdownMenuLabel className="text-base">{t('header.myAccount')}</DropdownMenuLabel>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem className="cursor-pointer text-base">
 								<User className="h-4 w-4 mr-2" />
-								<span>Profile</span>
+								<span>{t('header.profile')}</span>
 							</DropdownMenuItem>
 							{isAdmin && (
 								<DropdownMenuItem 
@@ -86,12 +90,12 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 									}}
 								>
 									<RefreshCcw className="h-4 w-4 mr-2" />
-									<span>Reconnect</span>
+									<span>{t('header.reconnect')}</span>
 								</DropdownMenuItem>
 							)}
 							<DropdownMenuItem className="cursor-pointer text-base">
 								<Settings className="h-4 w-4 mr-2" />
-								<span>Settings</span>
+								<span>{t('header.settings')}</span>
 							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem 
@@ -99,7 +103,7 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 								onClick={handleLogout}
 							>
 								<LogOut className="h-4 w-4 mr-2" />
-								<span>Logout</span>
+								<span>{t('header.logout')}</span>
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>

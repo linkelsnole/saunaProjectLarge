@@ -7,16 +7,18 @@ import { GlassCard } from "@/shared/ui/GlassCard";
 import { Input } from "@/shared/ui/input";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const defaultRegisters = [
-	{ id: 1, address: "0x00A4", name: "Рекуператор Статус", multiplier: "1" },
-	{ id: 2, address: "0x0081", name: "Целевые обороты", multiplier: "100" },
-	{ id: 3, address: "0x0080", name: "Текущие обороты", multiplier: "100" },
-	{ id: 4, address: "", name: "Вентилятор Приток", multiplier: "1" },
-	{ id: 5, address: "", name: "Вентилятор Вытяжка", multiplier: "1" },
+	{ id: 1, address: "0x00A4", nameKey: "configurator.registers.recupStatus", multiplier: "1" },
+	{ id: 2, address: "0x0081", nameKey: "configurator.registers.targetRpm", multiplier: "100" },
+	{ id: 3, address: "0x0080", nameKey: "configurator.registers.currentRpm", multiplier: "100" },
+	{ id: 4, address: "", nameKey: "configurator.registers.fanSupply", multiplier: "1" },
+	{ id: 5, address: "", nameKey: "configurator.registers.fanExhaust", multiplier: "1" },
 ];
 
 export const ConfiguratorWidget = () => {
+	const { t } = useTranslation();
 	const { type, changeType } = useRecuperatorType();
 	const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -72,9 +74,9 @@ export const ConfiguratorWidget = () => {
 			setIsValidating(false);
 
 			if (hasErrors) {
-				toast.error("Ошибка чтения некоторых регистров. Проверьте адреса.");
+				toast.error(t('configurator.readError'));
 			} else {
-				toast.success("Регистры успешно прочитаны. Настройки применены.");
+				toast.success(t('configurator.readSuccess'));
 				changeType(draftType);
 				setIsModalOpen(false);
 			}
@@ -103,14 +105,14 @@ export const ConfiguratorWidget = () => {
 						onClick={(e) => e.stopPropagation()}
 					>
 						<div className="p-5 border-b border-slate-100 bg-slate-50/80 flex justify-between items-center shrink-0">
-							<h3 className="font-bold text-slate-700 text-lg">Окно настроек (Тип {draftType})</h3>
+							<h3 className="font-bold text-slate-700 text-lg">{t('configurator.modalTitle', { value: draftType })}</h3>
 						</div>
 
 						<div className="p-6 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
 							<div className="flex gap-4 text-xs font-bold text-slate-500 uppercase tracking-wide px-1">
-								<div className="w-[120px] shrink-0">Адрес</div>
-								<div className="w-[80px] shrink-0">Множ.</div>
-								<div className="flex-1">Наименование элемента</div>
+								<div className="w-[120px] shrink-0">{t('configurator.columns.address')}</div>
+								<div className="w-[80px] shrink-0">{t('configurator.columns.multiplier')}</div>
+								<div className="flex-1">{t('configurator.columns.name')}</div>
 								<div className="w-[24px] shrink-0"></div>
 							</div>
 
@@ -146,7 +148,7 @@ export const ConfiguratorWidget = () => {
 
 											<Input
 												className="flex-1 text-sm bg-slate-50/50 cursor-default"
-												value={reg.name}
+												value={t(reg.nameKey)}
 												readOnly
 											/>
 
@@ -160,22 +162,22 @@ export const ConfiguratorWidget = () => {
 							</div>
 
 							<div className="mt-6 p-3 bg-blue-50/50 rounded-lg border border-blue-100 text-xs text-blue-600">
-								<span className="font-bold">Подсказка:</span> Введите адрес{" "}
-								<code className="font-mono bg-blue-100 px-1 rounded">0x9999</code>, чтобы сымитировать
-								ошибку чтения (регистр покраснеет).
+								<span className="font-bold">{t('configurator.hintLabel')}</span> {t('configurator.hintBefore')}{" "}
+								<code className="font-mono bg-blue-100 px-1 rounded">0x9999</code>
+								{t('configurator.hintAfter')}
 							</div>
 						</div>
 
 						<div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
 							<Button variant="outline" onClick={handleCancel} disabled={isValidating}>
-								Отмена
+								{t('configurator.cancel')}
 							</Button>
 							<Button
 								onClick={handleSave}
 								disabled={isValidating}
 								className="w-32 bg-blue-600 hover:bg-blue-700"
 							>
-								{isValidating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Ввод"}
+								{isValidating ? <Loader2 className="w-4 h-4 animate-spin" /> : t('configurator.submit')}
 							</Button>
 						</div>
 					</div>
@@ -190,10 +192,10 @@ export const ConfiguratorWidget = () => {
 				<GlassCard className="p-4">
 					<h4 className="text-sm font-bold text-slate-700 tracking-wider mb-4 flex items-center gap-2">
 						<div className="w-2 h-2 bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.8)]" />
-						Схема рекуператора
+						{t('configurator.schemaTitle')}
 					</h4>
 					<p className="text-xs text-slate-500 mb-4">
-						Выберите тип схемы. Текущий активный: <strong>Тип {type}</strong>
+						{t('configurator.currentActive')} <strong>{t('configurator.type', { value: type })}</strong>
 					</p>
 
 					<div className="grid grid-cols-2 gap-4">
@@ -206,10 +208,10 @@ export const ConfiguratorWidget = () => {
 							}`}
 						>
 							<div className="w-full h-24 bg-slate-100 rounded-md mb-3 flex items-center justify-center border border-dashed border-slate-300 text-slate-400 text-xs">
-								[Место под картинку Тип 1]
+								{t('configurator.imagePlaceholder', { value: 1 })}
 							</div>
 							<span className={`font-bold ${type === 1 ? "text-blue-600" : "text-slate-600"}`}>
-								Тип 1 (Полный)
+								{t('configurator.type1')}
 							</span>
 						</div>
 
@@ -222,10 +224,10 @@ export const ConfiguratorWidget = () => {
 							}`}
 						>
 							<div className="w-full h-24 bg-slate-100 rounded-md mb-3 flex items-center justify-center border border-dashed border-slate-300 text-slate-400 text-xs">
-								[Место под картинку Тип 2]
+								{t('configurator.imagePlaceholder', { value: 2 })}
 							</div>
 							<span className={`font-bold ${type === 2 ? "text-blue-600" : "text-slate-600"}`}>
-								Тип 2 (Упрощенный)
+								{t('configurator.type2')}
 							</span>
 						</div>
 					</div>

@@ -1,5 +1,6 @@
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import '@/shared/config/i18n/i18n'
 import './styles/main.css'
 import App from './App'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'

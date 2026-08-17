@@ -10,27 +10,13 @@ import {
 	RefreshCw,
 	Server,
 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/shared/lib/utils'
 import { useSystemEvents } from '@/api/useSystemEvents'
 import type { SystemEvent } from '@/api/typesApi'
 
 const TIME_OPTIONS = [15, 60, 240, 1440]
 const FILTER_OPTIONS = ['ALL', 'CRITICAL', 'WARNING', 'INFO'] as const
-
-const FILTER_LABELS: Record<(typeof FILTER_OPTIONS)[number], string> = {
-	ALL: 'Все',
-	CRITICAL: 'Аварии',
-	WARNING: 'Предупр.',
-	INFO: 'Инфо',
-}
-
-const TYPE_LABELS: Record<number, string> = {
-	1: 'Уведомление',
-	3: 'Внешнее событие',
-	4: 'Система',
-	6: 'Авария',
-	16: 'Контроллер (PLC)',
-}
 
 type Severity = 'CRITICAL' | 'WARNING' | 'INFO' | 'SUCCESS'
 
@@ -125,6 +111,7 @@ const Segmented = ({
 )
 
 const SystemEventsJournal = () => {
+	const { t, i18n } = useTranslation()
 	const [minutes, setMinutes] = useState(60)
 	const [filterType, setFilterType] = useState<string>('ALL')
 	const [now, setNow] = useState(Date.now())
@@ -170,16 +157,17 @@ const SystemEventsJournal = () => {
 		})
 	}, [processedEvents, filterType])
 
-	const windowLabel = (m: number) => (m < 60 ? `${m} мин` : `${m / 60} ч`)
+	const windowLabel = (m: number) =>
+		m < 60 ? `${m} ${t('dashboardLogs.units.min')}` : `${m / 60} ${t('dashboardLogs.units.hour')}`
 
 	const typeLabel = (type?: number) => {
-		if (type != null && TYPE_LABELS[type]) return TYPE_LABELS[type]
-		return type != null ? `Тип ${type}` : TYPE_LABELS[4]
+		if (type != null && [1, 3, 4, 6, 16].includes(type)) return t(`eventsJournal.types.t${type}`)
+		return type != null ? `${t('eventsJournal.types.unknown')} ${type}` : t('eventsJournal.types.t4')
 	}
 
 	const formatTimestamp = (ms?: number) => {
 		if (!ms) return '-'
-		return new Date(ms).toLocaleString('ru-RU', {
+		return new Date(ms).toLocaleString(i18n.language, {
 			day: '2-digit',
 			month: '2-digit',
 			hour: '2-digit',
@@ -191,11 +179,11 @@ const SystemEventsJournal = () => {
 	const formatRelativeTime = (ms?: number) => {
 		if (!ms) return ''
 		const diffMinutes = Math.floor((now - ms) / 60000)
-		if (diffMinutes < 1) return 'только что'
-		if (diffMinutes < 60) return `${diffMinutes}м назад`
+		if (diffMinutes < 1) return t('eventsJournal.justNow')
+		if (diffMinutes < 60) return t('eventsJournal.minutesAgo', { value: diffMinutes })
 		const hours = Math.floor(diffMinutes / 60)
-		if (hours < 24) return `${hours}ч назад`
-		return new Date(ms).toLocaleDateString('ru-RU', {
+		if (hours < 24) return t('eventsJournal.hoursAgo', { value: hours })
+		return new Date(ms).toLocaleDateString(i18n.language, {
 			day: '2-digit',
 			month: '2-digit',
 			hour: '2-digit',
@@ -259,7 +247,7 @@ const SystemEventsJournal = () => {
 					</div>
 					<div>
 						<div className="flex items-center gap-2">
-							<h3 className="text-lg font-semibold text-slate-900">Журнал событий</h3>
+							<h3 className="text-lg font-semibold text-slate-900">{t('eventsJournal.title')}</h3>
 							{stats.critical > 0 && (
 								<span className="rounded-full bg-rose-600 px-2 py-0.5 text-[11px] font-semibold text-white">
 									{stats.critical}
@@ -276,7 +264,7 @@ const SystemEventsJournal = () => {
 								</span>
 							)}
 						</div>
-						<p className="text-xs text-slate-500">События контроллера и системы за выбранный период</p>
+						<p className="text-xs text-slate-500">{t('eventsJournal.subtitle')}</p>
 					</div>
 				</div>
 				<button
@@ -290,7 +278,7 @@ const SystemEventsJournal = () => {
 
 			<div className="mt-4 flex flex-wrap items-center justify-between gap-2">
 				<Segmented
-					options={FILTER_OPTIONS.map((f) => ({ value: f, label: FILTER_LABELS[f] }))}
+					options={FILTER_OPTIONS.map((f) => ({ value: f, label: t(`eventsJournal.filters.${f.toLowerCase()}`) }))}
 					value={filterType}
 					onChange={(value) => setFilterType(String(value))}
 				/>
@@ -311,11 +299,11 @@ const SystemEventsJournal = () => {
 					</div>
 				) : isError ? (
 					<div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-400">
-						Не удалось загрузить журнал событий
+						{t('eventsJournal.loadError')}
 					</div>
 				) : filteredEvents.length === 0 ? (
 					<div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-400">
-						За выбранный период событий нет
+						{t('eventsJournal.empty')}
 					</div>
 				) : (
 					filteredEvents.map(renderEvent)
