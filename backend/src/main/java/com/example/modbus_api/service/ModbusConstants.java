@@ -176,7 +176,7 @@ public class ModbusConstants {
     public static final int REG_R_TARGET_RPM_STEP = ModbusRegisterMap.RECUPERATOR_RPM_STEP_SETTING;
 
 
-	public static final int REG_R_TEMP = 0x02C0; //температура рекуператора (BT6)
+	public static final int REG_R_TEMP = ModbusRegisterMap.SENSOR_RECUPERATOR_CARRIER + ModbusRegisterMap.TEMPERATURE_OFFSET; // TTR / BT6
 
 	// RecupState (MEStateRegister) 0x00A4 — текущее состояние рекуператора
 	public static final int REG_RECUP_STATE = ModbusRegisterMap.RECUPERATOR_STATE;

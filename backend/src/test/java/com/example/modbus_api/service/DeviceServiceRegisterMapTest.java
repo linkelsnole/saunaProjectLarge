@@ -18,6 +18,27 @@ import static org.mockito.Mockito.*;
 
 class DeviceServiceRegisterMapTest {
 
+    @Test void carrierTemperatureUsesNewBt6RegisterAndPreservesMissingValues() throws IOException {
+        ModbusClientAdapter client=mock(ModbusClientAdapter.class);
+        Map<Integer,Integer> values=new HashMap<>();
+        values.put(0x02C0,999);
+        values.put(0x10C8,253);
+        when(client.readRegisters(eq(SAUNA_PLC),anyList())).thenAnswer(a->{
+            java.util.List<Integer> requested=a.getArgument(1);
+            assertTrue(requested.contains(0x10C8));
+            assertFalse(requested.contains(0x02C0));
+            return new HashMap<>(values);
+        });
+        assertEquals(25.3,new DeviceService(client).getDashboardData().getRecupTempBt6());
+        values.put(0x10C8,(-53)&65535);
+        assertEquals(-5.3,new DeviceService(client).getDashboardData().getRecupTempBt6());
+        values.put(0x10C8,0x8000);
+        assertNull(new DeviceService(client).getDashboardData().getRecupTempBt6());
+        values.remove(0x10C8);
+        assertNull(new DeviceService(client).getDashboardData().getRecupTempBt6());
+        verify(client,never()).writeRegister(anyString(),anyInt(),anyInt());
+    }
+
     @Test void actualSupplyUsesSumAndNeverSubstitutesMissingFanWithZero() throws IOException {
         ModbusClientAdapter client=mock(ModbusClientAdapter.class);
         Map<Integer,Integer> values=new HashMap<>();

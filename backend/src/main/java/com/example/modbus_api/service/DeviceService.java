@@ -226,12 +226,12 @@ public class DeviceService {
 			REG_R_TARGET_RPM_MAX,
 			REG_R_TARGET_RPM_STEP,
 
-			REG_R_TEMP,   // 0x02C0 температура рекуператора (BT6)
+			REG_R_TEMP,   // 0x10C8 температура теплоносителя рекуператора (BT6)
 			REG_RECUP_STATE  // 0x00A4 RecupState — текущее состояние рекуператора
 		));
 
 		// Новая карта общей схемы. Чтения специфичных для большой сауны
-		// REG_Z_WORKSTATE2 и REG_R_TEMP выше сохраняются до уточнения их адресов.
+		// REG_Z_WORKSTATE2 выше сохраняется до уточнения адреса.
 		int[] sensorBases = {
 			ModbusRegisterMap.SENSOR_T1, ModbusRegisterMap.SENSOR_T2,
 			ModbusRegisterMap.SENSOR_T3, ModbusRegisterMap.SENSOR_T4_1,

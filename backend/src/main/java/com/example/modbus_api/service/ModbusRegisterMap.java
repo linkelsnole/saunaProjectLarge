@@ -25,6 +25,7 @@ public final class ModbusRegisterMap {
     public static final int SENSOR_TC1 = 0x1070;
     public static final int SENSOR_TH2 = 0x1080;
     public static final int SENSOR_TC2 = 0x1090;
+    public static final int SENSOR_RECUPERATOR_CARRIER = 0x10C0; // Air2Common: TTR / BT6
 
     public static final int PRESSURE_FAN_SUPPLY_1 = 0x1200 + PRESSURE_OFFSET;
     public static final int PRESSURE_FAN_SUPPLY_2 = 0x1210 + PRESSURE_OFFSET;

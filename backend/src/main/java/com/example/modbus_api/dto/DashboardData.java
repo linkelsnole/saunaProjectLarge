@@ -50,7 +50,7 @@ public class DashboardData {
     private Double recupSpeedRpm;     // Скорость вращения, об/мин
 
     @JsonProperty("recupTempBt6")
-    private Double recupTempBt6;     // Температура рекуператора BT6 (0x02C0), °C
+    private Double recupTempBt6;     // Температура рекуператора BT6 (0x10C8), °C
 
     @JsonProperty("recupTargetPercent")
     private Integer recupTargetPercent; // recupTargetRpm / targetRpmMax * 100, %
