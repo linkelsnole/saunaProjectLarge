@@ -167,6 +167,7 @@ export const useUpdateVolumeSettings = () => {
   const dashboardKey = deviceKeys.dashboard();
 
   return useMutation({
+    mutationKey: ['volume-settings'],
     mutationFn: (payload: UpdateVolumeSettingsRequest) => updateVolumeSettings(payload),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: dashboardKey });

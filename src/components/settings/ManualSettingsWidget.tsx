@@ -1,3 +1,4 @@
+import { LatestSaveQueue } from './latestSaveQueue';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
 import { useSetVentilationMode, useUpdateVolumeSettings } from '@/api/hooks';
@@ -9,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 type PresetKey = 'ecoAirflow' | 'normalAirflow' | 'intensiveAirflow';
 
 const AIRFLOW_MIN = 0;
-const AIRFLOW_MAX = 10000;
+const AIRFLOW_MAX = 21000;
 
 const MODE_STYLES: Record<number, string> = {
   1: 'from-emerald-500 to-green-600 ring-emerald-400/50',
@@ -99,9 +100,9 @@ export const ManualSettingsWidget = () => {
   const { data } = useDashboardData();
   const { role } = useAuth();
   const { mutate: selectMode, isPending: modePending } = useSetVentilationMode();
-  const { mutate: saveVolume } = useUpdateVolumeSettings();
-  const manualSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [manualAirflow, setManualAirflow] = useState(0);
+  const { mutate: saveVolume, mutateAsync: saveVolumeAsync } = useUpdateVolumeSettings();
+
+  const [manualAirflow, setManualAirflow] = useState(data?.volumeSettings?.manualAirflow ?? 0);
 
   const isAdmin = role === 'ROLE_ADMIN';
   const canOperate = isAdmin || role === 'ROLE_USER';
@@ -109,16 +110,23 @@ export const ManualSettingsWidget = () => {
   const screenMode = data?.screenMode === true;
   const activeMode = data?.ventilationModeCode ?? null;
   const volume = data?.volumeSettings;
+  const latestVolume = useRef(volume);
+  latestVolume.current = volume;
+  const manualQueue = useMemo(() => new LatestSaveQueue(
+    (value: number) => saveVolumeAsync({ manualAirflow: value }),
+    () => {
+      const actual = latestVolume.current?.manualAirflow;
+      if (actual != null) setManualAirflow(actual);
+    },
+  ), [saveVolumeAsync]);
 
   useEffect(() => {
-    if (volume?.manualAirflow !== null && volume?.manualAirflow !== undefined) {
+    if (!manualQueue.busy && volume?.manualAirflow !== null && volume?.manualAirflow !== undefined) {
       setManualAirflow(volume.manualAirflow);
     }
-  }, [volume?.manualAirflow]);
+  }, [volume?.manualAirflow, manualQueue]);
 
-  useEffect(() => () => {
-    if (manualSaveTimer.current) clearTimeout(manualSaveTimer.current);
-  }, []);
+  useEffect(() => () => manualQueue.dispose(), [manualQueue]);
 
   const modes = useMemo(() => [
     { code: 1, label: t('volumeWidget.modes.eco') },
@@ -143,8 +151,7 @@ export const ManualSettingsWidget = () => {
   const changeManualAirflow = (value: number) => {
     const nextValue = Math.max(AIRFLOW_MIN, Math.min(AIRFLOW_MAX, value));
     setManualAirflow(nextValue);
-    if (manualSaveTimer.current) clearTimeout(manualSaveTimer.current);
-    manualSaveTimer.current = setTimeout(() => saveVolume({ manualAirflow: nextValue }), 500);
+    manualQueue.schedule(nextValue);
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useIsMutating } from "@tanstack/react-query";
 import type { DashboardData } from "./typesApi";
 import { fetchWithAuth } from "./authApi";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,14 +7,16 @@ export const useDashboardData = () => {
 	const { role } = useAuth();
 	const isConfig = role === "ROLE_CONFIG";
 
+	const savingVolume = useIsMutating({ mutationKey: ['volume-settings'] }) > 0;
 	const query = useQuery<DashboardData>({
 		queryKey: ["dashboard"],
-		queryFn: async () => {
-			const response = await fetchWithAuth("/api/v1/devices/dashboard");
+		queryFn: async ({ signal }) => {
+			const response = await fetchWithAuth("/api/v1/devices/dashboard", { signal });
 			if (!response.ok) throw new Error("Network response was not ok");
 			return response.json();
 		},
-		refetchInterval: isConfig ? false : 7000,
+		refetchInterval: isConfig || savingVolume ? false : 7000,
+		refetchOnWindowFocus: !savingVolume,
 	});
 
 	return {

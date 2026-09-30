@@ -103,7 +103,7 @@ class SettingsServiceVolumeTest {
     void rejectsInvalidSettingsBeforeWritingAnything() throws IOException {
         ModbusClientAdapter client = mock(ModbusClientAdapter.class);
         UpdateVolumeSettingsRequest request = new UpdateVolumeSettingsRequest();
-        request.setEcoAirflow(10001.0);
+        request.setEcoAirflow(21001.0);
         request.setBoostPercent(5.0);
 
         assertThrows(
@@ -111,6 +111,40 @@ class SettingsServiceVolumeTest {
             () -> new SettingsService(client).updateVolumeSettings(request));
 
         verify(client, never()).writeRegister(anyString(), anyInt(), anyInt());
+    }
+
+    @Test
+    void acceptsFullAirflowRangeForEveryMode() throws IOException {
+        for (double value : new double[]{0, 15000, 21000}) {
+            ModbusClientAdapter client=mock(ModbusClientAdapter.class);
+            UpdateVolumeSettingsRequest request=new UpdateVolumeSettingsRequest();
+            request.setEcoAirflow(value); request.setNormalAirflow(value);
+            request.setIntensiveAirflow(value); request.setManualAirflow(value);
+            new SettingsService(client).updateVolumeSettings(request);
+            verifyFloatWrite(client, ModbusRegisterMap.AIRFLOW_ECO,(float)value);
+            verifyFloatWrite(client, ModbusRegisterMap.AIRFLOW_NORMAL,(float)value);
+            verifyFloatWrite(client, ModbusRegisterMap.AIRFLOW_INTENSIVE,(float)value);
+            verifyFloatWrite(client, ModbusRegisterMap.AIRFLOW_MANUAL,(float)value);
+        }
+    }
+
+    @Test
+    void rejectsOutOfRangeForEveryModeBeforeAnyWrite() throws IOException {
+        for (double value : new double[]{-1, 21000.1, 21010, Double.NaN, Double.POSITIVE_INFINITY}) {
+            for (int field=0;field<4;field++) {
+                ModbusClientAdapter client=mock(ModbusClientAdapter.class);
+                UpdateVolumeSettingsRequest request=new UpdateVolumeSettingsRequest();
+                request.setBoostPercent(5.0);
+                if(field==0)request.setEcoAirflow(value);
+                if(field==1)request.setNormalAirflow(value);
+                if(field==2)request.setIntensiveAirflow(value);
+                if(field==3)request.setManualAirflow(value);
+                IllegalArgumentException error=assertThrows(IllegalArgumentException.class,
+                    ()->new SettingsService(client).updateVolumeSettings(request));
+                org.junit.jupiter.api.Assertions.assertTrue(error.getMessage().contains("0–21000"));
+                verify(client,never()).writeRegister(anyString(),anyInt(),anyInt());
+            }
+        }
     }
 
     private static void verifyFloatWrite(

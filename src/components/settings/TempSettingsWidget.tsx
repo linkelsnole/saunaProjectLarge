@@ -19,10 +19,11 @@ interface TempInputProps {
   decimals?: number;
   readOnly?: boolean;
   inputClassName?: string;
+  compact?: boolean;
 }
 
-const TempInput = ({ label, value, onChange, unit = '°C', decimals = 1, readOnly = false, inputClassName }: TempInputProps) => {
-  const [localValue, setLocalValue] = useState('');
+const TempInput = ({ label, value, onChange, unit = '°C', decimals = 1, readOnly = false, inputClassName, compact = false }: TempInputProps) => {
+  const [localValue, setLocalValue] = useState(value == null ? '' : value.toFixed(decimals));
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
@@ -53,9 +54,9 @@ const TempInput = ({ label, value, onChange, unit = '°C', decimals = 1, readOnl
           onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }}
           readOnly={readOnly}
           tabIndex={readOnly ? -1 : 0}
-          className={`${readOnly ? 'bg-slate-50 text-slate-500 shadow-none' : 'text-slate-800'} h-10 pr-9 text-sm sm:text-base ${inputClassName ?? ''}`}
+          className={`${readOnly ? 'bg-slate-50 text-slate-500 shadow-none' : 'text-slate-800'} h-10 ${compact ? 'pl-1 pr-5 text-center text-xs sm:text-sm' : 'pr-9 text-sm sm:text-base'} ${inputClassName ?? ''}`}
         />
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-slate-400">{unit}</span>
+        <span className={`pointer-events-none absolute ${compact ? 'right-1 text-[10px]' : 'right-3 text-xs'} top-1/2 -translate-y-1/2 font-medium text-slate-400`}>{unit}</span>
       </div>
     </div>
   );
@@ -105,13 +106,13 @@ const OrpTable = ({ value, readOnly, onChange }: { value: OrpSettingsDto | null 
   ];
   return (
     <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
-      <div className="grid grid-cols-[36px_1fr_1fr] gap-2 border-b border-slate-200 px-3 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500"><span /><span>Текущая T</span><span>Целевая T</span></div>
+      <div className="grid grid-cols-[20px_minmax(0,1fr)_minmax(0,1fr)] gap-1 border-b border-slate-200 px-3 py-2 text-center text-[10px] font-semibold uppercase tracking-wide text-slate-500"><span /><span>Текущая T</span><span>Целевая T</span></div>
       <div className="space-y-2 p-3">
         {rows.map((row) => (
-          <div key={row.label} className="grid grid-cols-[36px_1fr_1fr] items-center gap-2">
+          <div key={row.label} className="grid grid-cols-[20px_minmax(0,1fr)_minmax(0,1fr)] items-center gap-1">
             <span className="text-xs font-bold text-slate-500">{row.label}</span>
-            <TempInput value={value?.[row.current]} onChange={(next) => onChange(row.current, next)} decimals={0} readOnly={readOnly} />
-            <TempInput value={value?.[row.target]} onChange={(next) => onChange(row.target, next)} decimals={0} readOnly={readOnly} />
+            <TempInput value={value?.[row.current]} onChange={(next) => onChange(row.current, next)} decimals={0} readOnly={readOnly} compact />
+            <TempInput value={value?.[row.target]} onChange={(next) => onChange(row.target, next)} decimals={0} readOnly={readOnly} compact />
           </div>
         ))}
       </div>

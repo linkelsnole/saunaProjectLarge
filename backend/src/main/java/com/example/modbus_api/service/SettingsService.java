@@ -17,7 +17,7 @@ import static com.example.modbus_api.service.ModbusConstants.*;
 @Service
 public class SettingsService {
 	private static final double AIRFLOW_MIN = 0.0;
-	private static final double AIRFLOW_MAX = 10000.0;
+	private static final double AIRFLOW_MAX = 21000.0;
 	private static final double BOOST_MIN = -100.0;
 	private static final double BOOST_MAX = 100.0;
 
@@ -270,7 +270,7 @@ public class SettingsService {
 			return;
 		}
 		if (value.isNaN() || value.isInfinite() || value < AIRFLOW_MIN || value > AIRFLOW_MAX) {
-			throw new IllegalArgumentException(name + ": объём должен быть в диапазоне 0–10000 м³/ч");
+			throw new IllegalArgumentException(name + ": объём должен быть в диапазоне 0–21000 м³/ч");
 		}
 	}
 
