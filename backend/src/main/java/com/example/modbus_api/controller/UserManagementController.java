@@ -27,6 +27,11 @@ public class UserManagementController {
         logs.log(ActionType.OTHER,"Изменение роли пользователя",true,"id="+id+"; role="+result.getRole());
         return result;
     }
+    @PatchMapping("/{id}/password") public ResponseEntity<Void> changePassword(Authentication actor,@PathVariable long id,@Valid @RequestBody ChangePassword request) {
+        users.changePassword(actor.getName(),id,request);
+        logs.log(ActionType.OTHER,"Изменение пароля пользователя",true,"id="+id);
+        return ResponseEntity.noContent().build();
+    }
     @DeleteMapping("/{id}") public ResponseEntity<Void> delete(Authentication actor,@PathVariable long id) {
         users.delete(actor.getName(),id);
         logs.log(ActionType.OTHER,"Удаление пользователя",true,"id="+id);

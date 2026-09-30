@@ -14,3 +14,6 @@ export function validNewUser(data:CreateUser) {
 }
 
 export const deleteUser=(user:ManagedUser)=>request<void>(`/${user.id}`,{method:'DELETE'});
+
+export const validPassword=(password:string)=>password.length>=12&&new TextEncoder().encode(password).length<=72;
+export const changeUserPassword=(user:ManagedUser,password:string)=>request<void>(`/${user.id}/password`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({password})});

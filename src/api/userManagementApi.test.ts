@@ -1,5 +1,5 @@
 import {afterEach,expect,it,vi} from 'vitest';
-import {deleteUser,changeUserRole,createUser,listUsers,validNewUser} from './userManagementApi';
+import {changeUserPassword,validPassword,deleteUser,changeUserRole,createUser,listUsers,validNewUser} from './userManagementApi';
 import {fetchWithAuth} from './authApi';
 vi.mock('./authApi',()=>({fetchWithAuth:vi.fn()}));
 afterEach(()=>vi.resetAllMocks());
@@ -17,3 +17,6 @@ it('shows rejected deletion as an error',async()=>{
  vi.mocked(fetchWithAuth).mockResolvedValue(new Response('{"message":"denied"}',{status:403}));
  await expect(deleteUser({id:7,username:'test',role:'ROLE_USER'})).rejects.toThrow('denied');
 });
+
+it('changes password with PATCH and accepts empty success',async()=>{vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null,{status:204}));await changeUserPassword({id:7,username:'test',role:'ROLE_USER'},'synthetic-password');expect(fetchWithAuth).toHaveBeenCalledWith('/api/v1/admin/users/7/password',expect.objectContaining({method:'PATCH',body:JSON.stringify({password:'synthetic-password'})}));});
+it('validates password size in UTF8 bytes',()=>{expect(validPassword('long-enough-password')).toBe(true);expect(validPassword('short')).toBe(false);expect(validPassword('я'.repeat(37))).toBe(false);});

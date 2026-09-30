@@ -51,7 +51,8 @@
       "fri": "Fri",
       "sat": "Sat",
       "sun": "Sun"
-    }
+    },
+    "cardTitle": "Schedule {{number}}"
   },
   "header": {
     "myAccount": "My account",
@@ -531,7 +532,8 @@
       "15": "Temperature mode · zone 2",
       "16": "Temperature control · zone 2",
       "17": "Temperature · zone 2, °C"
-    }
+    },
+    "ungrouped": "Ungrouped"
   },
   "users": {
     "newBadge": "New",
@@ -593,7 +595,14 @@
     "delete": "Delete user",
     "deleteTitle": "Delete",
     "deleteHint": "The user will lose access and their sessions will end.",
-    "deleted": "User deleted"
+    "deleted": "User deleted",
+    "changePassword": "Change password",
+    "newPassword": "New password",
+    "repeatPassword": "Repeat password",
+    "passwordMismatch": "Passwords do not match",
+    "savePassword": "Save password",
+    "passwordSaved": "Password changed",
+    "passwordChangeHint": "Saving signs out previous sessions. Changing your own password requires signing in again."
   },
   "panelUpdate": {
     "title": "An update is available",

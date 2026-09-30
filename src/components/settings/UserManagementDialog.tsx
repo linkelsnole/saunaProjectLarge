@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Users, Plus, Search, Check, RefreshCw, Crown, UserRound, BookOpen, FlaskConical, SlidersHorizontal, MoreHorizontal, ArrowLeft, Eye, EyeOff, Info, LockKeyhole, X } from 'lucide-react';
+import { Users, Plus, Search, Check, RefreshCw, Crown, UserRound, BookOpen, FlaskConical, SlidersHorizontal, MoreHorizontal, ArrowLeft, Eye, EyeOff, Info, KeyRound, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/shared/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover';
 import { useAuth } from '@/contexts/AuthContext';
-import { listUsers, createUser, changeUserRole, deleteUser, validNewUser, type ManagedUser } from '@/api/userManagementApi';
+import { listUsers, createUser, changeUserRole, deleteUser, changeUserPassword, validPassword, validNewUser, type ManagedUser } from '@/api/userManagementApi';
 
 const roles = ['ROLE_ADMIN', 'ROLE_USER', 'ROLE_READONLY', 'ROLE_TESTER', 'ROLE_MGM'];
 const roleIcons: Record<string, typeof Users> = { ROLE_ADMIN: Crown, ROLE_USER: UserRound, ROLE_READONLY: BookOpen, ROLE_TESTER: FlaskConical, ROLE_MGM: SlidersHorizontal, ROLE_CONFIG: SlidersHorizontal };
@@ -41,33 +41,41 @@ function RoleChoices({ value, onChange, disabled, compact = false, name }: { val
 }
 
 function UserRow({ user, self, fresh, onChanged, onDeleted, setMutationBusy }: { user: ManagedUser; self: boolean; fresh: boolean; onChanged: (user: ManagedUser) => void; onDeleted: (id: number) => void; setMutationBusy: (value: boolean) => void }) {
- const { t } = useTranslation(); const tr = (key: string) => t(`users.${key}`);
- const [confirmDelete, setConfirmDelete] = useState(false);
- const [open, setOpen] = useState(false); const [role, setRole] = useState(user.role); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
- async function remove() {
-  if (busy) return;
-  setBusy(true);setMutationBusy(true);setError('');
-  try {await deleteUser(user);onDeleted(user.id);toast.success(tr('deleted'));}
-  catch(e){setError(e instanceof Error?e.message:String(e));}
+ const { t } = useTranslation(); const tr = (key: string) => t(`users.${key}`); const { logout }=useAuth();
+ const [dialog,setDialog]=useState<'password'|'delete'|null>(null);
+ const [password,setPassword]=useState('');const [repeat,setRepeat]=useState('');const [visible,setVisible]=useState(false);
+ const [open,setOpen]=useState(false);const [role,setRole]=useState(user.role);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
+ function show(next:'password'|'delete'){setOpen(false);setError('');setPassword('');setRepeat('');setVisible(false);setDialog(next);}
+ async function perform(kind:'role'|'password'|'delete') {
+  if(busy)return;setBusy(true);setMutationBusy(true);setError('');
+  try {
+   if(kind==='role'){onChanged(await changeUserRole(user,role));setOpen(false);toast.success(tr('roleSaved'));}
+   if(kind==='delete'){await deleteUser(user);setDialog(null);onDeleted(user.id);toast.success(tr('deleted'));}
+   if(kind==='password'){await changeUserPassword(user,password);setDialog(null);setPassword('');setRepeat('');toast.success(tr('passwordSaved'));if(self)logout();}
+  }catch(e){setError(e instanceof Error?e.message:String(e));}
   finally{setBusy(false);setMutationBusy(false);}
  }
- async function save() {
-  if (busy || role === user.role) return;
-  setBusy(true); setMutationBusy(true); setError('');
-  try { const updated = await changeUserRole(user, role); onChanged(updated); setOpen(false); toast.success(tr('roleSaved')); }
-  catch (e) { setError(e instanceof Error ? e.message : String(e)); }
-  finally { setBusy(false); setMutationBusy(false); }
- }
- return <tr className={`border-b border-zinc-100 last:border-0 transition-colors duration-150 motion-reduce:transition-none ${fresh ? 'bg-emerald-50/80' : 'hover:bg-zinc-50/60'}`}>
-  <td className="py-4 pl-3 pr-2 sm:pl-4"><div className="flex items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-800">{user.username.slice(0, 2).toUpperCase()}</span><div className="min-w-0"><p className="break-all text-sm font-medium text-zinc-950">{user.username}</p><p className="mt-0.5 text-xs text-zinc-500">{self ? tr('you') : `#${user.id}`}{fresh && <span className="ml-2 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] text-emerald-700">{tr('newBadge')}</span>}</p><div className="mt-2 sm:hidden"><RoleBadge role={user.role}/></div></div></div></td>
-  <td className="hidden py-4 px-3 sm:table-cell"><RoleBadge role={user.role}/></td>
-  <td className="py-4 pl-2 pr-3 text-right sm:pr-4">{self ? <span className="inline-flex h-9 w-9 items-center justify-center text-zinc-300" title={tr('selfLocked')}><LockKeyhole size={15}/><span className="sr-only">{tr('selfLocked')}</span></span> : <Popover modal open={open} onOpenChange={next => { if (!busy) { setOpen(next); setConfirmDelete(false); setRole(user.role); setError(''); } }}><PopoverTrigger asChild><button className={`${secondary} min-h-9 h-9 w-9 !px-0`} aria-label={`${tr('changeRole')} ${user.username}`}><MoreHorizontal size={18}/></button></PopoverTrigger><PopoverContent align="end" sideOffset={8} collisionPadding={16} sticky="always" className={`${panel} flex w-[min(340px,calc(100vw-2rem))] flex-col overflow-hidden`} style={{ maxHeight: 'min(620px, calc(100dvh - 32px), var(--radix-popover-content-available-height, 620px))' }} onEscapeKeyDown={e => { if (busy) e.preventDefault(); }} onInteractOutside={e => { if (busy) e.preventDefault(); }}>
-   {confirmDelete ? <div className="space-y-3 p-3"><h3 className="font-semibold">{tr('deleteTitle')} {user.username}?</h3><p className="text-sm text-zinc-500">{tr('deleteHint')}</p>{error && <p role="alert" className="text-sm text-rose-600">{error}</p>}<div className="flex gap-2"><button className={secondary} disabled={busy} onClick={()=>setConfirmDelete(false)}>{tr('cancel')}</button><button className={primary} disabled={busy} onClick={()=>void remove()}>{tr('delete')}</button></div></div> : <>
-   <div className="shrink-0 px-3 pt-2 pb-3"><h3 className="text-sm font-semibold">{tr('chooseRole')}</h3><p className="mt-1 truncate text-xs text-zinc-500">{user.username}</p></div>
-   <div className="min-h-0 overflow-y-auto overscroll-contain px-1 py-1 [scrollbar-gutter:stable]"><RoleChoices name={`role-${user.id}`} compact value={role} onChange={setRole} disabled={busy}/></div>
-   {error && <p role="alert" className="px-3 py-2 text-xs text-rose-600">{error}</p>}
-   <div className="shrink-0 border-t border-zinc-100 p-2"><button className={`${primary} w-full`} disabled={busy || role === user.role} onClick={() => void save()}>{busy && <RefreshCw size={15} className="animate-spin motion-reduce:animate-none"/>}{tr('apply')}</button><button className={`${secondary} mt-2 w-full text-rose-600`} disabled={busy} onClick={()=>setConfirmDelete(true)}>{tr('delete')}</button></div></>}
-  </PopoverContent></Popover>}</td>
+ const iconButton=`${secondary} min-h-9 h-9 w-9 !px-0`;
+ return <tr className={`border-b border-zinc-100 last:border-0 ${fresh?'bg-emerald-50/80':'hover:bg-zinc-50/60'}`}>
+  <td className="py-4 pl-3 pr-2 sm:pl-4"><div className="flex items-center gap-3"><span className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold sm:flex">{user.username.slice(0,2).toUpperCase()}</span><div className="min-w-0"><p className="break-all text-sm font-medium">{user.username}</p><p className="mt-0.5 text-xs text-zinc-500">{self?tr('you'):`#${user.id}`}{fresh&&<span className="ml-2 text-emerald-700">{tr('newBadge')}</span>}</p><div className="mt-2 sm:hidden"><RoleBadge role={user.role}/></div></div></div></td>
+  <td className="hidden px-3 py-4 sm:table-cell"><RoleBadge role={user.role}/></td>
+  <td className="py-4 pl-1 pr-3 sm:pr-4"><div className="flex justify-end gap-1.5">
+   <button className={iconButton} disabled={busy} title={tr('changePassword')} aria-label={`${tr('changePassword')} ${user.username}`} onClick={()=>show('password')}><KeyRound size={17}/></button>
+   <Popover modal open={open} onOpenChange={next=>{if(!busy){setOpen(next);setRole(user.role);setError('');}}}><PopoverTrigger asChild><button className={iconButton} disabled={busy||self} title={tr('changeRole')} aria-label={`${tr('changeRole')} ${user.username}`}><MoreHorizontal size={18}/></button></PopoverTrigger><PopoverContent align="end" collisionPadding={16} className={`${panel} flex w-[min(340px,calc(100vw-2rem))] flex-col overflow-hidden`} style={{maxHeight:'min(620px, calc(100dvh - 32px), var(--radix-popover-content-available-height, 620px))'}}>
+    <div className="px-3 py-2"><h3 className="font-semibold">{tr('chooseRole')}</h3><p className="text-xs text-zinc-500">{user.username}</p></div><div className="min-h-0 overflow-y-auto overscroll-contain"><RoleChoices name={`role-${user.id}`} compact value={role} onChange={setRole} disabled={busy}/></div>
+    {error&&<p role="alert" className="p-2 text-sm text-rose-600">{error}</p>}<button className={`${primary} mt-2 shrink-0`} disabled={busy||role===user.role} onClick={()=>void perform('role')}>{tr('apply')}</button>
+   </PopoverContent></Popover>
+   <button className={`${iconButton} text-rose-600 hover:bg-rose-50`} disabled={busy||self} title={tr('delete')} aria-label={`${tr('delete')} ${user.username}`} onClick={()=>show('delete')}><Trash2 size={17}/></button>
+  </div>
+  <Dialog open={dialog!==null} onOpenChange={value=>{if(!value&&!busy){setDialog(null);setPassword('');setRepeat('');setError('');}}}><DialogContent className="max-h-[85dvh] overflow-y-auto rounded-2xl bg-white sm:max-w-md" onInteractOutside={e=>{if(busy)e.preventDefault();}} onEscapeKeyDown={e=>{if(busy)e.preventDefault();}}>
+   <DialogHeader><DialogTitle>{tr(dialog==='delete'?'deleteTitle':'changePassword')} {user.username}{dialog==='delete'?'?':''}</DialogTitle><DialogDescription>{tr(dialog==='delete'?'deleteHint':'passwordChangeHint')}</DialogDescription></DialogHeader>
+   {dialog==='password'&&<form id={`password-${user.id}`} className="space-y-4" onSubmit={e=>{e.preventDefault();if(validPassword(password)&&password===repeat)void perform('password');}}>
+    <div><label className="mb-2 block text-sm" htmlFor={`new-password-${user.id}`}>{tr('newPassword')}</label><div className="relative"><input id={`new-password-${user.id}`} className={`${input} pr-12`} type={visible?'text':'password'} autoComplete="new-password" value={password} disabled={busy} onChange={e=>setPassword(e.target.value)} required minLength={12} maxLength={72}/><button type="button" className="absolute right-2 top-3 text-zinc-500" aria-label={tr(visible?'hidePassword':'showPassword')} onClick={()=>setVisible(!visible)}>{visible?<EyeOff size={18}/>:<Eye size={18}/>}</button></div><p className="mt-2 text-xs text-zinc-500">{tr('passwordHint')}</p></div>
+    <div><label className="mb-2 block text-sm" htmlFor={`repeat-password-${user.id}`}>{tr('repeatPassword')}</label><input id={`repeat-password-${user.id}`} className={input} type={visible?'text':'password'} autoComplete="new-password" value={repeat} disabled={busy} onChange={e=>setRepeat(e.target.value)} required/>{repeat&&repeat!==password&&<p className="mt-2 text-xs text-rose-600">{tr('passwordMismatch')}</p>}</div>
+   </form>}
+   {error&&<p role="alert" className="text-sm text-rose-600">{error}</p>}
+   <div className="flex justify-end gap-2"><button className={secondary} disabled={busy} onClick={()=>{setDialog(null);setPassword('');setRepeat('');}}>{tr('cancel')}</button>{dialog==='delete'?<button className={primary} disabled={busy} onClick={()=>void perform('delete')}>{tr('delete')}</button>:<button className={primary} type="submit" form={`password-${user.id}`} disabled={busy||!validPassword(password)||password!==repeat}>{tr('savePassword')}</button>}</div>
+  </DialogContent></Dialog></td>
  </tr>;
 }
 
@@ -137,7 +145,7 @@ function UserManagementContent({ open, busy, setBusy }: { open: boolean; busy: b
    <button className={`${secondary} w-11 !px-0`} disabled={busy || query.isFetching} onClick={() => void query.refetch()} aria-label={tr('refresh')}><RefreshCw size={17} className={query.isFetching ? 'animate-spin motion-reduce:animate-none' : ''}/></button>
   </div>
   {query.isError && <p role="alert" className="rounded-xl bg-rose-50 p-3 text-sm text-rose-700">{query.error.message}</p>}
-  <div className="overflow-hidden rounded-2xl border border-zinc-100"><table className="w-full table-fixed text-left"><thead className="bg-zinc-50 text-[11px] font-normal text-zinc-500"><tr><th className="px-4 py-3 font-normal">{tr('userColumn')}</th><th className="hidden w-[44%] px-3 py-3 font-normal sm:table-cell">{tr('role')}</th><th className="w-20 px-3 py-3 text-right font-normal sm:w-24">{tr('actionsColumn')}</th></tr></thead><tbody>
+  <div className="overflow-hidden rounded-2xl border border-zinc-100"><table className="w-full table-fixed text-left"><thead className="bg-zinc-50 text-[11px] font-normal text-zinc-500"><tr><th className="px-4 py-3 font-normal">{tr('userColumn')}</th><th className="hidden w-[34%] px-3 py-3 font-normal sm:table-cell">{tr('role')}</th><th className="w-36 px-3 py-3 text-right font-normal">{tr('actionsColumn')}</th></tr></thead><tbody>
    {query.isPending ? <tr><td colSpan={3} className="p-10 text-center text-sm text-zinc-400"><RefreshCw size={18} className="mx-auto mb-3 animate-spin motion-reduce:animate-none"/>{tr('loading')}</td></tr> : filtered.map(user => <UserRow key={`${user.id}:${user.role}`} user={user} self={user.username === username} fresh={createdId === user.id} onChanged={updateUser} onDeleted={id=>{cache.setQueryData<ManagedUser[]>(['managed-users'],old=>old?.filter(u=>u.id!==id));void cache.invalidateQueries({queryKey:['managed-users']});}} setMutationBusy={setBusy}/>)}
    {!query.isPending && !query.isError && filtered.length === 0 && <tr><td colSpan={3} className="p-10 text-center text-sm text-zinc-500">{tr('empty')}</td></tr>}
   </tbody></table></div>

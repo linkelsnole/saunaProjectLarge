@@ -41,11 +41,6 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .build();
             userRepository.save(readOnlyUser);
             logger.info("Read-only user created");
-        } else {
-            readOnlyUser.setPassword(passwordEncoder.encode("RR104k$"));
-            readOnlyUser.setRole(Role.ROLE_READONLY);
-            userRepository.save(readOnlyUser);
-            logger.info("Read-only user credentials updated");
         }
 
         }
@@ -60,11 +55,6 @@ public class DatabaseInitializer implements CommandLineRunner {
                     .build();
             userRepository.save(configUser);
             logger.info("Config user created");
-        } else {
-            configUser.setPassword(passwordEncoder.encode("config123"));
-            configUser.setRole(Role.ROLE_CONFIG);
-            userRepository.save(configUser);
-            logger.info("Config user credentials updated");
         }
         }
 

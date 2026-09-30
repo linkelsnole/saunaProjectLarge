@@ -10,6 +10,9 @@ public final class UserManagementDto {
         @NotNull @Size(min=12,max=72) @ToString.Exclude private String password;
         @NotNull private Role role;
     }
+    @Data @NoArgsConstructor @AllArgsConstructor public static class ChangePassword {
+        @NotNull @Size(min=12,max=72) @ToString.Exclude private String password;
+    }
     @Data @NoArgsConstructor @AllArgsConstructor public static class ChangeRole {
         @NotNull private Role role;
         @NotNull private Role expectedRole;

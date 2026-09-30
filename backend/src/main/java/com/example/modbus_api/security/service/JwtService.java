@@ -20,15 +20,18 @@ public class JwtService {
 
     private final com.example.modbus_api.service.DeletedUsers deleted;
     private final JwtProperties jwtProperties;
+    private final com.example.modbus_api.service.PasswordChanges passwordChanges;
 
-    public JwtService(JwtProperties jwtProperties,com.example.modbus_api.service.DeletedUsers deleted) {
-        this.deleted=deleted;
+    public JwtService(JwtProperties jwtProperties,com.example.modbus_api.service.DeletedUsers deleted,com.example.modbus_api.service.PasswordChanges passwordChanges) {
+        this.deleted=deleted;this.passwordChanges=passwordChanges;
         this.jwtProperties = jwtProperties;
     }
 
     public String generateAccessToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<String, Object>();
         Long lastDeletion=deleted.deletedAt(userDetails.getUsername());
+        Long changed=passwordChanges.changedAt(userDetails.getUsername());
+        if(changed!=null) lastDeletion=lastDeletion==null?changed:Math.max(lastDeletion,changed);
         claims.put("sessionCreatedAt", Math.max(System.currentTimeMillis(),lastDeletion==null?0:lastDeletion+1));
         claims.put("roles", userDetails.getAuthorities().stream()
                 .map(Object::toString)
@@ -57,6 +60,8 @@ public class JwtService {
         Number created=(Number)claims.get("sessionCreatedAt");
         long issued=created!=null?created.longValue():claims.getIssuedAt()==null?0:claims.getIssuedAt().getTime();
         if(deletedAt!=null && issued<=deletedAt) return false;
+        Long changedAt=passwordChanges.changedAt(username);
+        if(changedAt!=null && issued<=changedAt) return false;
         if (DefaultCredentialsRotation.appliesTo(username) && !DefaultCredentialsRotation.VERSION.equals(claims.get("credentialsVersion", String.class))) return false;
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }

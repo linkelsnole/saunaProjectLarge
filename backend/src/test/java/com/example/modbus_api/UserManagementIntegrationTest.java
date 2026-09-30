@@ -250,4 +250,33 @@ class UserManagementIntegrationTest {
         JsonNode result=json.readTree(body);assertEquals(32768,result.get("workState").asInt());assertEquals(7,result.get("modbusErrors").asInt());assertTrue(result.get("failureRestarts").isNull());
         verify(modbus,never()).getEvents(anyInt());verify(modbus,never()).writeRegister(anyString(),anyInt(),anyInt());
     }
+    @Test void passwordChangeRevokesSessionsAndOldPasswordAndSurvivesInitialization() throws Exception {
+        AppUser target=account(Role.ROLE_ADMIN);String oldToken=login(target);
+        String next="new-synthetic-password-42";
+        mvc.perform(patch("/api/v1/admin/users/"+target.getId()+"/password").header("Authorization",auth())
+            .contentType("application/json").content(json.writeValueAsString(Collections.singletonMap("password",next))))
+            .andExpect(status().isNoContent());
+        assertTrue(encoder.matches(next,users.findById(target.getId()).get().getPassword()));
+        assertTrue(refreshSessions.findAll().stream().noneMatch(s->s.getUser().getId().equals(target.getId())));
+        mvc.perform(get("/api/v1/admin/users").header("Authorization","Bearer "+oldToken)).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/auth/login").contentType("application/json").content(json.writeValueAsString(new HashMap<String,String>(){{put("username",target.getUsername());put("password",PASSWORD);}}))).andExpect(status().isUnauthorized());
+        mvc.perform(post("/api/v1/auth/login").contentType("application/json").content(json.writeValueAsString(new HashMap<String,String>(){{put("username",target.getUsername());put("password",next);}}))).andExpect(status().isOk());
+        initializer.run();assertTrue(encoder.matches(next,users.findById(target.getId()).get().getPassword()));
+    }
+    @Test void passwordChangeRequiresAdminAndValidPassword() throws Exception {
+        AppUser reader=account(Role.ROLE_READONLY);String path="/api/v1/admin/users/"+reader.getId()+"/password";
+        mvc.perform(patch(path).header("Authorization","Bearer "+login(reader)).contentType("application/json").content("{\"password\":\"long-enough-test-password\"}")).andExpect(status().isForbidden());
+        for(String invalid:Arrays.asList("short",String.join("",Collections.nCopies(37,"я"))))
+            mvc.perform(patch(path).header("Authorization",auth()).contentType("application/json").content(json.writeValueAsString(Collections.singletonMap("password",invalid)))).andExpect(status().isBadRequest());
+        assertTrue(encoder.matches(PASSWORD,users.findById(reader.getId()).get().getPassword()));
+    }
+    @Test void administratorCanChangeOwnPasswordAndMustSignInAgain() throws Exception {
+        mvc.perform(patch("/api/v1/admin/users/"+admin.getId()+"/password").header("Authorization",auth()).contentType("application/json").content("{\"password\":\"new-own-password-42\"}")).andExpect(status().isNoContent());
+        mvc.perform(get("/api/v1/admin/users").header("Authorization",auth())).andExpect(status().isUnauthorized());
+    }
+    @Test void builtinReaderPasswordIsNotResetOnRestart() throws Exception {
+        AppUser target=users.findByUsername("READER").orElseGet(()->users.findByUsername("readonly").get());
+        mvc.perform(patch("/api/v1/admin/users/"+target.getId()+"/password").header("Authorization",auth()).contentType("application/json").content("{\"password\":\"new-reader-password-42\"}")).andExpect(status().isNoContent());
+        initializer.run();assertTrue(encoder.matches("new-reader-password-42",users.findById(target.getId()).get().getPassword()));
+    }
 }
