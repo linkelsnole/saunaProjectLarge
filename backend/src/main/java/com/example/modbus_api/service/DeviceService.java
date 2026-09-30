@@ -150,8 +150,7 @@ public class DeviceService {
 			ModbusRegisterMap.AIRFLOW_NORMAL,
 			ModbusRegisterMap.AIRFLOW_INTENSIVE,
 			ModbusRegisterMap.AIRFLOW_MANUAL,
-			ModbusRegisterMap.AIRFLOW_TARGET,
-			ModbusRegisterMap.AIRFLOW_REAL
+			ModbusRegisterMap.AIRFLOW_TARGET
 		};
 		for (int register : floatRegisters) {
 			addFloatRegister(allRegs, register);

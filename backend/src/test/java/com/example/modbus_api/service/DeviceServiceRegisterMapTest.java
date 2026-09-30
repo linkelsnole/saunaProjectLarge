@@ -69,7 +69,11 @@ class DeviceServiceRegisterMapTest {
             int bits=Float.floatToIntBits(flows[i]);
             values.put(addresses[i],bits&65535);values.put(addresses[i]+1,bits>>>16);
         }
-        when(client.readRegisters(eq(SAUNA_PLC),anyList())).thenAnswer(a->new HashMap<>(values));
+        when(client.readRegisters(eq(SAUNA_PLC),anyList())).thenAnswer(a->{
+            java.util.List<Integer> requested=a.getArgument(1);
+            assertFalse(requested.contains(ModbusRegisterMap.AIRFLOW_REAL));
+            return new HashMap<>(values);
+        });
         DashboardData data=new DeviceService(client).getDashboardData();
         assertEquals(6736.0,data.getAirflowReal());
         assertEquals(data.getVm1().doubleValue(),data.getAirflowReal());
