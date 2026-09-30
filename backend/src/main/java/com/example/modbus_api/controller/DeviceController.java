@@ -529,7 +529,7 @@ public class DeviceController {
 		appendChange(parts, old, REG_HOT_VALVE_MIN_PROC, 10.0, "Мин. открытие вентиля ГВ", "%", request.getHotValveMinProc());
 		appendChange(parts, old, REG_T_WATER_NO_WORK, 10.0, "Мин. T воды без работы", "°C", request.getWaterMinTNoWork());
 		appendChange(parts, old, REG_T_WATER_WORK, 10.0, "Мин. T воды в работе", "°C", request.getWaterMinTWork());
-		appendChange(parts, old, REG_T_VALVE_START_POS, 1.0, "Положение вентилей при запуске", "%", request.getValveStartupPosition());
+		appendChange(parts, old, REG_T_VALVE_START_POS, 10.0, "Положение вентилей при запуске", "%", request.getValveStartupPosition());
 		appendChange(parts, old, REG_T_CTRL_ALGORITHM, 1.0, "Алгоритм управления по T", "", request.getControlAlgorithm());
 		appendChange(parts, old, REG_T_TRACK_INTERVAL, 1.0, "Интервал слежения по T", "с", request.getTempTrackingInterval());
 		return parts.isEmpty() ? null : String.join("; ", parts);

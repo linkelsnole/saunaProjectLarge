@@ -18,6 +18,25 @@ import static org.mockito.Mockito.*;
 
 class DeviceServiceRegisterMapTest {
 
+    @Test void dashboardDoesNotRequestLegacyRegistersAndScalesStartupPercent() throws IOException {
+        ModbusClientAdapter client=mock(ModbusClientAdapter.class);
+        when(client.readRegisters(eq(SAUNA_PLC),anyList())).thenAnswer(a->{
+            java.util.List<Integer> requested=a.getArgument(1);
+            int[] obsolete={0x24,0x47,0x48,0x70,0x7e,0x84,0x9f,0xa3,0xa4,0xa5,0xa6,0xa9,0xab,0xac,0xad,0xae,0xb3,0xb4,0xb5,0xb6,0xb8,0xd5,0xd6,0xdd,0x100,0x110,0x120,0x130,0x140,0x150,0x190,0x1a0,0x1b0,0x1c0,0x210,0x220,0x230};
+            for(int address:obsolete)assertFalse(requested.contains(address),"obsolete "+Integer.toHexString(address));
+            assertTrue(requested.contains(0x708));
+            assertTrue(requested.contains(0x10c8));
+            return Collections.singletonMap(0x708,300);
+        });
+        assertEquals(30.0,new DeviceService(client).getDashboardData().getTempSettings().getValveStartupPosition());
+        new SettingsService(client).updateTempSettings(null,null,null,null,null,null,null,null,null,null,30.5,null,null);
+        verify(client).writeRegister(SAUNA_PLC,0x708,305);
+        assertEquals(300,SettingsService.encodeStartupPercent(30.0));
+        assertEquals(305,SettingsService.encodeStartupPercent(30.5));
+        assertThrows(IllegalArgumentException.class,()->SettingsService.encodeStartupPercent(300));
+        assertThrows(IllegalArgumentException.class,()->SettingsService.encodeStartupPercent(Double.NaN));
+    }
+
     @Test void carrierTemperatureUsesNewBt6RegisterAndPreservesMissingValues() throws IOException {
         ModbusClientAdapter client=mock(ModbusClientAdapter.class);
         Map<Integer,Integer> values=new HashMap<>();

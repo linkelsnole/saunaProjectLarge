@@ -20,9 +20,9 @@ public class UpdateTempSettingsRequest {
     private Double waterMinTWork;
 
     /**
-     * Приоритет 0 (пакет 301): положение вентилей при запуске, регистр 0x00E1; сырое signed 16-bit, без REG_POWERPROC и без ×10.
+     * Приоритет 0 (пакет 301): положение вентилей при запуске, регистр 0x0708, проценты; в контроллере хранится значение ×10.
      */
-    private Integer valveStartupPosition;
+    private Double valveStartupPosition;
     /**
      * Приоритет 0 (пакет 301): алгоритм управления температурой, регистр 0x00DD; сырое signed 16-bit, без REG_POWERPROC и без ×10.
      */

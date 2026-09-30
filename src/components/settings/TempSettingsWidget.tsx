@@ -208,7 +208,7 @@ export const TempSettingsWidget = () => {
 
       <GlassCard className="p-4 animate-in fade-in fill-mode-backwards duration-500 [animation-delay:160ms] motion-reduce:animate-none">
         <h4 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500"><span className="h-1.5 w-1.5 rounded-full bg-amber-400" />{t('tempWidget.temperatureSection')}</h4>
-        <TempInput label={t('tempWidget.valveStartupPosition')} value={tempSettings?.valveStartupPosition} onChange={(value) => updateCommon({ valveStartupPosition: Math.round(value) })} unit="%" decimals={0} readOnly={!canEditAll} />
+        <TempInput label={t('tempWidget.valveStartupPosition')} value={tempSettings?.valveStartupPosition} onChange={(value) => updateCommon({ valveStartupPosition: value })} unit="%" decimals={1} readOnly={!canEditAll} />
       </GlassCard>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

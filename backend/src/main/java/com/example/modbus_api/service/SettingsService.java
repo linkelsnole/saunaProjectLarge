@@ -283,6 +283,12 @@ public class SettingsService {
 		}
 	}
 
+    static int encodeStartupPercent(double percent) {
+        if (!Double.isFinite(percent) || percent < 0 || percent > 100)
+            throw new IllegalArgumentException("Положение вентилей должно быть от 0 до 100%");
+        return (int)Math.round(percent * 10.0);
+    }
+
 	public void updateTempSettings(
 		Double targetZone1, 
 		Double targetZone2,
@@ -294,7 +300,7 @@ public class SettingsService {
 		Double hotValveMinProc,
 		Double waterMinTNoWork,
 		Double waterMinTWork,
-		Integer valveStartupPosition,
+		Double valveStartupPosition,
 		Integer controlAlgorithm,
 		Integer tempTrackingInterval
 	) throws IOException {
@@ -303,13 +309,13 @@ public class SettingsService {
         }
 		/*
 		 * Порядок важен: сначала приоритет 0 по температуре (п.1–3), значения как в Modbus, без REG_POWERPROC:
-		 *   0x00E1 (REG_T_VALVE_START_POS) — положение вентилей при запуске,
+		 *   0x0708 (REG_T_VALVE_START_POS) — положение вентилей при запуске, ×10,
 		 *   0x00DD (REG_T_CTRL_ALGORITHM) — алгоритм управления,
 		 *   0x007E (REG_T_TRACK_INTERVAL) — интервал слежения по T.
 		 * Затем целевые температуры зон, пороги воды и ПВ, новые температурные уставки; в конце — performFastModeChange() → REG_AGGREGATE_CMD.
 		 */
 		if (valveStartupPosition != null) {
-			modbusClient.writeRegister(SAUNA_PLC, REG_T_VALVE_START_POS, clampToInt16(valveStartupPosition));
+			modbusClient.writeRegister(SAUNA_PLC, REG_T_VALVE_START_POS, encodeStartupPercent(valveStartupPosition));
 		}
 		if (controlAlgorithm != null) {
 			modbusClient.writeRegister(SAUNA_PLC, REG_T_CTRL_ALGORITHM, clampToInt16(controlAlgorithm));

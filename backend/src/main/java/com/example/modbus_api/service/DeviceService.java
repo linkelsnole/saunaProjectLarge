@@ -114,135 +114,25 @@ public class DeviceService {
 	}
 
 	public DashboardData getDashboardData() throws IOException {
-		List<Integer> tempRegs = Arrays.asList(
-			// --- ТЕМПЕРАТУРА (тип 1) ---
-			REG_T_BT3,    // T1
-			REG_T_BT11,    // T2
-			REG_T_BT10, // T3
-			REG_T_BT1,  // T4-1
-			REG_T_BT2,    // T5
-			REG_T_BT21,  // T4-2
-
-			// --- ТЕМПЕРАТУРА (тип 2) ---
-			REG_T_BT8,
-			REG_T_BT9,
-			REG_T_BT24,
-			REG_T_BT27,
-
-			// --- ТЕМПЕРАТУРЫ ЗОН ---
-			REG_T_ZONE1,
-			REG_T_ZONE2
+		List<Integer> sensorBases = Arrays.asList(
+			ModbusRegisterMap.SENSOR_T1,
+			ModbusRegisterMap.SENSOR_T2,
+			ModbusRegisterMap.SENSOR_T3,
+			ModbusRegisterMap.SENSOR_T4_1,
+			ModbusRegisterMap.SENSOR_T4_2,
+			ModbusRegisterMap.SENSOR_T5,
+			ModbusRegisterMap.SENSOR_TH1,
+			ModbusRegisterMap.SENSOR_TC1,
+			ModbusRegisterMap.SENSOR_TH2,
+			ModbusRegisterMap.SENSOR_TC2
 		);
 
-		List<Integer> allRegs = new ArrayList<>(tempRegs);
-		for (Integer reg : tempRegs) {
-			allRegs.add(reg + OFFSET_HUMID);
-		}
-
-		allRegs.addAll(Arrays.asList(
-			// Приоритет 0 (Сауна): 0xE1, 0xDD, 0x7E (темп.) + 0x64 (рекуп) — см. ModbusConstants
-			REG_T_VALVE_START_POS,
-			REG_T_CTRL_ALGORITHM,
-			REG_T_TRACK_INTERVAL,
-			REG_R_TRACK_INTERVAL,
-
-			// --- ДАВЛЕНИЕ (Вентиляторы) ---
-			REG_P_BF11,  // вентилятор 1
-			REG_P_BF12,  // внетилятор 2
-			REG_P_BF21,  // вентилятор 3
-			REG_P_BF22,  // внетилятор 4
-
-			// --- ДАВЛЕНИЕ (W)  ---
-			REG_P_BP1,
-			REG_P_BP2,
-			REG_P_BP5,  // Давление "слева от рекупа"
-			REG_P_BP10,   // Давление "справа от рекупа"
-
-			// --- ОБОРОТЫ ВЕНТИЛЯТОРОВ ---
-			REG_P_VM11, //обороты вентилятора 1
-			REG_P_VM12, //обороты вентилятора 2
-			REG_P_VM21, //обороты вентилятора 3
-			REG_P_VM22, //обороты вентилятора 4
-
-			// --- ЦЕЛЬ ВЕНТИЛЯТОРОВ ---
-			REG_F_TARGET, // цель всех вентиляторов
-			REG_POWERPROC, // powerproc для расчета цели справа
-
-			// --- ОБЪЕМ ПРОКАЧКИ ---
-			REG_F_VM1, // объем прокачки 1
-			REG_F_VM2, // объем прокачки 2
-
-			// --- КЛАПАНЫ ---
-			REG_F_VH1, //клапан + слева
-			REG_F_VC1, //клапан - справа
-			REG_F_VH2, //клапан + справа
-			REG_F_VC2, //клапан - справа
-
-			// --- СКОРОСТЬ (Вентиляторы) ---
-			REG_F_G11,
-			REG_F_G12,
-			REG_F_G21,
-			REG_F_G22,
-
-			// --- РЕКУПЕРАТОР ---
-			REG_R_RECUP_SPEED,
-			SPEED_R_REG,   // 0x0082 скорость вращения
-			REG_R_TARGET,
-			REG_R_STATE,
-			TARGET_R_REG,  // Обороты вала рекуператора (целевые) - делить на 100
-			CURRENT_R_REG, // Обороты вала - делить на 100
-
-			// --- MANUAL PROC ---
-			REG_V_VManualProcIn,
-			REG_V_VManualDProcOut,
-
-			// --- ТЕМПЕРАТУРНЫЕ УСТАВКИ ---
-			REG_T_WATER_WARN,
-			REG_T_WATER_FAIL,
-			REG_T_INFLOW_WARN,
-			REG_T_INFLOW_FAIL,
-			REG_T_CTRL_MODE_ZONE1,
-			REG_T_CTRL_MODE_ZONE2,
-
-			//Задвижки
-			REG_Z_WORKSTATE,
-			REG_Z_WORKSTATE2,
-
-			// --- НОВЫЕ РЕГИСТРЫ (22.01.2026) ---
-			REG_T_NEUTRAL_ZONE,
-			REG_HOT_VALVE_MIN_PROC,
-			REG_T_WATER_NO_WORK,
-			REG_T_WATER_WORK,
-			REG_T_RAD_FZ_FAIL,
-			REG_VALVE_HEAT_POS1,
-			REG_VALVE_COOL_POS1,
-			REG_VALVE_OPEN_PROC1,
-			REG_VALVE_HEAT_POS2,
-			REG_VALVE_COOL_POS2,
-			REG_VALVE_OPEN_PROC2,
-
-
-			REG_R_TARGET_RPM_MIN,
-			REG_R_TARGET_RPM_MAX,
-			REG_R_TARGET_RPM_STEP,
-
-			REG_R_TEMP,   // 0x10C8 температура теплоносителя рекуператора (BT6)
-			REG_RECUP_STATE  // 0x00A4 RecupState — текущее состояние рекуператора
-		));
-
-		// Новая карта общей схемы. Чтения специфичных для большой сауны
-		// REG_Z_WORKSTATE2 выше сохраняется до уточнения адреса.
-		int[] sensorBases = {
-			ModbusRegisterMap.SENSOR_T1, ModbusRegisterMap.SENSOR_T2,
-			ModbusRegisterMap.SENSOR_T3, ModbusRegisterMap.SENSOR_T4_1,
-			ModbusRegisterMap.SENSOR_T4_2, ModbusRegisterMap.SENSOR_T5,
-			ModbusRegisterMap.SENSOR_TH1, ModbusRegisterMap.SENSOR_TC1,
-			ModbusRegisterMap.SENSOR_TH2, ModbusRegisterMap.SENSOR_TC2
-		};
-		for (int base : sensorBases) {
+		List<Integer> allRegs = new ArrayList<>();
+		for (Integer base : sensorBases) {
 			allRegs.add(base + ModbusRegisterMap.TEMPERATURE_OFFSET);
 			allRegs.add(base + ModbusRegisterMap.HUMIDITY_OFFSET);
 		}
+
 		int[] floatRegisters = {
 			ModbusRegisterMap.PRESSURE_FAN_SUPPLY_1,
 			ModbusRegisterMap.PRESSURE_FAN_SUPPLY_2,
@@ -266,6 +156,7 @@ public class DeviceService {
 		for (int register : floatRegisters) {
 			addFloatRegister(allRegs, register);
 		}
+
 		allRegs.addAll(Arrays.asList(
 			ModbusRegisterMap.FAN_SUPPLY_1 + ModbusRegisterMap.FAN_PERCENT_OFFSET,
 			ModbusRegisterMap.FAN_SUPPLY_2 + ModbusRegisterMap.FAN_PERCENT_OFFSET,
@@ -297,8 +188,48 @@ public class DeviceService {
 			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.ORP_CURRENT_T3_OFFSET,
 			ModbusRegisterMap.VENTILATION_MODE,
 			ModbusRegisterMap.AIRFLOW_IMBALANCE,
-			ModbusRegisterMap.RECUPERATOR_MAX_RPM
+			ModbusRegisterMap.AGGREGATE_STATE,
+			ModbusRegisterMap.WORK_STATE,
+			ModbusRegisterMap.RECUPERATOR_STATE,
+			ModbusRegisterMap.RECUPERATOR_MAX_RPM,
+			ModbusRegisterMap.RECUPERATOR_TARGET_RPM,
+			ModbusRegisterMap.RECUPERATOR_CURRENT_RPM,
+			ModbusRegisterMap.RECUPERATOR_MOTOR_RPM,
+
+			REG_T_ZONE1,
+			REG_T_ZONE2,
+
+			// --- ТЕМПЕРАТУРНЫЕ УСТАВКИ ---
+			REG_T_WATER_WARN,
+			REG_T_WATER_FAIL,
+			REG_T_INFLOW_WARN,
+			REG_T_INFLOW_FAIL,
+			REG_T_CTRL_MODE_ZONE1,
+			REG_T_CTRL_MODE_ZONE2,
+			REG_T_VALVE_START_POS,   // 0x0708 положение вентилей при запуске
+
+			// --- НОВЫЕ РЕГИСТРЫ (22.01.2026) ---
+			REG_T_NEUTRAL_ZONE,
+			REG_HOT_VALVE_MIN_PROC,
+			REG_T_WATER_NO_WORK,
+			REG_T_WATER_WORK,
+			REG_T_RAD_FZ_FAIL,
+			REG_VALVE_HEAT_POS1,
+			REG_VALVE_COOL_POS1,
+			REG_VALVE_OPEN_PROC1,
+			REG_VALVE_HEAT_POS2,
+			REG_VALVE_COOL_POS2,
+			REG_VALVE_OPEN_PROC2,
+
+
+			REG_R_TARGET_RPM_MIN,
+			REG_R_TARGET_RPM_MAX,
+			REG_R_TRACK_INTERVAL,   // 0x0511 интервал слежения по рекуператору
+			REG_R_TARGET_RPM_STEP,
+			REG_R_TEMP,
+			REG_RECUP_STATE
 		));
+
 		for (int i = 0; i < ModbusRegisterMap.SCHEDULE_COUNT; i++) {
 			int base = ModbusRegisterMap.scheduleBase(i);
 			allRegs.add(base);
@@ -499,7 +430,7 @@ public class DeviceService {
 			.inflowTargetZone2(inflowTargetZone2)
 			.orpZone1(orpZone1)
 			.orpZone2(orpZone2)
-			.valveStartupPosition(getValidOrNull(data.get(REG_T_VALVE_START_POS)))       // п.1: 0x00E1 положение вентилей при запуске
+			.valveStartupPosition(getValidScaled(data.get(REG_T_VALVE_START_POS), 10.0))       // 0x0708, десятые доли процента
 			.controlAlgorithm(getValidOrNull(data.get(REG_T_CTRL_ALGORITHM)))           // п.2: 0x00DD алгоритм управления
 			.tempTrackingInterval(getValidOrNull(data.get(REG_T_TRACK_INTERVAL)))       // п.3: 0x007E интервал слежения по T
 			.targetZone1(targetZone1)
