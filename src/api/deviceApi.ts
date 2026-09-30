@@ -5,6 +5,11 @@ import type {
   ServerStateData,
   UserActionEntry,
   LogSettingsData,
+  UpdateVolumeSettingsRequest,
+  UpdateTemperatureControlRequest,
+  UpdateTemperatureSetpointsRequest,
+  ScheduleListData,
+  UpdateScheduleGroupRequest,
 } from './typesApi';
 
 interface UpdateManualSettingsRequest {
@@ -43,6 +48,46 @@ export async function updateManualSettings(data: UpdateManualSettingsRequest): P
   }
 }
 
+export async function setVentilationMode(modeCode: number): Promise<void> {
+  const response = await fetchWithAuth(`/api/v1/devices/ventilation-mode/${modeCode}`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to change ventilation mode');
+  }
+}
+
+export async function setTemperatureControl(data: UpdateTemperatureControlRequest): Promise<void> {
+  const response = await fetchWithAuth('/api/v1/devices/temperature-control', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Failed to change temperature control mode');
+}
+
+export async function updateTemperatureSetpoints(data: UpdateTemperatureSetpointsRequest): Promise<void> {
+  const response = await fetchWithAuth('/api/v1/devices/temperature-setpoints', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Failed to update temperature setpoints');
+}
+
+export async function updateVolumeSettings(data: UpdateVolumeSettingsRequest): Promise<void> {
+  const response = await fetchWithAuth('/api/v1/devices/volume-settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to update volume settings');
+  }
+}
+
 export async function updateTempSettings(data: UpdateTempSettingsRequest): Promise<void> {
   const response = await fetchWithAuth('/api/v1/devices/temp-settings', {
     method: 'POST',
@@ -74,6 +119,41 @@ export async function toggleRecuperator(enable: boolean): Promise<void> {
   if (!response.ok) {
     throw new Error('Failed to toggle recuperator');
   }
+}
+
+export async function setScreenMode(screenMode: boolean): Promise<void> {
+  const endpoint = screenMode
+    ? '/api/v1/devices/screen-mode/activate'
+    : '/api/v1/devices/screen-mode/deactivate';
+  const response = await fetchWithAuth(endpoint, { method: 'POST' });
+
+  if (!response.ok) {
+    throw new Error('Failed to switch screen mode');
+  }
+}
+
+export async function getSchedules(): Promise<ScheduleListData> {
+  const response = await fetchWithAuth('/api/v1/devices/schedules');
+  if (!response.ok) throw new Error('Failed to load schedules');
+  return response.json();
+}
+
+export async function updateScheduleGroup(groupId: number, data: UpdateScheduleGroupRequest): Promise<void> {
+  const response = await fetchWithAuth(`/api/v1/devices/schedules/group/${groupId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Failed to update schedule group');
+}
+
+export async function toggleScheduleGroupActive(groupId: number, isActive: boolean): Promise<void> {
+  const response = await fetchWithAuth(`/api/v1/devices/schedules/group/${groupId}/active`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ isActive }),
+  });
+  if (!response.ok) throw new Error('Failed to toggle schedule group');
 }
 
 const normalizeUpgradeStatus = (data?: Partial<UpgradeStatusData> | null): UpgradeStatusData => ({

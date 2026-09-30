@@ -4,5 +4,6 @@ public enum Role {
     ROLE_USER,
     ROLE_ADMIN,
     ROLE_READONLY,
-    ROLE_CONFIG
+    ROLE_CONFIG,
+    ROLE_TESTER
 }

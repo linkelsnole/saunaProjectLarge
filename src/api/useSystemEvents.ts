@@ -1,25 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
-import { fetchWithAuth } from "./authApi";
-import type { SystemEvent } from "./typesApi";
-
-export const useSystemEvents = (minutes: number) => {
-  const query = useQuery<SystemEvent[]>({
-    queryKey: ["systemEvents", minutes],
-    queryFn: async () => {
-      const response = await fetchWithAuth(`/api/v1/devices/events?minutes=${minutes}`);
-      if (!response.ok) throw new Error("Network response was not ok");
-      return response.json();
-    },
-    refetchInterval: 15000,
-    placeholderData: (prev) => prev,
-  });
-
-  return {
-    data: query.data,
-    isLoading: query.isLoading,
-    error: query.error,
-    isError: query.isError,
-    refetch: query.refetch,
-    isFetching: query.isFetching,
-  };
-};
+import { useQuery } from '@tanstack/react-query';
+import { readSystemEvents } from './systemEvents';
+export const useSystemEvents=(minutes:number)=>useQuery({
+ queryKey:['systemEvents',minutes],
+ queryFn:({signal})=>readSystemEvents(minutes,signal),
+ refetchInterval:15000,
+ retry:1,
+});

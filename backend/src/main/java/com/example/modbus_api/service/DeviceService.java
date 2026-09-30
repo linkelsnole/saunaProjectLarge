@@ -1,6 +1,5 @@
 package com.example.modbus_api.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.example.modbus_api.dto.SensorData;
 import com.example.modbus_api.dto.CalibrationData;
@@ -10,7 +9,9 @@ import com.example.modbus_api.dto.FanFlowData;
 import com.example.modbus_api.dto.RecuperatorStatusDto;
 import com.example.modbus_api.dto.ManualSettingsDto;
 import com.example.modbus_api.dto.TempSettingsDto;
+import com.example.modbus_api.dto.OrpSettingsDto;
 import com.example.modbus_api.dto.RecuperatorSettingsDto;
+import com.example.modbus_api.dto.VolumeSettingsDto;
 
 import java.util.Map;
 import java.util.List;
@@ -26,7 +27,6 @@ import static com.example.modbus_api.service.ModbusConstants.*;
 public class DeviceService {
 	private final ModbusClientAdapter modbusClient;
 
-	@Autowired
 	public DeviceService(ModbusClientAdapter modbusClient) {
 		this.modbusClient = modbusClient;
 	}
@@ -67,6 +67,50 @@ public class DeviceService {
 		Map<Integer, Integer> results = modbusClient.readRegisters(SAUNA_PLC, Collections.singletonList(REG_R_STATE));
 		int stateCode = results.getOrDefault(REG_R_STATE, 0);
 		return (stateCode & 32) != 0;
+	}
+
+	public void setScreenMode(boolean screenMode) throws IOException {
+		List<Integer> modeRegisters = new ArrayList<>();
+		for (int i = 0; i < ModbusRegisterMap.SCHEDULE_COUNT; i++) {
+			modeRegisters.add(ModbusRegisterMap.scheduleBase(i));
+		}
+		Map<Integer, Integer> modes = modbusClient.readRegisters(SAUNA_PLC, modeRegisters);
+		Integer userSetBase = findUserSetScheduleBase(modes);
+		if (userSetBase == null) {
+			throw new IOException("Расписание UserSet (mode=5) не найдено");
+		}
+
+		int stateRegister = userSetBase + ModbusRegisterMap.SCHEDULE_STATE_OFFSET;
+		Integer currentState = modbusClient.readRegister(SAUNA_PLC, stateRegister);
+		if (currentState == null || currentState == INVALID_VALUE) {
+			throw new IOException("Не удалось прочитать состояние UserSet");
+		}
+		// Как в основной схеме 301: передаём полное состояние UserSet,
+		// чтобы при выходе с экрана сбросить и Selected, и прежний Working.
+		int requestedState = screenMode ? 1 : 0;
+		modbusClient.writeRegister(SAUNA_PLC, stateRegister, requestedState);
+		try {
+			Thread.sleep(100);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IOException("Прервано подтверждение состояния UserSet", e);
+		}
+		int confirmedState = modbusClient.readRegister(SAUNA_PLC, stateRegister);
+		System.out.printf("UserSet %s state[0x%04X]: before=%d, requested=%d, readback=%d (before command 6)%n",
+			SAUNA_PLC, stateRegister, currentState, requestedState, confirmedState);
+		if (confirmedState != requestedState) {
+			System.err.println("UserSet: прочитанное состояние отличается от отправленного; команда применяется как в 301");
+		}
+		// Как в 301: возврат к расписанию всегда применяет режим,
+		// активация экрана — только когда агрегат уже вентилирует.
+		if (!screenMode) {
+			modbusClient.writeRegister(SAUNA_PLC, REG_AGGREGATE_CMD, CMD_FAST_MODE_CHANGE);
+		} else {
+			Integer aggregateState = modbusClient.readRegister(SAUNA_PLC, REG_R_STATE);
+			if (isValid(aggregateState) && (aggregateState & MASK_STATE_VENTILATION) != 0) {
+				modbusClient.writeRegister(SAUNA_PLC, REG_AGGREGATE_CMD, CMD_FAST_MODE_CHANGE);
+			}
+		}
 	}
 
 	public DashboardData getDashboardData() throws IOException {
@@ -186,82 +230,151 @@ public class DeviceService {
 			REG_RECUP_STATE  // 0x00A4 RecupState — текущее состояние рекуператора
 		));
 
+		// Новая карта общей схемы. Чтения специфичных для большой сауны
+		// REG_Z_WORKSTATE2 и REG_R_TEMP выше сохраняются до уточнения их адресов.
+		int[] sensorBases = {
+			ModbusRegisterMap.SENSOR_T1, ModbusRegisterMap.SENSOR_T2,
+			ModbusRegisterMap.SENSOR_T3, ModbusRegisterMap.SENSOR_T4_1,
+			ModbusRegisterMap.SENSOR_T4_2, ModbusRegisterMap.SENSOR_T5,
+			ModbusRegisterMap.SENSOR_TH1, ModbusRegisterMap.SENSOR_TC1,
+			ModbusRegisterMap.SENSOR_TH2, ModbusRegisterMap.SENSOR_TC2
+		};
+		for (int base : sensorBases) {
+			allRegs.add(base + ModbusRegisterMap.TEMPERATURE_OFFSET);
+			allRegs.add(base + ModbusRegisterMap.HUMIDITY_OFFSET);
+		}
+		int[] floatRegisters = {
+			ModbusRegisterMap.PRESSURE_FAN_SUPPLY_1,
+			ModbusRegisterMap.PRESSURE_FAN_SUPPLY_2,
+			ModbusRegisterMap.PRESSURE_FAN_EXHAUST_1,
+			ModbusRegisterMap.PRESSURE_FAN_EXHAUST_2,
+			ModbusRegisterMap.PRESSURE_FILTER_SUPPLY,
+			ModbusRegisterMap.PRESSURE_FILTER_EXHAUST,
+			ModbusRegisterMap.PRESSURE_RECUP_SUPPLY,
+			ModbusRegisterMap.PRESSURE_RECUP_EXHAUST,
+			ModbusRegisterMap.FAN_SUPPLY_1 + ModbusRegisterMap.FAN_AIRFLOW_OFFSET,
+			ModbusRegisterMap.FAN_SUPPLY_2 + ModbusRegisterMap.FAN_AIRFLOW_OFFSET,
+			ModbusRegisterMap.FAN_EXHAUST_1 + ModbusRegisterMap.FAN_AIRFLOW_OFFSET,
+			ModbusRegisterMap.FAN_EXHAUST_2 + ModbusRegisterMap.FAN_AIRFLOW_OFFSET,
+			ModbusRegisterMap.AIRFLOW_ECO,
+			ModbusRegisterMap.AIRFLOW_NORMAL,
+			ModbusRegisterMap.AIRFLOW_INTENSIVE,
+			ModbusRegisterMap.AIRFLOW_MANUAL,
+			ModbusRegisterMap.AIRFLOW_TARGET,
+			ModbusRegisterMap.AIRFLOW_REAL
+		};
+		for (int register : floatRegisters) {
+			addFloatRegister(allRegs, register);
+		}
+		allRegs.addAll(Arrays.asList(
+			ModbusRegisterMap.FAN_SUPPLY_1 + ModbusRegisterMap.FAN_PERCENT_OFFSET,
+			ModbusRegisterMap.FAN_SUPPLY_2 + ModbusRegisterMap.FAN_PERCENT_OFFSET,
+			ModbusRegisterMap.FAN_EXHAUST_1 + ModbusRegisterMap.FAN_PERCENT_OFFSET,
+			ModbusRegisterMap.FAN_EXHAUST_2 + ModbusRegisterMap.FAN_PERCENT_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.HEAT_PERCENT_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.COOL_PERCENT_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.HEAT_PERCENT_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.COOL_PERCENT_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.TARGET_TEMPERATURE_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.TARGET_TEMPERATURE_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.TEMPERATURE_CONTROL_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.TEMPERATURE_CONTROL_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.INFLOW_TARGET_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.INFLOW_TARGET_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.OUTFLOW_TARGET_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.OUTFLOW_TARGET_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.ORP_TARGET_T1_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.ORP_CURRENT_T1_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.ORP_TARGET_T2_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.ORP_CURRENT_T2_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.ORP_TARGET_T3_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.ORP_CURRENT_T3_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.ORP_TARGET_T1_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.ORP_CURRENT_T1_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.ORP_TARGET_T2_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.ORP_CURRENT_T2_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.ORP_TARGET_T3_OFFSET,
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.ORP_CURRENT_T3_OFFSET,
+			ModbusRegisterMap.VENTILATION_MODE,
+			ModbusRegisterMap.AIRFLOW_IMBALANCE,
+			ModbusRegisterMap.RECUPERATOR_MAX_RPM
+		));
+		for (int i = 0; i < ModbusRegisterMap.SCHEDULE_COUNT; i++) {
+			int base = ModbusRegisterMap.scheduleBase(i);
+			allRegs.add(base);
+			allRegs.add(base + ModbusRegisterMap.SCHEDULE_STATE_OFFSET);
+		}
+
 		Map<Integer, Integer> data =  modbusClient.readRegisters(SAUNA_PLC, allRegs);
 
 		List<ClimateSensorDto> climate = Arrays.asList(
-			// --- ТЕМПЕРАТУРА (тип 1) ---
-			mapClimate("BT3", "T1", REG_T_BT3, data),
-			mapClimate("BT11", "T2", REG_T_BT11, data),
-			mapClimate("BT10", "T3", REG_T_BT10, data),
-			mapClimate("BT1", "T4-1", REG_T_BT1, data),
-			mapClimate("BT2", "T5", REG_T_BT2, data),
-			mapClimate("BT21", "T4-2", REG_T_BT21, data),
-
-			// --- ТЕМПЕРАТУРА (тип 2) ---
-			mapClimate("BT8", "BT8", REG_T_BT8, data),
-			mapClimate("BT9", "BT9", REG_T_BT9, data),
-			mapClimate("BT24", "BT24", REG_T_BT24, data),
-			mapClimate("BT27", "BT27", REG_T_BT27, data),
-
-			// --- ТЕМПЕРАТУРЫ ЗОН ---
-			mapZoneTemperature("T_ZONE1", "T_ZONE1", REG_T_ZONE1, data),
-			mapZoneTemperature("T_ZONE2", "T_ZONE2", REG_T_ZONE2, data)
+			mapClimate("BT3", "T1", ModbusRegisterMap.SENSOR_T1, data),
+			mapClimate("BT11", "T2", ModbusRegisterMap.SENSOR_T2, data),
+			mapClimate("BT10", "T3", ModbusRegisterMap.SENSOR_T3, data),
+			mapClimate("BT1", "T4-1", ModbusRegisterMap.SENSOR_T4_1, data),
+			mapClimate("BT2", "T5", ModbusRegisterMap.SENSOR_T5, data),
+			mapClimate("BT21", "T4-2", ModbusRegisterMap.SENSOR_T4_2, data),
+			mapClimate("BT8", "BT8", ModbusRegisterMap.SENSOR_TH1, data),
+			mapClimate("BT9", "BT9", ModbusRegisterMap.SENSOR_TC1, data),
+			mapClimate("BT24", "BT24", ModbusRegisterMap.SENSOR_TH2, data),
+			mapClimate("BT27", "BT27", ModbusRegisterMap.SENSOR_TC2, data),
+			mapZoneTemperature("T_ZONE1", "T_ZONE1",
+				ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.TARGET_TEMPERATURE_OFFSET, data),
+			mapZoneTemperature("T_ZONE2", "T_ZONE2",
+				ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.TARGET_TEMPERATURE_OFFSET, data)
 		);
 
-		// --- ДАВЛЕНИЕ (Вентиляторы) ---
-		Integer targetFlow = data.get(REG_F_TARGET);
-		Integer powerProc = data.get(REG_POWERPROC);
-		
-		Double targetRight = null;
-		if (targetFlow != null && powerProc != null) {
-			targetRight = (100.0 + powerProc / 10.0) / 100.0 * targetFlow;
+		Double targetRight = decodeFloat(data, ModbusRegisterMap.AIRFLOW_TARGET);
+		Double imbalance = getValidScaledSigned(data.get(ModbusRegisterMap.AIRFLOW_IMBALANCE), 10.0);
+		Double targetLeft = targetRight;
+		if (targetRight != null && imbalance != null) {
+			targetLeft = targetRight * (1.0 - imbalance / 100.0);
 		}
 		
-		Double targetLeft = targetFlow != null ? targetFlow.doubleValue() : null;
-		
 		List<FanFlowData> fans = Arrays.asList(
-			mapFan("BF11", "Давление/Вентилятор 1", REG_P_BF11, REG_P_VM11, targetRight, data, REG_F_G11),
-			mapFan("BF12", "Давление/Вентилятор 2", REG_P_BF12,  REG_P_VM12, targetRight, data, REG_F_G12),
-			mapFan("BF21", "Давление/Вентилятор 3", REG_P_BF21, REG_P_VM21, targetLeft, data, REG_F_G21),
-			mapFan("BF22", "Давление/Вентилятор 4", REG_P_BF22, REG_P_VM22, targetLeft, data, REG_F_G22)
+			mapFan("BF11", "Давление/Вентилятор 1", ModbusRegisterMap.PRESSURE_FAN_SUPPLY_1, ModbusRegisterMap.FAN_SUPPLY_1, targetRight, data),
+			mapFan("BF12", "Давление/Вентилятор 2", ModbusRegisterMap.PRESSURE_FAN_SUPPLY_2, ModbusRegisterMap.FAN_SUPPLY_2, targetRight, data),
+			mapFan("BF21", "Давление/Вентилятор 3", ModbusRegisterMap.PRESSURE_FAN_EXHAUST_1, ModbusRegisterMap.FAN_EXHAUST_1, targetLeft, data),
+			mapFan("BF22", "Давление/Вентилятор 4", ModbusRegisterMap.PRESSURE_FAN_EXHAUST_2, ModbusRegisterMap.FAN_EXHAUST_2, targetLeft, data)
 		);
 		 
 
 		// --- ДАВЛЕНИЕ (W)  ---
 		List<SensorData> wSensors = Arrays.asList(
-			createSensor("BP1", "Давление \"W right\"", data.get(REG_P_BP1), "Pa", 1.0),
-			createSensor("BP2", "Давление \"W left\"", data.get(REG_P_BP2), "Pa", 1.0)
+			createSensor("BP1", "Давление фильтра НВ", decodeFloat(data, ModbusRegisterMap.PRESSURE_FILTER_SUPPLY), "Pa"),
+			createSensor("BP2", "Давление фильтра ОВ", decodeFloat(data, ModbusRegisterMap.PRESSURE_FILTER_EXHAUST), "Pa")
 		);
 
 		
 
 		// --- ДАВЛЕНИЕ (Рекуп)  ---
 		List<SensorData> pressureSensors = Arrays.asList(
-			createSensor("BP5", "Давление \"слева от рекупа\"", data.get(REG_P_BP5), "Pa", 1.0),
-			createSensor("BP10", "Давление \"справа от рекупа\"", data.get(REG_P_BP10), "Pa", 1.0)
+			createSensor("BP5", "Давление рекуператора ОВ-ВВ", decodeFloat(data, ModbusRegisterMap.PRESSURE_RECUP_EXHAUST), "Pa"),
+			createSensor("BP10", "Давление рекуператора НВ-ОВ", decodeFloat(data, ModbusRegisterMap.PRESSURE_RECUP_SUPPLY), "Pa")
 		);
 
 		// --- КЛАПАНЫ ---
 		List<SensorData> valves = Arrays.asList(
-			createSensor("VH1", "Клапан + слева", data.get(REG_F_VH1), "%"),
-			createSensor("VC1", "Клапан - справа", data.get(REG_F_VC1), "%"),
-			createSensor("VH2", "Клапан + справа", data.get(REG_F_VH2), "%"),
-			createSensor("VC2", "Клапан - справа", data.get(REG_F_VC2), "%")
+			createSensor("VH1", "Нагрев зона 1", getValidScaledSigned(data.get(ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.HEAT_PERCENT_OFFSET), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
+			createSensor("VC1", "Охлаждение зона 1", getValidScaledSigned(data.get(ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.COOL_PERCENT_OFFSET), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
+			createSensor("VH2", "Нагрев зона 2", getValidScaledSigned(data.get(ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.HEAT_PERCENT_OFFSET), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
+			createSensor("VC2", "Охлаждение зона 2", getValidScaledSigned(data.get(ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.COOL_PERCENT_OFFSET), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%")
 		);
 
 		List<SensorData> debugValveSensors = Arrays.asList(
-			createSensor("VHP1", "Положение вентиля ГВ зона 1", data.get(REG_VALVE_HEAT_POS1), "%"),
-			createSensor("VCP1", "Положение вентиля ХВ зона 1", data.get(REG_VALVE_COOL_POS1), "%"),
-			createSensor("VOP1", "% доп. открытия вентиля ГВ зона 1", data.get(REG_VALVE_OPEN_PROC1), "%"),
-			createSensor("VHP2", "Положение вентиля ГВ зона 2", data.get(REG_VALVE_HEAT_POS2), "%"),
-			createSensor("VCP2", "Положение вентиля ХВ зона 2", data.get(REG_VALVE_COOL_POS2), "%"),
-			createSensor("VOP2", "% доп. открытия вентиля ГВ зона 2", data.get(REG_VALVE_OPEN_PROC2), "%")
+			createSensor("VHP1", "Положение вентиля ГВ зона 1", getValidScaledSigned(data.get(REG_VALVE_HEAT_POS1), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
+			createSensor("VCP1", "Положение вентиля ХВ зона 1", getValidScaledSigned(data.get(REG_VALVE_COOL_POS1), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
+			createSensor("VOP1", "% доп. открытия вентиля ГВ зона 1", getValidScaledSigned(data.get(REG_VALVE_OPEN_PROC1), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
+			createSensor("VHP2", "Положение вентиля ГВ зона 2", getValidScaledSigned(data.get(REG_VALVE_HEAT_POS2), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
+			createSensor("VCP2", "Положение вентиля ХВ зона 2", getValidScaledSigned(data.get(REG_VALVE_COOL_POS2), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
+			createSensor("VOP2", "% доп. открытия вентиля ГВ зона 2", getValidScaledSigned(data.get(REG_VALVE_OPEN_PROC2), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%")
 		);
 
 		
 
 		// --- РЕКУПЕРАТОР ---
-		Integer recupSpeed = getValidSignedOrNull(data.get(REG_R_RECUP_SPEED));
+		Integer recupSpeed = roundToInteger(getValidScaledSigned(
+			data.get(ModbusRegisterMap.RECUPERATOR_CURRENT_RPM), 100.0));
 		Double efficiency = calcEfficiency(data);
 		List<SensorData> recuperator = Arrays.asList(
 			createSensor("R_EFFICIENCY", "КПД", efficiency, "%")
@@ -270,7 +383,7 @@ public class DeviceService {
 		//  -- РЕКУПЕРАТОР ШАГ и БЫСТРАЯ СМЕНА РЕЖИМА --
 		
 
-		Integer stateCode = data.get(REG_R_STATE);
+		Integer stateCode = data.get(ModbusRegisterMap.AGGREGATE_STATE);
 		String stateName = resolveRecuperatorStateName(stateCode);
 		boolean isEffectivelyOff = stateCode == null || stateCode == 0 || (stateCode & 1) != 0 || stateCode == 128;
 		
@@ -281,35 +394,56 @@ public class DeviceService {
 			.build();
 
 	
-		Integer vm1 = getValidOrNull(data.get(REG_F_VM1));
-		Integer vm2 = getValidOrNull(data.get(REG_F_VM2));
+		Integer vm1 = sumFloatRegisters(data,
+			ModbusRegisterMap.FAN_SUPPLY_1 + ModbusRegisterMap.FAN_AIRFLOW_OFFSET,
+			ModbusRegisterMap.FAN_SUPPLY_2 + ModbusRegisterMap.FAN_AIRFLOW_OFFSET);
+		Integer vm2 = sumFloatRegisters(data,
+			ModbusRegisterMap.FAN_EXHAUST_1 + ModbusRegisterMap.FAN_AIRFLOW_OFFSET,
+			ModbusRegisterMap.FAN_EXHAUST_2 + ModbusRegisterMap.FAN_AIRFLOW_OFFSET);
 		
-		// --- MANUAL PROC ---
-		Double vManualProcIn = getValidScaled(data.get(REG_V_VManualProcIn), 10.0);
-		Double vManualDProcOut = getValidScaled(data.get(REG_V_VManualDProcOut), 10.0);
+		Double manualAirflow = decodeFloat(data, ModbusRegisterMap.AIRFLOW_MANUAL);
+		Double boostPercent = getValidScaledSigned(data.get(ModbusRegisterMap.AIRFLOW_IMBALANCE), 10.0);
 
 		
 		// --- MANUAL SETTINGS DTO ---
 		ManualSettingsDto manualSettings = ManualSettingsDto.builder()
-			.supplySpeed(vManualProcIn)
-			.boostPercent(vManualDProcOut)
+			.supplySpeed(manualAirflow)
+			.boostPercent(boostPercent)
+			.build();
+
+		VolumeSettingsDto volumeSettings = VolumeSettingsDto.builder()
+			.ecoAirflow(decodeFloat(data, ModbusRegisterMap.AIRFLOW_ECO))
+			.normalAirflow(decodeFloat(data, ModbusRegisterMap.AIRFLOW_NORMAL))
+			.intensiveAirflow(decodeFloat(data, ModbusRegisterMap.AIRFLOW_INTENSIVE))
+			.manualAirflow(manualAirflow)
+			.boostPercent(boostPercent)
 			.build();
 		
 		// --- TEMP SETTINGS DTO ---
-		Double waterWarn = getValidScaled(data.get(REG_T_WATER_WARN), 10.0);
-		Double waterFail = getValidScaled(data.get(REG_T_WATER_FAIL), 10.0);
-		Double inflowWarn = getValidScaled(data.get(REG_T_INFLOW_WARN), 10.0);
-		Double inflowFail = getValidScaled(data.get(REG_T_INFLOW_FAIL), 10.0);
+		Double waterWarn = getValidScaledSigned(data.get(REG_T_WATER_WARN), 10.0);
+		Double waterFail = getValidScaledSigned(data.get(REG_T_WATER_FAIL), 10.0);
+		Double inflowWarn = getValidScaledSigned(data.get(REG_T_INFLOW_WARN), 10.0);
+		Double inflowFail = getValidScaledSigned(data.get(REG_T_INFLOW_FAIL), 10.0);
 		
-		// Целевые температуры зон берутся напрямую из REG_T_ZONE1/ZONE2 (уже прочитаны выше)
-		Double targetZone1 = data.get(REG_T_ZONE1) != null ? data.get(REG_T_ZONE1).doubleValue() : null;
-		Double targetZone2 = data.get(REG_T_ZONE2) != null ? data.get(REG_T_ZONE2).doubleValue() : null;
+		Double inflowTargetZone1 = getValidScaledSigned(data.get(
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.INFLOW_TARGET_OFFSET), 10.0);
+		Double inflowTargetZone2 = getValidScaledSigned(data.get(
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.INFLOW_TARGET_OFFSET), 10.0);
+		Double outflowTargetZone1 = getValidScaledSigned(data.get(
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.OUTFLOW_TARGET_OFFSET), 10.0);
+		Double outflowTargetZone2 = getValidScaledSigned(data.get(
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.OUTFLOW_TARGET_OFFSET), 10.0);
+		Double outflowTarget = outflowTargetZone1 != null ? outflowTargetZone1 : outflowTargetZone2;
+		Double targetZone1 = inflowTargetZone1;
+		Double targetZone2 = inflowTargetZone2;
+		OrpSettingsDto orpZone1 = readOrpSettings(data, ModbusRegisterMap.HEATER_ZONE_1);
+		OrpSettingsDto orpZone2 = readOrpSettings(data, ModbusRegisterMap.HEATER_ZONE_2);
 		
 		Integer ctrlModeZone1 = data.get(REG_T_CTRL_MODE_ZONE1);
 		Integer ctrlModeZone2 = data.get(REG_T_CTRL_MODE_ZONE2);
 
 		//Задвижки
-		Integer workStateRaw = data.get(REG_Z_WORKSTATE);
+		Integer workStateRaw = data.get(ModbusRegisterMap.WORK_STATE);
 		Boolean damperSupply = null;
 		Boolean damperExhaust = null;
 		if (workStateRaw != null) {
@@ -325,35 +459,46 @@ public class DeviceService {
 		Boolean pumpActive = workState2Raw != null && (workState2Raw & MASK_PUMP_WORKSTATE) != 0;
 
 		// целые значения 0, 1, 2, 3, 4
-		Integer recupStateRaw = data.get(REG_RECUP_STATE);
-		Integer recupStateCode = (recupStateRaw != null && recupStateRaw >= 0 && recupStateRaw <= 4) ? recupStateRaw : null;
+		Integer recupStateRaw = data.get(ModbusRegisterMap.RECUPERATOR_STATE);
+		Integer recupStateCode = (recupStateRaw != null && recupStateRaw >= 0 && recupStateRaw <= 6) ? recupStateRaw : null;
 		String recupStateName = recupStateCode != null ? RECUP_STATES.get(recupStateCode) : (recupStateRaw != null ? "Неизвестно (" + recupStateRaw + ")" : null);
 
 		//Логи
 		System.out.println("DEBUG: текущее состояние агрегата: " + stateCode + " - " + stateName);
 		
 		// --- НОВЫЕ РЕГИСТРЫ РЕКУПЕРАТОРА ---
-		Double recupTargetRpm = getValidScaled(data.get(TARGET_R_REG), 100.0);  // Обороты вала рекуператора (целевые)
-		Double recupCurrentRpm = getValidScaled(data.get(CURRENT_R_REG), 100.0); // Обороты вала
-		Double recupSpeedRpm = getValidScaledSigned(data.get(SPEED_R_REG), 10.0); // Скорость вращения 0x0082 (signed 16-bit)
+		Double recupTargetRpm = getValidScaledSigned(data.get(ModbusRegisterMap.RECUPERATOR_TARGET_RPM), 100.0);
+		Double recupCurrentRpm = getValidScaledSigned(data.get(ModbusRegisterMap.RECUPERATOR_CURRENT_RPM), 100.0);
+		Double recupSpeedRpm = getValidScaledSigned(data.get(ModbusRegisterMap.RECUPERATOR_MOTOR_RPM), 10.0);
 		Integer rawTempBt6 = data.get(REG_R_TEMP);
 		Double recupTempBt6 = isValid(rawTempBt6) ? ((short) rawTempBt6.intValue()) / 10.0 : null;
 
-		Double recupTargetRpmMax = getValidScaled(data.get(REG_R_TARGET_RPM_MAX), 10.0);
+		Double recupTargetRpmMax = getValidScaledSigned(data.get(ModbusRegisterMap.RECUPERATOR_MAX_RPM), 100.0);
 		Integer recupTargetPercent = null;
 		if (recupTargetRpm != null && recupTargetRpmMax != null && recupTargetRpmMax > 0) {
 			recupTargetPercent = (int) Math.round((recupTargetRpm / recupTargetRpmMax) * 100);
 		}
+		Integer ventilationModeCode = getValidOrNull(data.get(ModbusRegisterMap.VENTILATION_MODE));
+		Integer temperatureControlModeZone1Code = getValidOrNull(data.get(
+			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.TEMPERATURE_CONTROL_OFFSET));
+		Integer temperatureControlModeZone2Code = getValidOrNull(data.get(
+			ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.TEMPERATURE_CONTROL_OFFSET));
+		Boolean screenMode = readScreenMode(data);
 
-		// --- УСТАВКИ РЕКУПЕРАТОРА (25.01.2026) ---
+		// --- УСТАВКИ РЕКУПЕРАТОРА ---
 		RecuperatorSettingsDto recuperatorSettings = RecuperatorSettingsDto.builder()
-			.targetRpmMin(getValidScaled(data.get(REG_R_TARGET_RPM_MIN), 10.0))   // Минимальные целевые обороты вала рекуператора в оборотах в минуту (масштаб ×10 в регистре)
-			.targetRpmMax(getValidScaled(data.get(REG_R_TARGET_RPM_MAX), 10.0))   // Максимальные целевые обороты вала рекуператора в оборотах в минуту (масштаб ×10 в регистре)
-			.targetRpmStep(getValidScaled(data.get(REG_R_TARGET_RPM_STEP), 10.0))  // Шаг калибровки целевых оборотов рекуператора в оборотах в минуту (масштаб ×10 в регистре)
-			.trackingIntervalRecup(getValidOrNull(data.get(REG_R_TRACK_INTERVAL))) // п.4 приоритета 0: 0x0064 интервал слежения по рекуператору, сырое
+			.targetRpmMin(getValidScaled(data.get(REG_R_TARGET_RPM_MIN), 100.0))
+			.targetRpmMax(getValidScaled(data.get(REG_R_TARGET_RPM_MAX), 100.0))
+			.targetRpmStep(getValidScaled(data.get(REG_R_TARGET_RPM_STEP), 100.0))
+			.trackingIntervalRecup(getValidOrNull(data.get(REG_R_TRACK_INTERVAL)))
 			.build();
 		
 		TempSettingsDto tempSettings = TempSettingsDto.builder()
+			.outflowTarget(outflowTarget)
+			.inflowTargetZone1(inflowTargetZone1)
+			.inflowTargetZone2(inflowTargetZone2)
+			.orpZone1(orpZone1)
+			.orpZone2(orpZone2)
 			.valveStartupPosition(getValidOrNull(data.get(REG_T_VALVE_START_POS)))       // п.1: 0x00E1 положение вентилей при запуске
 			.controlAlgorithm(getValidOrNull(data.get(REG_T_CTRL_ALGORITHM)))           // п.2: 0x00DD алгоритм управления
 			.tempTrackingInterval(getValidOrNull(data.get(REG_T_TRACK_INTERVAL)))       // п.3: 0x007E интервал слежения по T
@@ -365,11 +510,11 @@ public class DeviceService {
 			.inflowFailThreshold(inflowFail)
 			.ctrlModeZone1(ctrlModeZone1)
 			.ctrlModeZone2(ctrlModeZone2)
-			.neutralZoneT(getValidScaled(data.get(REG_T_NEUTRAL_ZONE), 10.0))
-			.hotValveMinProc(getValidScaled(data.get(REG_HOT_VALVE_MIN_PROC), 10.0))
-			.waterMinTNoWork(getValidScaled(data.get(REG_T_WATER_NO_WORK), 10.0))
-			.waterMinTWork(getValidScaled(data.get(REG_T_WATER_WORK), 10.0))
-			.radTempFail(getValidScaled(data.get(REG_T_RAD_FZ_FAIL), 10.0))
+			.neutralZoneT(getValidScaledSigned(data.get(REG_T_NEUTRAL_ZONE), 10.0))
+			.hotValveMinProc(getValidScaledSigned(data.get(REG_HOT_VALVE_MIN_PROC), 10.0))
+			.waterMinTNoWork(getValidScaledSigned(data.get(REG_T_WATER_NO_WORK), 10.0))
+			.waterMinTWork(getValidScaledSigned(data.get(REG_T_WATER_WORK), 10.0))
+			.radTempFail(getValidScaledSigned(data.get(REG_T_RAD_FZ_FAIL), 10.0))
 			.build();
 		
 		return DashboardData.builder()
@@ -383,9 +528,12 @@ public class DeviceService {
 			.vm2(vm2)
 			.vm1(vm1)
 			.recupSpeed(recupSpeed)
-			.vManualProcIn(vManualProcIn)
-			.vManualDProcOut(vManualDProcOut)
+			.vManualProcIn(manualAirflow)
+			.vManualDProcOut(boostPercent)
 			.manualSettings(manualSettings)
+			.volumeSettings(volumeSettings)
+			.airflowTarget(targetRight)
+			.airflowReal(vm1 == null ? null : vm1.doubleValue())
 			.tempSettings(tempSettings)
 			.recuperatorSettings(recuperatorSettings)
 			.debugValveSensors(debugValveSensors) //22.01.2026
@@ -399,9 +547,27 @@ public class DeviceService {
 			.recupSpeedRpm(recupSpeedRpm)
 			.recupTempBt6(recupTempBt6)
 			.recupTargetPercent(recupTargetPercent)
+			.ventilationModeCode(ventilationModeCode)
+			.ventilationModeName(ModbusRegisterMap.ventilationModeName(ventilationModeCode))
+			.temperatureControlModeZone1Code(temperatureControlModeZone1Code)
+			.temperatureControlModeZone1Name(ModbusRegisterMap.temperatureControlName(temperatureControlModeZone1Code))
+			.temperatureControlModeZone2Code(temperatureControlModeZone2Code)
+			.temperatureControlModeZone2Name(ModbusRegisterMap.temperatureControlName(temperatureControlModeZone2Code))
+			.screenMode(screenMode)
 			.calibration(CalibrationData.builder()
 				.calibrating(stateCode != null && (stateCode & 32) != 0)
 				.build())
+			.build();
+	}
+
+	private OrpSettingsDto readOrpSettings(Map<Integer, Integer> data, int base) {
+		return OrpSettingsDto.builder()
+			.targetT1(getValidScaledSigned(data.get(base + ModbusRegisterMap.ORP_TARGET_T1_OFFSET), 1.0))
+			.currentT1(getValidScaledSigned(data.get(base + ModbusRegisterMap.ORP_CURRENT_T1_OFFSET), 1.0))
+			.targetT2(getValidScaledSigned(data.get(base + ModbusRegisterMap.ORP_TARGET_T2_OFFSET), 1.0))
+			.currentT2(getValidScaledSigned(data.get(base + ModbusRegisterMap.ORP_CURRENT_T2_OFFSET), 1.0))
+			.targetT3(getValidScaledSigned(data.get(base + ModbusRegisterMap.ORP_TARGET_T3_OFFSET), 1.0))
+			.currentT3(getValidScaledSigned(data.get(base + ModbusRegisterMap.ORP_CURRENT_T3_OFFSET), 1.0))
 			.build();
 	}
 
@@ -409,8 +575,8 @@ public class DeviceService {
 
 
 	private ClimateSensorDto mapClimate(String id, String label, int register, Map<Integer, Integer> data) {
-		Integer temp = data.get(register + OFFSET_TEMP);
-		Integer humid = data.get(register + OFFSET_HUMID);
+		Integer temp = data.get(register + ModbusRegisterMap.TEMPERATURE_OFFSET);
+		Integer humid = data.get(register + ModbusRegisterMap.HUMIDITY_OFFSET);
 		return ClimateSensorDto.builder()
 			.id(id)
 			.label(label)
@@ -420,26 +586,25 @@ public class DeviceService {
 	}
 
 	private ClimateSensorDto mapZoneTemperature(String id, String label, int register, Map<Integer, Integer> data) {
-		Integer temp = data.get(register + OFFSET_TEMP);
-		Integer humid = data.get(register + OFFSET_HUMID);
+		Integer temp = data.get(register);
 		return ClimateSensorDto.builder()
 			.id(id)
 			.label(label)
-			.temperature(temp != null ? temp.doubleValue() : null)
-			.humidity(getValidScaled(humid, 10.0))
+			.temperature(getValidScaledSigned(temp, 10.0))
+			.humidity(null)
 			.build();
 	}
 
-	private FanFlowData mapFan(String id, String type, Integer pressureRegister, Integer vm, Double targetFlow, Map<Integer, Integer> data, Integer speedPerc) {
-		Integer pressureRaw = data.get(pressureRegister);
-		Integer vmRaw = data.get(vm);
-		Integer speedPercRaw = data.get(speedPerc);
+	private FanFlowData mapFan(String id, String type, int pressureRegister, int fanBase, Double targetFlow, Map<Integer, Integer> data) {
+		Double pressure = decodeFloat(data, pressureRegister);
+		Double airflow = decodeFloat(data, fanBase + ModbusRegisterMap.FAN_AIRFLOW_OFFSET);
+		Integer speedPercRaw = data.get(fanBase + ModbusRegisterMap.FAN_PERCENT_OFFSET);
 		
 		return FanFlowData.builder()
 			.type(type)
-			.pressure(getValidScaled(pressureRaw, 1.0))
-			.speedPerc(isValid(speedPercRaw) ? (int)(speedPercRaw / 100.0) : null)
-			.vm(getValidOrNull(vmRaw))
+			.pressure(pressure)
+			.speedPerc(roundToInteger(getValidScaledSigned(speedPercRaw, 100.0)))
+			.vm(roundToInteger(airflow))
 			.targetAirFlow(targetFlow)
 			.build();
 	}
@@ -456,6 +621,46 @@ public class DeviceService {
 
 	private SensorData createSensor(String id, String name, Integer rawValue, String unit) {
 		return createSensor(id, name, rawValue, unit, 10.0);
+	}
+
+	private void addFloatRegister(List<Integer> registers, int lowRegister) {
+		registers.add(lowRegister);
+		registers.add(lowRegister + 1);
+	}
+
+	private Double decodeFloat(Map<Integer, Integer> data, int lowRegister) {
+		return ModbusRegisterMap.decodeFloat(data.get(lowRegister), data.get(lowRegister + 1));
+	}
+
+	private Integer roundToInteger(Double value) {
+		return value == null ? null : (int) Math.round(value);
+	}
+
+	private Integer sumFloatRegisters(Map<Integer, Integer> data, int first, int second) {
+		Double firstValue = decodeFloat(data, first);
+		Double secondValue = decodeFloat(data, second);
+		return firstValue == null || secondValue == null ? null : (int) Math.round(firstValue + secondValue);
+	}
+
+	private Integer findUserSetScheduleBase(Map<Integer, Integer> data) {
+		for (int i = 0; i < ModbusRegisterMap.SCHEDULE_COUNT; i++) {
+			int base = ModbusRegisterMap.scheduleBase(i);
+			if (Integer.valueOf(ModbusRegisterMap.SCHEDULE_USERSET_MODE).equals(data.get(base))) {
+				return base;
+			}
+		}
+		return null;
+	}
+
+	private Boolean readScreenMode(Map<Integer, Integer> data) {
+		Integer userSetBase = findUserSetScheduleBase(data);
+		if (userSetBase == null) {
+			return null;
+		}
+		Integer state = data.get(userSetBase + ModbusRegisterMap.SCHEDULE_STATE_OFFSET);
+		return state == null || state == INVALID_VALUE
+			? null
+			: (state & ModbusRegisterMap.SCHEDULE_SELECTED_MASK) != 0;
 	}
 
 	// == HELPER METHODS
@@ -521,9 +726,9 @@ public class DeviceService {
 	}
 
 	private Double calcEfficiency(Map<Integer, Integer> data) {
-		Double bt3 = getTempFromReg(data, REG_T_BT3);
-		Double bt10 = getTempFromReg(data, REG_T_BT10);
-		Double bt2 = getTempFromReg(data, REG_T_BT2);
+		Double bt3 = getTempFromReg(data, ModbusRegisterMap.SENSOR_T1);
+		Double bt10 = getTempFromReg(data, ModbusRegisterMap.SENSOR_T3);
+		Double bt2 = getTempFromReg(data, ModbusRegisterMap.SENSOR_T5);
 		if (bt3 == null || bt10 == null || bt2 == null) return null;
 		double denom = Math.abs(bt3 - bt2);
 		if (denom < 1e-6) return null;
@@ -532,7 +737,7 @@ public class DeviceService {
 	}
 
 	private Double getTempFromReg(Map<Integer, Integer> data, int reg) {
-		Integer raw = data.get(reg + OFFSET_TEMP);
+		Integer raw = data.get(reg + ModbusRegisterMap.TEMPERATURE_OFFSET);
 		return isValid(raw) ? ((short) raw.intValue()) / 10.0 : null;
 	}
 }

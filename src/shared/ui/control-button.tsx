@@ -1,3 +1,4 @@
+import { isAggregateAlarm } from "@/schema/aggregateState"
 import { Button } from "@/shared/ui/button"
 import { Power, Loader2, AlertTriangle } from "lucide-react"
 import { useTranslation } from "react-i18next"
@@ -32,7 +33,7 @@ export function ControlButton({
   let Icon = Power
 
 
-  const isAlarm = stateCode != null && (stateCode & 6) !==0
+  const isAlarm = isAggregateAlarm(stateCode)
 
   if (isDataLoading) {
     buttonText = t("controlButton.loading")

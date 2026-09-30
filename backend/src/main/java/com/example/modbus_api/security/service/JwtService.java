@@ -1,6 +1,7 @@
 package com.example.modbus_api.security.service;
 
 import com.example.modbus_api.config.JwtProperties;
+import com.example.modbus_api.service.DefaultCredentialsRotation;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
@@ -17,17 +18,22 @@ import java.util.stream.Collectors;
 @Service
 public class JwtService {
 
+    private final com.example.modbus_api.service.DeletedUsers deleted;
     private final JwtProperties jwtProperties;
 
-    public JwtService(JwtProperties jwtProperties) {
+    public JwtService(JwtProperties jwtProperties,com.example.modbus_api.service.DeletedUsers deleted) {
+        this.deleted=deleted;
         this.jwtProperties = jwtProperties;
     }
 
     public String generateAccessToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<String, Object>();
+        Long lastDeletion=deleted.deletedAt(userDetails.getUsername());
+        claims.put("sessionCreatedAt", Math.max(System.currentTimeMillis(),lastDeletion==null?0:lastDeletion+1));
         claims.put("roles", userDetails.getAuthorities().stream()
                 .map(Object::toString)
                 .collect(Collectors.toList()));
+        if (DefaultCredentialsRotation.appliesTo(userDetails.getUsername())) claims.put("credentialsVersion", DefaultCredentialsRotation.VERSION);
         Date issuedAt = new Date();
         Date expiration = new Date(issuedAt.getTime() + jwtProperties.getAccessTokenExpirationMs());
 
@@ -45,7 +51,13 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        String username = extractUsername(token);
+        Claims claims = extractAllClaims(token);
+        String username = claims.getSubject();
+        Long deletedAt=deleted.deletedAt(username);
+        Number created=(Number)claims.get("sessionCreatedAt");
+        long issued=created!=null?created.longValue():claims.getIssuedAt()==null?0:claims.getIssuedAt().getTime();
+        if(deletedAt!=null && issued<=deletedAt) return false;
+        if (DefaultCredentialsRotation.appliesTo(username) && !DefaultCredentialsRotation.VERSION.equals(claims.get("credentialsVersion", String.class))) return false;
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
     }
 

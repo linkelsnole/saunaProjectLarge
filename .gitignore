@@ -31,3 +31,39 @@ backend/node/
 backend/*.iml
 backend/sauna_app.db
 backend/app.log
+
+# Local tooling
+/.claude/
+/.codex/
+/deploy2.sh
+
+# Runtime state, credentials and local reports (never publish)
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.token
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+*.jar
+!backend/.mvn/wrapper/maven-wrapper.jar
+*.backup-*
+*.deploy.lock
+__pycache__/
+*.py[cod]
+/coverage/
+/.config/
+/artifacts/
+/playwright-report/
+/test-results/
+/vpn-report-*.txt
+
+# VPN profiles contain client private keys
+*.ovpn
+*.p12
+*.pfx

@@ -1,3 +1,4 @@
+import SystemEventsJournal from './SystemEventsJournal'
 import { useState } from 'react'
 import { Download, FileSpreadsheet, History, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -11,12 +12,12 @@ import {
 } from '@/api/hooks'
 import type { UserActionEntry } from '@/api/typesApi'
 
-const WINDOW_OPTIONS = [1, 5, 30, 60, 1440]
+const WINDOW_OPTIONS = [1, 5, 30, 60, 1440, 43200, 129600]
 const TYPE_OPTIONS = ['ALL', 'POWER', 'MODE', 'SETPOINT', 'AUTH', 'OTHER']
 const INTERVAL_OPTIONS = [1, 5, 10, 30, 60]
 
 const cardClassName =
-	'rounded-2xl border border-slate-200 bg-white p-5 shadow-sm animate-in fade-in fill-mode-backwards duration-500 motion-reduce:animate-none'
+	'rounded-[22px] border border-slate-200/90 bg-white p-4 sm:p-5 shadow-[0_4px_18px_-12px_rgba(15,23,42,.15)] animate-in fade-in fill-mode-backwards duration-200 motion-reduce:animate-none'
 
 const readStoredNumber = (key: string, fallback: number, allowed: number[]) => {
 	const raw = Number(localStorage.getItem(key))
@@ -45,7 +46,7 @@ const Segmented = ({
 				onClick={() => onChange(option.value)}
 				disabled={disabled}
 				className={cn(
-					'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors duration-300',
+					'rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors duration-150 motion-reduce:transition-none',
 					value === option.value ? 'bg-slate-800 text-white' : 'text-slate-600 hover:bg-white'
 				)}
 			>
@@ -90,7 +91,7 @@ const DashboardLogs = () => {
 	}
 
 	const windowLabel = (minutes: number) =>
-		minutes < 60 ? `${minutes} ${t('dashboardLogs.units.min')}` : `${minutes / 60} ${t('dashboardLogs.units.hour')}`
+		minutes < 60 ? `${minutes} ${t('dashboardLogs.units.min')}` : minutes < 1440 ? `${minutes / 60} ${t('dashboardLogs.units.hour')}` : t('eventsJournal.days', { count: minutes / 1440 })
 
 	const fromMs = fromDate.getTime()
 	const toMs = toDate.getTime()
@@ -137,10 +138,11 @@ const DashboardLogs = () => {
 
 	return (
 		<div className="space-y-4 p-1">
+			<SystemEventsJournal mode="logs" />
 			<div className={cardClassName}>
-				<div className="flex items-start justify-between gap-4">
+				<div className="flex flex-wrap items-start justify-between gap-4">
 					<div className="flex min-w-0 items-center gap-4">
-						<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+						<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-slate-900">
 							<History className="h-5 w-5" />
 						</div>
 						<div className="min-w-0">
@@ -152,7 +154,7 @@ const DashboardLogs = () => {
 						options={WINDOW_OPTIONS.map((m) => ({ value: m, label: windowLabel(m) }))}
 						value={windowMinutes}
 						onChange={changeWindow}
-						className="max-w-[240px] shrink-0 justify-end xl:max-w-none"
+						className="max-w-full justify-start"
 					/>
 				</div>
 
@@ -190,7 +192,7 @@ const DashboardLogs = () => {
 
 			<div className={cn(cardClassName, '[animation-delay:80ms]')}>
 				<div className="flex items-center gap-4">
-					<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+					<div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-slate-900">
 						<FileSpreadsheet className="h-5 w-5" />
 					</div>
 					<div>
@@ -228,7 +230,7 @@ const DashboardLogs = () => {
 				<button
 					onClick={() => rangeValid && download.mutate({ from: fromMs, to: toMs })}
 					disabled={!rangeValid || download.isPending}
-					className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-sky-600 text-sm font-semibold text-white transition-colors duration-300 hover:bg-sky-700 disabled:pointer-events-none disabled:opacity-50"
+					className="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-slate-900 text-sm font-semibold text-white transition-colors duration-150 motion-reduce:transition-none hover:bg-slate-800 disabled:pointer-events-none disabled:opacity-50"
 				>
 					{download.isPending ? (
 						<Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" />

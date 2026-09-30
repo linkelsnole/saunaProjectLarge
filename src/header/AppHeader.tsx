@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { Avatar, AvatarFallback } from "@/shared/ui/avatar"
 import { Button } from "@/shared/ui/button"
@@ -14,6 +14,8 @@ import { useSettingsSheet } from "@/contexts/SettingsSheetContext"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu"
 import { useAuth } from "@/contexts/AuthContext"
 import { triggerReconnect } from "@/api/connectionApi"
+import { PanelVersionHistory } from "@/components/updates/PanelVersionHistory"
+import { UserManagementDialog } from "@/components/settings/UserManagementDialog"
 import { LanguageSwitcher } from "@/features/language-switcher/ui/LanguageSwitcher"
 import { useTranslation } from "react-i18next"
 
@@ -26,6 +28,8 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 	const settingsSheet = useSettingsSheet()
 	const navigate = useNavigate()
 	const isAdmin = role === 'ROLE_ADMIN'
+	const [usersOpen, setUsersOpen] = useState(false)
+	const [versionsOpen,setVersionsOpen]=useState(false)
 
 	const handleLogout = () => {
 		logout()
@@ -39,16 +43,17 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 
 	const getRoleDisplayName = (role: string | null) => {
 		if (!role) return t('header.roles.user')
+		if (role === 'ROLE_TESTER') return t('header.roles.tester')
 		if (role === 'ROLE_ADMIN') return t('header.roles.admin')
 		if (role === 'ROLE_READONLY') return t('header.roles.readonly')
+		if (role === 'ROLE_MGM') return t('header.roles.operator')
 		return t('header.roles.user')
 	}
 
 	return (
 		<header className="flex h-8 min-[360px]:h-12 items-center gap-4 bg-transparent w-full">
 			<div className="flex items-center gap-4 lg:gap-6 w-full">
-				{/* Кнопка уставок — только на мобилке */}
-				{settingsSheet && (
+				{settingsSheet && role !== 'ROLE_TESTER' && (
 					<Button
 						variant="ghost"
 						size="icon"
@@ -81,6 +86,8 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 								<User className="h-4 w-4 mr-2" />
 								<span>{t('header.profile')}</span>
 							</DropdownMenuItem>
+							{isAdmin && <DropdownMenuItem className="cursor-pointer text-base" onSelect={()=>setVersionsOpen(true)}><RefreshCcw className="h-4 w-4 mr-2"/><span>{t("panelHistory.title")}</span></DropdownMenuItem>}
+							{isAdmin && <DropdownMenuItem className="cursor-pointer text-base" onSelect={() => setUsersOpen(true)}><User className="h-4 w-4 mr-2" /><span>{t('users.title')}</span></DropdownMenuItem>}
 							{isAdmin && (
 								<DropdownMenuItem 
 									className="cursor-pointer text-base"
@@ -109,6 +116,8 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 					</DropdownMenu>
 				</div>
 			</div>
+			{isAdmin && <UserManagementDialog open={usersOpen} onOpenChange={setUsersOpen} />}
+			{isAdmin && <PanelVersionHistory open={versionsOpen} onOpenChange={setVersionsOpen}/>}
 		</header>
 	)
 }

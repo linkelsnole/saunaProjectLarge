@@ -10,4 +10,6 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<AppUser, Long>{
     Optional<AppUser> findByUsername(String username);
     Boolean existsByUsername(String username);
+    boolean existsByUsernameIgnoreCase(String username);
+    long countByRole(com.example.modbus_api.security.model.Role role);
 }

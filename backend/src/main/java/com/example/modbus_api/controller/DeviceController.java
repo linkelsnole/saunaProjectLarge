@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import javax.validation.Valid;
 
 import static com.example.modbus_api.service.ModbusConstants.*;
 
@@ -32,6 +33,7 @@ public class DeviceController {
 
     private final DeviceService deviceService;
     private final SettingsService settingsService;
+    private final ScheduleService scheduleService;
     private final UpgradeService upgradeService;
     private final UserActionLogService userActionLogService;
 
@@ -39,11 +41,13 @@ public class DeviceController {
     public DeviceController(
 		DeviceService deviceService,
 		SettingsService settingsService,
+		ScheduleService scheduleService,
 		UpgradeService upgradeService,
 		UserActionLogService userActionLogService
 	) {
         this.deviceService = deviceService;
         this.settingsService = settingsService;
+        this.scheduleService = scheduleService;
         this.upgradeService = upgradeService;
         this.userActionLogService = userActionLogService;
     }
@@ -103,24 +107,186 @@ public class DeviceController {
 		}
 	}
 
+	@Operation(summary = "Переключить управление на экран")
+	@PostMapping("/screen-mode/activate")
+	@PreAuthorize("hasAnyRole('ADMIN','USER')")
+	public ResponseEntity<?> activateScreenMode() {
+		return updateScreenMode(true);
+	}
+
+	@Operation(summary = "Переключить управление на расписание")
+	@PostMapping("/screen-mode/deactivate")
+	@PreAuthorize("hasAnyRole('ADMIN','USER')")
+	public ResponseEntity<?> deactivateScreenMode() {
+		return updateScreenMode(false);
+	}
+
+	private ResponseEntity<?> updateScreenMode(boolean screenMode) {
+		String action = screenMode ? "Режим управления: экран" : "Режим управления: расписание";
+		try {
+			deviceService.setScreenMode(screenMode);
+			userActionLogService.log(ActionType.MODE, action, true, null);
+			return ResponseEntity.ok().build();
+		} catch (IOException e) {
+			userActionLogService.log(ActionType.MODE, action, false, "Ошибка обмена с контроллером");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new ErrorResponse("MODBUS_ERROR", "Не удалось переключить режим управления"));
+		}
+	}
+
+	@Operation(summary = "Получить все слоты расписания")
+	@GetMapping("/schedules")
+	@PreAuthorize("hasAnyRole('ADMIN','USER','READONLY','MGM')")
+	public ResponseEntity<?> getSchedules() {
+		try {
+			return ResponseEntity.ok(scheduleService.getAllSchedules());
+		} catch (IOException e) {
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new ErrorResponse("MODBUS_ERROR", "Не удалось прочитать расписания"));
+		}
+	}
+
+	@Operation(summary = "Сохранить группу расписания")
+	@PutMapping("/schedules/group/{groupId}")
+	@PreAuthorize("hasAnyRole('ADMIN','USER')")
+	public ResponseEntity<?> updateScheduleGroup(
+		@PathVariable int groupId,
+		@Valid @RequestBody UpdateScheduleGroupRequest request
+	) {
+		String action = "Изменение группы расписаний " + groupId;
+		try {
+			scheduleService.updateScheduleGroup(groupId, request);
+			userActionLogService.log(ActionType.SETPOINT, action, true, null);
+			return ResponseEntity.ok().build();
+		} catch (IllegalArgumentException e) {
+			userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
+			return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", e.getMessage()));
+		} catch (IOException e) {
+			userActionLogService.log(ActionType.SETPOINT, action, false, "Ошибка обмена с контроллером");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new ErrorResponse("MODBUS_ERROR", "Не удалось сохранить расписание"));
+		}
+	}
+
+	@Operation(summary = "Изменить активность группы расписания")
+	@PatchMapping("/schedules/group/{groupId}/active")
+	@PreAuthorize("hasAnyRole('ADMIN','USER')")
+	public ResponseEntity<?> toggleScheduleGroup(
+		@PathVariable int groupId,
+		@Valid @RequestBody ToggleScheduleGroupActiveRequest request
+	) {
+		String action = (request.isActive() ? "Включение" : "Выключение")
+			+ " группы расписаний " + groupId;
+		try {
+			scheduleService.toggleScheduleGroupActive(groupId, request.isActive());
+			userActionLogService.log(ActionType.MODE, action, true, null);
+			return ResponseEntity.ok().build();
+		} catch (IllegalArgumentException e) {
+			userActionLogService.log(ActionType.MODE, action, false, e.getMessage());
+			return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", e.getMessage()));
+		} catch (IOException e) {
+			userActionLogService.log(ActionType.MODE, action, false, "Ошибка обмена с контроллером");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new ErrorResponse("MODBUS_ERROR", "Не удалось изменить активность расписания"));
+		}
+	}
+
+	@Operation(summary = "Выбрать режим вентиляции через UserSet")
+	@PostMapping("/ventilation-mode/{modeCode}")
+	@PreAuthorize("hasAnyRole('ADMIN','USER')")
+	public ResponseEntity<?> setVentilationMode(@PathVariable int modeCode) {
+		String modeName = ModbusRegisterMap.ventilationModeName(modeCode);
+		String action = "Режим вентиляции: " + (modeName == null ? modeCode : modeName);
+		try {
+			settingsService.setVentilationMode(modeCode);
+			userActionLogService.log(ActionType.MODE, action, true, null);
+			return ResponseEntity.ok().build();
+		} catch (IllegalArgumentException e) {
+			userActionLogService.log(ActionType.MODE, action, false, e.getMessage());
+			return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", e.getMessage()));
+		} catch (IOException e) {
+			userActionLogService.log(ActionType.MODE, action, false, "Ошибка обмена с контроллером");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new ErrorResponse("MODBUS_ERROR", "Не удалось изменить режим вентиляции"));
+		}
+	}
+
+	@Operation(summary = "Выбрать тип регулирования температуры для зон через UserSet")
+	@PostMapping("/temperature-control")
+	@PreAuthorize("hasAnyRole('ADMIN','USER')")
+	public ResponseEntity<?> setTemperatureControl(@RequestBody UpdateTemperatureControlRequest request) {
+		String action = "Смена типа регулирования температуры";
+		try {
+			settingsService.setTemperatureControlModes(request);
+			userActionLogService.log(ActionType.MODE, action, true,
+				"Зона 1: " + request.getZone1Mode() + "; зона 2: " + request.getZone2Mode());
+			return ResponseEntity.ok().build();
+		} catch (IllegalArgumentException e) {
+			userActionLogService.log(ActionType.MODE, action, false, e.getMessage());
+			return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", e.getMessage()));
+		} catch (IOException e) {
+			userActionLogService.log(ActionType.MODE, action, false, "Ошибка обмена с контроллером");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new ErrorResponse("MODBUS_ERROR", "Не удалось изменить тип регулирования температуры"));
+		}
+	}
+
+	@Operation(summary = "Обновить уставки ОВ, ПВ или ОРП")
+	@PostMapping("/temperature-setpoints")
+	@PreAuthorize("hasAnyRole('ADMIN','USER')")
+	public ResponseEntity<?> updateTemperatureSetpoints(@RequestBody UpdateTemperatureSetpointsRequest request) {
+		String action = "Запись температурных уставок зоны";
+		try {
+			settingsService.updateTemperatureSetpoints(request);
+			userActionLogService.log(ActionType.SETPOINT, action, true, null);
+			return ResponseEntity.ok().build();
+		} catch (IllegalArgumentException e) {
+			userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
+			return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", e.getMessage()));
+		} catch (IOException e) {
+			userActionLogService.log(ActionType.SETPOINT, action, false, "Ошибка обмена с контроллером");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new ErrorResponse("MODBUS_ERROR", "Не удалось записать температурные уставки"));
+		}
+	}
+
+	@Operation(summary = "Обновить настройки объёма вентиляции")
+	@PostMapping("/volume-settings")
+	@PreAuthorize("hasAnyRole('ADMIN','USER')")
+	public ResponseEntity<?> updateVolumeSettings(@RequestBody UpdateVolumeSettingsRequest request) {
+		String action = "Запись настроек объёма";
+		if (isRole("ROLE_USER") && request != null && request.hasPresetValues()) {
+			userActionLogService.log(ActionType.SETPOINT, action, false, "Недостаточно прав для уставок режимов");
+			return ResponseEntity.status(HttpStatus.FORBIDDEN)
+				.body(new ErrorResponse("FORBIDDEN", "Уставки ЭКО/Норм/Интенсив доступны только администратору"));
+		}
+		try {
+			settingsService.updateVolumeSettings(request);
+			userActionLogService.log(ActionType.SETPOINT, action, true, describeVolumeSettings(request));
+			return ResponseEntity.ok().build();
+		} catch (IllegalArgumentException e) {
+			userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
+			return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", e.getMessage()));
+		} catch (IOException e) {
+			userActionLogService.log(ActionType.SETPOINT, action, false, "Ошибка обмена с контроллером");
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new ErrorResponse("MODBUS_ERROR", "Не удалось сохранить настройки объёма"));
+		}
+	}
+
 	@Operation(summary = "Обновить ручные настройки")
 	@PostMapping("/manual-settings")
 	@PreAuthorize("hasAnyRole('ADMIN','USER')")
 	public ResponseEntity<?> updateManualSettings(@RequestBody UpdateManualSettingsRequest request) {
 		String action = "Запись ручных уставок";
 		try {
-			List<Integer> regs = new ArrayList<>();
+			List<String> parts = new ArrayList<>();
 			if (request.getSupplySpeed() != null) {
-				regs.add(REG_V_VManualProcIn);
+				parts.add("Ручной объём → " + request.getSupplySpeed() + " м³/ч");
 			}
 			if (request.getBoostPercent() != null) {
-				regs.add(REG_V_VManualDProcOut);
+				parts.add("Наддув → " + request.getBoostPercent() + " %");
 			}
-			Map<Integer, Integer> old = readOldValues(regs);
-
-			List<String> parts = new ArrayList<>();
-			appendChange(parts, old, REG_V_VManualProcIn, 10.0, "Скорость притока", "%", request.getSupplySpeed());
-			appendChange(parts, old, REG_V_VManualDProcOut, 10.0, "Буст вытяжки", "%", request.getBoostPercent());
 
 			settingsService.updateManualSettings(request.getSupplySpeed(), request.getBoostPercent());
 			userActionLogService.log(ActionType.SETPOINT, action, true,
@@ -130,6 +296,19 @@ public class DeviceController {
 			userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
+	}
+
+	private static String describeVolumeSettings(UpdateVolumeSettingsRequest request) {
+		if (request == null) {
+			return null;
+		}
+		List<String> parts = new ArrayList<>();
+		if (request.getEcoAirflow() != null) parts.add("ЭКО → " + request.getEcoAirflow() + " м³/ч");
+		if (request.getNormalAirflow() != null) parts.add("Норм → " + request.getNormalAirflow() + " м³/ч");
+		if (request.getIntensiveAirflow() != null) parts.add("Интенсив → " + request.getIntensiveAirflow() + " м³/ч");
+		if (request.getManualAirflow() != null) parts.add("Ручной → " + request.getManualAirflow() + " м³/ч");
+		if (request.getBoostPercent() != null) parts.add("Наддув → " + request.getBoostPercent() + " %");
+		return parts.isEmpty() ? null : String.join("; ", parts);
 	}
 
 	@Operation(summary = "Обновить температурные уставки")
@@ -189,9 +368,9 @@ public class DeviceController {
 			Map<Integer, Integer> old = readOldValues(regs);
 
 			List<String> parts = new ArrayList<>();
-			appendChange(parts, old, REG_R_TARGET_RPM_MIN, 10.0, "Мин. обороты", "об/мин", request.getTargetRpmMin());
-			appendChange(parts, old, REG_R_TARGET_RPM_MAX, 10.0, "Макс. обороты", "об/мин", request.getTargetRpmMax());
-			appendChange(parts, old, REG_R_TARGET_RPM_STEP, 10.0, "Шаг калибровки", "об/мин", request.getTargetRpmStep());
+			appendChange(parts, old, REG_R_TARGET_RPM_MIN, 100.0, "Мин. обороты", "об/мин", request.getTargetRpmMin());
+			appendChange(parts, old, REG_R_TARGET_RPM_MAX, 100.0, "Макс. обороты", "об/мин", request.getTargetRpmMax());
+			appendChange(parts, old, REG_R_TARGET_RPM_STEP, 100.0, "Шаг калибровки", "об/мин", request.getTargetRpmStep());
 			appendChange(parts, old, REG_R_TRACK_INTERVAL, 1.0, "Интервал слежения", "с", request.getTrackingIntervalRecup());
 
 			settingsService.updateRecuperatorSettings(

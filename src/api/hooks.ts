@@ -14,13 +14,49 @@ import {
   updateLogSettings,
   getUserActionLogs,
   downloadReadingsFile,
+  setVentilationMode,
+  updateVolumeSettings,
+  setTemperatureControl,
+  updateTemperatureSetpoints,
+  getSchedules,
+  updateScheduleGroup,
+  toggleScheduleGroupActive,
 } from './deviceApi';
-import type { DashboardData, UpdateRecuperatorSettingsRequest, RecuperatorSettingsDto, UserActionEntry } from './typesApi';
+import type { DashboardData, UpdateRecuperatorSettingsRequest, RecuperatorSettingsDto, UserActionEntry, UpdateVolumeSettingsRequest, UpdateTemperatureControlRequest, UpdateTemperatureSetpointsRequest, UpdateScheduleGroupRequest } from './typesApi';
 import { toast } from 'sonner';
 import i18n from '@/shared/config/i18n/i18n';
 
 export const deviceKeys = {
   dashboard: () => ['dashboard'] as const,
+  schedules: () => ['schedules'] as const,
+};
+
+export const useSchedules = () => useQuery({
+  queryKey: deviceKeys.schedules(),
+  queryFn: getSchedules,
+  staleTime: 10_000,
+  refetchOnWindowFocus: false,
+});
+
+export const useUpdateScheduleGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, data }: { groupId: number; data: UpdateScheduleGroupRequest }) =>
+      updateScheduleGroup(groupId, data),
+    onSuccess: () => toast.success(i18n.t('toasts.scheduleSaved')),
+    onError: () => toast.error(i18n.t('toasts.scheduleSaveError')),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: deviceKeys.schedules() }),
+  });
+};
+
+export const useToggleScheduleGroup = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ groupId, isActive }: { groupId: number; isActive: boolean }) =>
+      toggleScheduleGroupActive(groupId, isActive),
+    onError: () => toast.error(i18n.t('toasts.scheduleToggleError')),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: deviceKeys.schedules() }),
+  });
 };
 
 interface UpdateManualSettingsRequest {
@@ -95,6 +131,140 @@ export const useUpdateManualSettings = () => {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: dashboardKey });
     },
+  });
+};
+
+export const useSetVentilationMode = () => {
+  const queryClient = useQueryClient();
+  const dashboardKey = deviceKeys.dashboard();
+
+  return useMutation({
+    mutationFn: setVentilationMode,
+    onMutate: async (modeCode: number) => {
+      await queryClient.cancelQueries({ queryKey: dashboardKey });
+      const previousDashboard = queryClient.getQueryData<DashboardData>(dashboardKey);
+      const names: Record<number, string> = { 1: 'ЭКО', 2: 'АВТО', 3: 'Интенсив', 4: 'Ручной' };
+      queryClient.setQueryData<DashboardData>(dashboardKey, (old) => old ? {
+        ...old,
+        ventilationModeCode: modeCode,
+        ventilationModeName: names[modeCode] ?? old.ventilationModeName,
+        screenMode: true,
+      } : old);
+      return { previousDashboard };
+    },
+    onError: (_error, _modeCode, context) => {
+      if (context?.previousDashboard) {
+        queryClient.setQueryData(dashboardKey, context.previousDashboard);
+      }
+      toast.error(i18n.t('toasts.modeSaveError'));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: dashboardKey }),
+  });
+};
+
+export const useUpdateVolumeSettings = () => {
+  const queryClient = useQueryClient();
+  const dashboardKey = deviceKeys.dashboard();
+
+  return useMutation({
+    mutationFn: (payload: UpdateVolumeSettingsRequest) => updateVolumeSettings(payload),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: dashboardKey });
+      const previousDashboard = queryClient.getQueryData<DashboardData>(dashboardKey);
+      queryClient.setQueryData<DashboardData>(dashboardKey, (old) => {
+        if (!old) return old;
+        const current = old.volumeSettings ?? {
+          ecoAirflow: null,
+          normalAirflow: null,
+          intensiveAirflow: null,
+          manualAirflow: null,
+          boostPercent: null,
+        };
+        return {
+          ...old,
+          volumeSettings: { ...current, ...payload },
+          manualSettings: old.manualSettings ? {
+            ...old.manualSettings,
+            ...(payload.manualAirflow !== undefined ? { supplySpeed: payload.manualAirflow } : {}),
+            ...(payload.boostPercent !== undefined ? { boostPercent: payload.boostPercent } : {}),
+          } : old.manualSettings,
+        };
+      });
+      return { previousDashboard };
+    },
+    onSuccess: () => toast.success(i18n.t('toasts.volumeSaved')),
+    onError: (_error, _payload, context) => {
+      if (context?.previousDashboard) {
+        queryClient.setQueryData(dashboardKey, context.previousDashboard);
+      }
+      toast.error(i18n.t('toasts.saveError'));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: dashboardKey }),
+  });
+};
+
+export const useSetTemperatureControl = () => {
+  const queryClient = useQueryClient();
+  const dashboardKey = deviceKeys.dashboard();
+  return useMutation({
+    mutationFn: (payload: UpdateTemperatureControlRequest) => setTemperatureControl(payload),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: dashboardKey });
+      const previousDashboard = queryClient.getQueryData<DashboardData>(dashboardKey);
+      const names: Record<number, string> = { 0: 'ОРП', 1: 'ПВ', 2: 'ОВ' };
+      queryClient.setQueryData<DashboardData>(dashboardKey, (old) => old ? {
+        ...old,
+        ...(payload.zone1Mode !== undefined ? {
+          temperatureControlModeZone1Code: payload.zone1Mode,
+          temperatureControlModeZone1Name: names[payload.zone1Mode],
+        } : {}),
+        ...(payload.zone2Mode !== undefined ? {
+          temperatureControlModeZone2Code: payload.zone2Mode,
+          temperatureControlModeZone2Name: names[payload.zone2Mode],
+        } : {}),
+        screenMode: true,
+      } : old);
+      return { previousDashboard };
+    },
+    onError: (_error, _payload, context) => {
+      if (context?.previousDashboard) queryClient.setQueryData(dashboardKey, context.previousDashboard);
+      toast.error(i18n.t('toasts.modeSaveError'));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: dashboardKey }),
+  });
+};
+
+export const useUpdateTemperatureSetpoints = () => {
+  const queryClient = useQueryClient();
+  const dashboardKey = deviceKeys.dashboard();
+  return useMutation({
+    mutationFn: (payload: UpdateTemperatureSetpointsRequest) => updateTemperatureSetpoints(payload),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey: dashboardKey });
+      const previousDashboard = queryClient.getQueryData<DashboardData>(dashboardKey);
+      queryClient.setQueryData<DashboardData>(dashboardKey, (old) => {
+        if (!old?.tempSettings) return old;
+        const temp = old.tempSettings;
+        return {
+          ...old,
+          tempSettings: {
+            ...temp,
+            ...(payload.outflowTarget !== undefined ? { outflowTarget: payload.outflowTarget } : {}),
+            ...(payload.inflowTargetZone1 !== undefined ? { inflowTargetZone1: payload.inflowTargetZone1 } : {}),
+            ...(payload.inflowTargetZone2 !== undefined ? { inflowTargetZone2: payload.inflowTargetZone2 } : {}),
+            ...(payload.orpZone1 ? { orpZone1: { ...(temp.orpZone1 ?? { targetT1: null, currentT1: null, targetT2: null, currentT2: null, targetT3: null, currentT3: null }), ...payload.orpZone1 } } : {}),
+            ...(payload.orpZone2 ? { orpZone2: { ...(temp.orpZone2 ?? { targetT1: null, currentT1: null, targetT2: null, currentT2: null, targetT3: null, currentT3: null }), ...payload.orpZone2 } } : {}),
+          },
+        };
+      });
+      return { previousDashboard };
+    },
+    onSuccess: () => toast.success(i18n.t('toasts.tempSaved')),
+    onError: (_error, _payload, context) => {
+      if (context?.previousDashboard) queryClient.setQueryData(dashboardKey, context.previousDashboard);
+      toast.error(i18n.t('toasts.saveError'));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: dashboardKey }),
   });
 };
 

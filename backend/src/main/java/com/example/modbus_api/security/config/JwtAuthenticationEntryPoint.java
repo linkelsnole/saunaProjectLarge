@@ -22,7 +22,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
                          AuthenticationException authException) throws IOException, ServletException {
         String path = request.getRequestURI();
         
-        if (path.startsWith("/api/") && !path.startsWith("/api/v1/auth/")) {
+        if (path.startsWith("/api/")) {
             logger.warn("Unauthorized API request: {}", path);
             response.setContentType("application/json;charset=UTF-8");
             response.setCharacterEncoding("UTF-8");

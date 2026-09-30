@@ -24,7 +24,7 @@ public class RefreshTokenService {
 
     @Transactional
     public RefreshToken createRefreshToken(AppUser user) {
-        refreshTokenRepository.deleteByUser(user);
+        refreshTokenRepository.deleteByExpiryAtBefore(Instant.now());
 
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
@@ -36,7 +36,7 @@ public class RefreshTokenService {
     }
 
     @Transactional
-    public RefreshToken rotateRefreshToken(String token) {
+    public RefreshToken renewRefreshToken(String token) {
         RefreshToken currentToken = refreshTokenRepository.findByToken(token)
                 .orElseThrow(() -> new AuthException("Refresh token not found"));
 
@@ -45,10 +45,10 @@ public class RefreshTokenService {
             throw new AuthException("Refresh token expired");
         }
 
-        AppUser user = currentToken.getUser();
-        refreshTokenRepository.delete(currentToken);
-
-        return createRefreshToken(user);
+        // One opaque token per browser session. Keeping it stable avoids invalidating
+        // concurrent refreshes from other tabs or a retry after a lost HTTP response.
+        currentToken.setExpiryAt(Instant.now().plusMillis(jwtProperties.getRefreshTokenExpirationMs()));
+        return refreshTokenRepository.save(currentToken);
     }
 
     @Transactional

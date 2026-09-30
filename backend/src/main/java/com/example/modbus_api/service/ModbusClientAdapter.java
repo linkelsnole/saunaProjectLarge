@@ -26,6 +26,7 @@ public class ModbusClientAdapter {
     private final ModbusAPIClient.RestAPIModbus api;
     private final OkHttpClient httpClient;
     private final ModbusProperties config;
+    private final ResilientRegisterBatchReader resilientBatchReader = new ResilientRegisterBatchReader();
     private volatile String sessionToken;
     private final Object lock = new Object();
 
@@ -170,11 +171,15 @@ public class ModbusClientAdapter {
     /**
      * Выполняет чтение регистра без retry логики
      */
+    private String configuredLogName(String requested) {
+        return ModbusConstants.SAUNA_PLC.equals(requested) ? config.getLogName() : requested;
+    }
+
     private int performRead(String logUnit, int register) throws IOException {
         JInt result = new ModbusAPIClient.APICall<JInt>() {
             @Override
             public retrofit2.Call<JInt> apiFun() {
-                return api.readESS2RegisterByLogUnit(sessionToken, logUnit, register);
+                return api.readESS2RegisterByLogUnit(sessionToken, configuredLogName(logUnit), register);
             }
         }.call();
 
@@ -192,7 +197,7 @@ public class ModbusClientAdapter {
         new ModbusAPIClient.APICall<JEmpty>() {
             @Override
             public retrofit2.Call<JEmpty> apiFun() {
-                return api.writeESS2RegisterByLogUnit(sessionToken, logUnit, register, value);
+                return api.writeESS2RegisterByLogUnit(sessionToken, configuredLogName(logUnit), register, value);
             }
         }.call();
     }
@@ -213,7 +218,7 @@ public class ModbusClientAdapter {
         IntegerList result = new ModbusAPIClient.APICall<IntegerList>() {
             @Override
             public retrofit2.Call<IntegerList> apiFun() {
-                return api.readESS2RegisterListByLogUnit(sessionToken, logUnit, unitRegisterList);
+                return api.readESS2RegisterListByLogUnit(sessionToken, configuredLogName(logUnit), unitRegisterList);
             }
         }.call();
 
@@ -303,7 +308,7 @@ public class ModbusClientAdapter {
 			try {
 			ensureConnection();
         try {
-            return performReadRegisters(logUnit, registers);
+			return performResilientReadRegisters(logUnit, registers);
         } catch (Exception e) {
 
             if (isConnectionOrAuthError(e)) {
@@ -311,7 +316,7 @@ public class ModbusClientAdapter {
                                  e.getClass().getSimpleName() + ": " + e.getMessage() + "). Повторная авторизация...");
                 try {
                     reconnect();
-                    return performReadRegisters(logUnit, registers); 
+					return performResilientReadRegisters(logUnit, registers);
                 } catch (IOException reconnectException) {
                     throw new IOException("Не удалось выполнить переподключение после сбоя при пакетном чтении из " + 
                                         logUnit + ": " + reconnectException.getMessage(), reconnectException);
@@ -322,6 +327,16 @@ public class ModbusClientAdapter {
 			} finally {
 
 			}
+    }
+
+    private Map<Integer, Integer> performResilientReadRegisters(
+        String logUnit,
+        List<Integer> registers
+    ) throws IOException {
+        return resilientBatchReader.read(
+            logUnit,
+            registers,
+            batch -> performReadRegisters(logUnit, batch));
     }
 
 
@@ -398,19 +413,20 @@ public class ModbusClientAdapter {
 		return result;
 	}
 
-	private java.util.ArrayList<com.example.modbus_api.modbus.legacy.ArchESSEvent> performGetEvents(
+	private java.util.ArrayList<com.example.modbus_api.dto.SystemEventDto> performGetEvents(
 			int lastMinutes, com.example.modbus_api.modbus.legacy.IntegerList types) throws IOException {
-		java.util.ArrayList<com.example.modbus_api.modbus.legacy.ArchESSEvent> events =
-				new ModbusAPIClient.APICall<java.util.ArrayList<com.example.modbus_api.modbus.legacy.ArchESSEvent>>() {
+		java.util.ArrayList<com.example.modbus_api.dto.SystemEventDto> events =
+				new ModbusAPIClient.APICall<java.util.ArrayList<com.example.modbus_api.dto.SystemEventDto>>() {
 					@Override
-					public retrofit2.Call<java.util.ArrayList<com.example.modbus_api.modbus.legacy.ArchESSEvent>> apiFun() {
+					public retrofit2.Call<java.util.ArrayList<com.example.modbus_api.dto.SystemEventDto>> apiFun() {
 						return api.getEventsList(sessionToken, lastMinutes, types);
 					}
 				}.call();
-		return events != null ? events : new java.util.ArrayList<>();
+		if (events == null) throw new IOException("Сервер вернул пустой ответ вместо списка событий");
+		return events;
 	}
 
-	public java.util.ArrayList<com.example.modbus_api.modbus.legacy.ArchESSEvent> getEvents(int lastMinutes) throws IOException {
+	public java.util.ArrayList<com.example.modbus_api.dto.SystemEventDto> getEvents(int lastMinutes) throws IOException {
 		ensureConnection();
 		com.example.modbus_api.modbus.legacy.IntegerList types = new com.example.modbus_api.modbus.legacy.IntegerList();
 		types.add(16); // EventPLC - Сообщения модуля управления
@@ -561,4 +577,4 @@ public class ModbusClientAdapter {
            System.out.println("{TEST} ПЛОХОЙ ТОКЕН");
            this.sessionToken = "NAHUI_BLYAT";
     }
-} 
+}

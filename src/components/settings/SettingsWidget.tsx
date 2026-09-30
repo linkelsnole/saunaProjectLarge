@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ManualSettingsWidget } from './ManualSettingsWidget';
 import { TempSettingsWidget } from './TempSettingsWidget';
 import { RecuperatorWidget } from './RecuperatorWidget';
+import { ScheduleWorkspace } from './ScheduleWorkspace';
 import { ConfiguratorWidget } from './ConfiguratorWidget';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,7 +18,7 @@ export const SettingsWidget = () => {
     <div className="h-full flex flex-col overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 h-full flex flex-col overflow-hidden">
         <TabsList
-          className={`grid w-full mb-4 shrink-0 ${canSeeConfigurator ? 'grid-cols-4' : 'grid-cols-3'}`}
+          className={`grid w-full mb-4 shrink-0 ${canSeeConfigurator ? 'grid-cols-5' : 'grid-cols-4'}`}
         >
           <TabsTrigger value="volume" className="text-xs sm:text-sm">
             {t('app.tabsShort.volume')}
@@ -27,6 +28,9 @@ export const SettingsWidget = () => {
           </TabsTrigger>
           <TabsTrigger value="recuperator" className="text-xs sm:text-sm">
             {t('app.tabsShort.recuperator')}
+          </TabsTrigger>
+          <TabsTrigger value="schedule" className="text-xs sm:text-sm">
+            {t('app.tabs.schedule')}
           </TabsTrigger>
           {canSeeConfigurator && (
             <TabsTrigger value="config" className="text-xs sm:text-sm">
@@ -47,6 +51,10 @@ export const SettingsWidget = () => {
           <RecuperatorWidget />
         </TabsContent>
 
+        <TabsContent value="schedule" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
+          <ScheduleWorkspace />
+        </TabsContent>
+
         {canSeeConfigurator && (
           <TabsContent value="config" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
             <ConfiguratorWidget />
@@ -56,4 +64,3 @@ export const SettingsWidget = () => {
     </div>
   );
 };
-

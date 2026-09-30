@@ -10,14 +10,14 @@ import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
-import javax.persistence.OneToOne;
+import javax.persistence.ManyToOne;
 import javax.persistence.PrePersist;
 import javax.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "refresh_tokens")
+@Table(name = "web_refresh_sessions")
 @Data
 @Builder
 @NoArgsConstructor
@@ -34,8 +34,8 @@ public class RefreshToken {
     @Column(nullable = false)
     private Instant expiryAt;
 
-    @OneToOne(fetch = FetchType.EAGER, optional = false)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.EAGER, optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private AppUser user;
 
     @PrePersist

@@ -1,0 +1,223 @@
+package com.example.modbus_api.service;
+
+import com.example.modbus_api.dto.DashboardData;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.InOrder;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import static com.example.modbus_api.service.ModbusConstants.SAUNA_PLC;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
+
+class DeviceServiceRegisterMapTest {
+
+    @Test void actualSupplyUsesSumAndNeverSubstitutesMissingFanWithZero() throws IOException {
+        ModbusClientAdapter client=mock(ModbusClientAdapter.class);
+        Map<Integer,Integer> values=new HashMap<>();
+        int first=ModbusRegisterMap.FAN_SUPPLY_1+ModbusRegisterMap.FAN_AIRFLOW_OFFSET;
+        int second=ModbusRegisterMap.FAN_SUPPLY_2+ModbusRegisterMap.FAN_AIRFLOW_OFFSET;
+        int[] addresses={first,second,ModbusRegisterMap.AIRFLOW_REAL};
+        float[] flows={3355.4f,3380.4f,123f};
+        for(int i=0;i<addresses.length;i++) {
+            int bits=Float.floatToIntBits(flows[i]);
+            values.put(addresses[i],bits&65535);values.put(addresses[i]+1,bits>>>16);
+        }
+        when(client.readRegisters(eq(SAUNA_PLC),anyList())).thenAnswer(a->new HashMap<>(values));
+        DashboardData data=new DeviceService(client).getDashboardData();
+        assertEquals(6736.0,data.getAirflowReal());
+        assertEquals(data.getVm1().doubleValue(),data.getAirflowReal());
+        values.remove(second);
+        assertNull(new DeviceService(client).getDashboardData().getAirflowReal());
+        verify(client,never()).writeRegister(anyString(),anyInt(),anyInt());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2, 3})
+    void activatesUserSetWithFullStateOneAndAppliesRunningMode(int currentState) throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        int base = ModbusRegisterMap.scheduleBase(3);
+        when(client.readRegisters(eq(SAUNA_PLC), anyList()))
+            .thenReturn(Collections.singletonMap(base, ModbusRegisterMap.SCHEDULE_USERSET_MODE));
+        when(client.readRegister(SAUNA_PLC, base + 1)).thenReturn(currentState, 1);
+        when(client.readRegister(SAUNA_PLC, ModbusRegisterMap.AGGREGATE_STATE)).thenReturn(64);
+
+        new DeviceService(client).setScreenMode(true);
+
+        InOrder ordered = inOrder(client);
+        ordered.verify(client).writeRegister(SAUNA_PLC, base + 1, 1);
+        ordered.verify(client).readRegister(SAUNA_PLC, base + 1);
+        ordered.verify(client).writeRegister(SAUNA_PLC, ModbusRegisterMap.AGGREGATE_COMMAND, 6);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1, 2, 3})
+    void deactivatesUserSetClearingSelectedAndWorkingBeforeModeChange(int currentState) throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        int base = ModbusRegisterMap.scheduleBase(19);
+        when(client.readRegisters(eq(SAUNA_PLC), anyList()))
+            .thenReturn(Collections.singletonMap(base, ModbusRegisterMap.SCHEDULE_USERSET_MODE));
+        when(client.readRegister(SAUNA_PLC, base + 1)).thenReturn(currentState, 0);
+
+        new DeviceService(client).setScreenMode(false);
+
+        InOrder ordered = inOrder(client);
+        ordered.verify(client).writeRegister(SAUNA_PLC, base + 1, 0);
+        ordered.verify(client).readRegister(SAUNA_PLC, base + 1);
+        ordered.verify(client).writeRegister(SAUNA_PLC, ModbusRegisterMap.AGGREGATE_COMMAND, 6);
+    }
+
+    @Test
+    void activatingScreenDoesNotStartStoppedUnit() throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        int base = ModbusRegisterMap.scheduleBase(0);
+        when(client.readRegisters(eq(SAUNA_PLC), anyList()))
+            .thenReturn(Collections.singletonMap(base, ModbusRegisterMap.SCHEDULE_USERSET_MODE));
+        when(client.readRegister(SAUNA_PLC, base + 1)).thenReturn(0, 1);
+        when(client.readRegister(SAUNA_PLC, ModbusRegisterMap.AGGREGATE_STATE)).thenReturn(1);
+
+        new DeviceService(client).setScreenMode(true);
+
+        verify(client).writeRegister(SAUNA_PLC, base + 1, 1);
+        verify(client, never()).writeRegister(eq(SAUNA_PLC),
+            eq(ModbusRegisterMap.AGGREGATE_COMMAND), anyInt());
+    }
+
+    @Test
+    void missingUserSetDoesNotWriteAnyRegister() throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        when(client.readRegisters(eq(SAUNA_PLC), anyList())).thenReturn(Collections.emptyMap());
+
+        assertThrows(IOException.class, () -> new DeviceService(client).setScreenMode(true));
+
+        verify(client, never()).writeRegister(anyString(), anyInt(), anyInt());
+    }
+
+    @Test
+    void dashboardReadsFloatPairsScalesValuesAndUsesNewModes() throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        Map<Integer, Integer> registers = new HashMap<>();
+        putFloat(registers, ModbusRegisterMap.PRESSURE_FAN_SUPPLY_1, 775.25f);
+        putFloat(registers, ModbusRegisterMap.FAN_SUPPLY_1 + 8, 2934.5f);
+        putFloat(registers, ModbusRegisterMap.FAN_SUPPLY_2 + 8, 2945.25f);
+        putFloat(registers, ModbusRegisterMap.AIRFLOW_ECO, 750.0f);
+        putFloat(registers, ModbusRegisterMap.AIRFLOW_NORMAL, 1500.0f);
+        putFloat(registers, ModbusRegisterMap.AIRFLOW_INTENSIVE, 2000.0f);
+        putFloat(registers, ModbusRegisterMap.AIRFLOW_MANUAL, 1750.0f);
+        putFloat(registers, ModbusRegisterMap.AIRFLOW_TARGET, 6000.0f);
+        putFloat(registers, ModbusRegisterMap.AIRFLOW_REAL, 5880.0f);
+        registers.put(ModbusRegisterMap.AIRFLOW_IMBALANCE, (int) (short) -50);
+        registers.put(ModbusRegisterMap.FAN_SUPPLY_1 + 10, 7900);
+        registers.put(ModbusRegisterMap.SENSOR_T1 + 8, 100);
+        registers.put(ModbusRegisterMap.SENSOR_T3 + 8, 200);
+        registers.put(ModbusRegisterMap.SENSOR_T5 + 8, 300);
+        registers.put(ModbusRegisterMap.SENSOR_T1 + 9, 668);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_1 + 18, 190);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_1 + 7, 260);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_1 + 3, 0);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_2 + 3, 1);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_1 + 5, 10);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_2 + 5, 5);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_1 + 25, 215);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_2 + 25, 180);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_1 + 26, 195);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_2 + 26, 196);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_1 + 27, 20);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_1 + 28, 15);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_1 + 29, 21);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_1 + 30, 19);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_1 + 31, 14);
+        registers.put(ModbusRegisterMap.HEATER_ZONE_1 + 32, 22);
+        registers.put(ModbusConstants.REG_VALVE_HEAT_POS1, 250);
+        registers.put(ModbusConstants.REG_VALVE_COOL_POS1, 1000);
+        registers.put(ModbusConstants.REG_VALVE_OPEN_PROC1, 50);
+        registers.put(ModbusConstants.REG_T_RAD_FZ_FAIL, 0xFFCE);
+        registers.put(ModbusRegisterMap.VENTILATION_MODE, 2);
+        registers.put(ModbusRegisterMap.AGGREGATE_STATE, 64);
+        registers.put(ModbusRegisterMap.WORK_STATE, 3);
+        registers.put(ModbusRegisterMap.RECUPERATOR_TARGET_RPM, 150);
+        registers.put(ModbusRegisterMap.RECUPERATOR_CURRENT_RPM, 145);
+        registers.put(ModbusRegisterMap.RECUPERATOR_MOTOR_RPM, 123);
+        registers.put(ModbusRegisterMap.RECUPERATOR_MAX_RPM, 200);
+        registers.put(ModbusRegisterMap.RECUPERATOR_TRACKING_INTERVAL, 120);
+        registers.put(ModbusRegisterMap.RECUPERATOR_MIN_RPM_SETTING, 50);
+        registers.put(ModbusRegisterMap.RECUPERATOR_MAX_RPM_SETTING, 1000);
+        registers.put(ModbusRegisterMap.RECUPERATOR_RPM_STEP_SETTING, 10);
+        registers.put(ModbusRegisterMap.scheduleBase(2), ModbusRegisterMap.SCHEDULE_USERSET_MODE);
+        registers.put(ModbusRegisterMap.scheduleBase(2) + 1, 3);
+        when(client.readRegisters(eq(SAUNA_PLC), anyList())).thenAnswer(invocation -> {
+            java.util.List<Integer> requested = invocation.getArgument(1);
+            assertTrue(requested.contains(ModbusRegisterMap.AIRFLOW_TARGET + 1));
+            assertTrue(requested.contains(ModbusRegisterMap.PRESSURE_FAN_SUPPLY_1 + 1));
+            assertTrue(requested.contains(ModbusRegisterMap.HEATER_ZONE_1 + 18));
+            return registers;
+        });
+
+        DashboardData data = new DeviceService(client).getDashboardData();
+
+        assertEquals(775.25, data.getFans().get(0).getPressure(), 0.001);
+        assertEquals(Integer.valueOf(79), data.getFans().get(0).getSpeedPerc());
+        assertEquals(Integer.valueOf(5880), data.getVm1());
+        assertEquals(6300.0, data.getFans().get(2).getTargetAirFlow(), 0.001);
+        assertEquals(10.0, data.getClimateSensors().get(0).getTemperature(), 0.001);
+        assertEquals(66.8, data.getClimateSensors().get(0).getHumidity(), 0.001);
+        assertEquals(19.0, data.getClimateSensors().get(10).getTemperature(), 0.001);
+        assertEquals("26.0", data.getValves().get(0).getValue());
+        assertEquals("50.0", data.getRecuperator().get(0).getValue());
+        assertEquals("АВТО", data.getVentilationModeName());
+        assertEquals(6000.0, data.getAirflowTarget(), 0.001);
+        assertEquals(5880.0, data.getAirflowReal(), 0.001);
+        assertEquals(750.0, data.getVolumeSettings().getEcoAirflow(), 0.001);
+        assertEquals(1500.0, data.getVolumeSettings().getNormalAirflow(), 0.001);
+        assertEquals(2000.0, data.getVolumeSettings().getIntensiveAirflow(), 0.001);
+        assertEquals(1750.0, data.getVolumeSettings().getManualAirflow(), 0.001);
+        assertEquals(-5.0, data.getVolumeSettings().getBoostPercent(), 0.001);
+        assertEquals("ОРП", data.getTemperatureControlModeZone1Name());
+        assertEquals("ПВ", data.getTemperatureControlModeZone2Name());
+        assertEquals(19.5, data.getTempSettings().getOutflowTarget(), 0.001);
+        assertEquals(21.5, data.getTempSettings().getInflowTargetZone1(), 0.001);
+        assertEquals(18.0, data.getTempSettings().getInflowTargetZone2(), 0.001);
+        assertEquals(20.0, data.getTempSettings().getOrpZone1().getTargetT1(), 0.001);
+        assertEquals(15.0, data.getTempSettings().getOrpZone1().getCurrentT1(), 0.001);
+        assertEquals(Integer.valueOf(10), data.getTempSettings().getCtrlModeZone1());
+        assertEquals("25.0", data.getDebugValveSensors().get(0).getValue());
+        assertEquals(-5.0, data.getTempSettings().getRadTempFail(), 0.001);
+        assertEquals(Boolean.TRUE, data.getScreenMode());
+        assertEquals(1.5, data.getRecupTargetRpm(), 0.001);
+        assertEquals(1.45, data.getRecupCurrentRpm(), 0.001);
+        assertEquals(12.3, data.getRecupSpeedRpm(), 0.001);
+        assertEquals(Integer.valueOf(120), data.getRecuperatorSettings().getTrackingIntervalRecup());
+        assertEquals(0.5, data.getRecuperatorSettings().getTargetRpmMin(), 0.001);
+        assertEquals(10.0, data.getRecuperatorSettings().getTargetRpmMax(), 0.001);
+        assertEquals(0.1, data.getRecuperatorSettings().getTargetRpmStep(), 0.001);
+        assertEquals(Boolean.TRUE, data.getDamperSupply());
+        assertEquals(Boolean.TRUE, data.getDamperExhaust());
+    }
+
+    private static void putFloat(Map<Integer, Integer> registers, int base, float value) {
+        int bits = Float.floatToIntBits(value);
+        registers.put(base, bits & 0xFFFF);
+        registers.put(base + 1, (bits >>> 16) & 0xFFFF);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0x0042, 0x0044, 0x0046, 0x0244})
+    void ventilationStateWinsOverStaleAlarmBits(int state) throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        when(client.readRegisters(eq(SAUNA_PLC), anyList()))
+            .thenReturn(Collections.singletonMap(ModbusRegisterMap.AGGREGATE_STATE, state));
+
+        DashboardData data = new DeviceService(client).getDashboardData();
+
+        assertEquals("Вентилирование", data.getRecuperatorStatus().getStateName());
+        assertEquals(state, data.getRecuperatorStatus().getStateCode().intValue());
+        assertTrue(data.getRecuperatorStatus().isEnabled());
+        verify(client, never()).writeRegister(anyString(), anyInt(), anyInt());
+    }
+}

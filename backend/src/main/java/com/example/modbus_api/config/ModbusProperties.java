@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "modbus.api")
 public class ModbusProperties {
+    private String logName = "Sauna21000PLC";
     private String ip;
     private String port;
     private String username;
@@ -23,6 +24,13 @@ public class ModbusProperties {
 				this.enableHttpLogging = enableHttpLogging;
 		}
     
+    public String getLogName() { return logName; }
+    public void setLogName(String logName) {
+        if (logName == null || !logName.matches("[A-Za-z0-9_.-]{1,64}"))
+            throw new IllegalArgumentException("Некорректное имя логического устройства");
+        this.logName = logName;
+    }
+
     public String getIp() { return ip; }
     public void setIp(String ip) { this.ip = ip; }
     

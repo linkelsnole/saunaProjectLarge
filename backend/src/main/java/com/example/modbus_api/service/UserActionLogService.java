@@ -58,7 +58,7 @@ public class UserActionLogService {
     }
 
     public List<Map<String, Object>> findRecent(int minutes, String type) {
-        int window = Math.max(1, Math.min(minutes, 7 * 24 * 60));
+        int window = Math.max(1, Math.min(minutes, 90 * 24 * 60));
         long since = System.currentTimeMillis() - window * 60_000L;
 
         StringBuilder sql = new StringBuilder(

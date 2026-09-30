@@ -1,3 +1,4 @@
+import { PanelUpdateNotice } from "@/components/updates/PanelUpdateNotice";
 import { useRef, useCallback } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -11,6 +12,7 @@ import { PublicRoute } from "@/components/auth/PublicRoute";
 import { ManualSettingsWidget } from "@/components/settings/ManualSettingsWidget";
 import { TempSettingsWidget } from "@/components/settings/TempSettingsWidget";
 import { RecuperatorWidget } from "@/components/settings/RecuperatorWidget";
+import { ScheduleWorkspace } from "@/components/settings/ScheduleWorkspace";
 import { ConfiguratorWidget } from "@/components/settings/ConfiguratorWidget";
 import SystemEventsJournal from "@/components/logs/SystemEventsJournal";
 import DashboardLogs from "@/components/logs/DashboardLogs";
@@ -21,16 +23,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SettingsSheetProvider, useSettingsSheet } from "@/contexts/SettingsSheetContext";
 import { RecuperatorTypeProvider } from "@/hooks/useRecuperatorType";
 import { SettingsPanelBoundsProvider } from "@/contexts/SettingsPanelBoundsContext";
-import { cn } from "@/shared/lib/utils";
 
 const SWIPE_THRESHOLD = 60;
-
-const settingsTabsGridClass = (tabCount: number) => {
-	if (tabCount <= 3) return "grid-cols-2 md:grid-cols-3";
-	if (tabCount === 4) return "grid-cols-2 md:grid-cols-4";
-	if (tabCount === 5) return "grid-cols-2 md:grid-cols-5";
-	return "grid-cols-3 md:grid-cols-7";
-};
 
 const SettingsTabs = ({
 	isAdmin,
@@ -42,34 +36,30 @@ const SettingsTabs = ({
 	compact?: boolean;
 }) => {
 	const { t } = useTranslation();
-	const tabCount = 3 + (canSeeConfigurator ? 1 : 0) + (isAdmin ? 3 : 0);
 
 	return (
 		<Tabs defaultValue="volume" className="h-full flex flex-col min-h-0">
-			<TabsList
-				className={cn(
-					"grid w-full mb-4",
-					settingsTabsGridClass(tabCount),
-					compact && "mb-4 flex w-full flex-nowrap justify-start overflow-x-auto"
-				)}
-			>
-				<TabsTrigger value="volume" className={compact ? "flex-none px-4" : ""}>
+			<TabsList className="mb-4 flex w-full shrink-0 flex-nowrap justify-start overflow-x-auto">
+				<TabsTrigger value="volume" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>
 					{t('app.tabs.volume')}
 				</TabsTrigger>
-				<TabsTrigger value="temperature" className={compact ? "flex-none px-4" : ""}>
+				<TabsTrigger value="temperature" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>
 					{t('app.tabs.temperature')}
 				</TabsTrigger>
-				<TabsTrigger value="recuperator" className={compact ? "flex-none px-4" : ""}>
+				<TabsTrigger value="recuperator" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>
 					{t('app.tabs.recuperator')}
 				</TabsTrigger>
+				<TabsTrigger value="schedule" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>
+					{t('app.tabs.schedule')}
+				</TabsTrigger>
 				{canSeeConfigurator && (
-					<TabsTrigger value="config" className={compact ? "flex-none px-4" : ""}>
+					<TabsTrigger value="config" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>
 						{t('app.tabs.config')}
 					</TabsTrigger>
 				)}
-				{isAdmin && <TabsTrigger value="errors" className={compact ? "flex-none px-4" : ""}>{t('app.tabs.errors')}</TabsTrigger>}
-				{isAdmin && <TabsTrigger value="logs" className={compact ? "flex-none px-4" : ""}>{t('app.tabs.logs')}</TabsTrigger>}
-				{isAdmin && <TabsTrigger value="update" className={compact ? "flex-none px-4" : ""}>{t('app.tabs.update')}</TabsTrigger>}
+				{isAdmin && <TabsTrigger value="errors" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>{t('app.tabs.errors')}</TabsTrigger>}
+				{isAdmin && <TabsTrigger value="logs" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>{t('app.tabs.logs')}</TabsTrigger>}
+				{isAdmin && <TabsTrigger value="update" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>{t('app.tabs.update')}</TabsTrigger>}
 			</TabsList>
 			<TabsContent value="volume" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
 				<ManualSettingsWidget />
@@ -79,6 +69,9 @@ const SettingsTabs = ({
 			</TabsContent>
 			<TabsContent value="recuperator" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
 				<RecuperatorWidget />
+			</TabsContent>
+			<TabsContent value="schedule" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
+				<ScheduleWorkspace />
 			</TabsContent>
 			{canSeeConfigurator && (
 				<TabsContent value="config" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
@@ -122,6 +115,8 @@ const MainDashboard = () => {
 			sheet.setOpen(true);
 		}
 	}, [sheet]);
+
+	if (role === 'ROLE_TESTER') return <div className="h-full overflow-y-auto pb-6"><div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-4 md:p-6"><p className="text-sm text-slate-600">{t('physicalSchedule.adminOnly')}</p></div></div>;
 
 	return (
 		<div className="w-full h-full pb-3">
@@ -202,6 +197,7 @@ const App = () => {
 											</div>
 										</div>
 									</div>
+								<PanelUpdateNotice />
 								</SettingsSheetProvider>
 							</RecuperatorTypeProvider>
 						</ProtectedRoute>
