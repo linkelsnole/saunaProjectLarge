@@ -5,7 +5,6 @@ import { Button } from "@/shared/ui/button"
 import {
 	ChevronDownIcon,
 	User,
-	Settings,
 	LogOut,
 	RefreshCcw,
 	SlidersHorizontal,
@@ -13,7 +12,6 @@ import {
 import { useSettingsSheet } from "@/contexts/SettingsSheetContext"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/shared/ui/dropdown-menu"
 import { useAuth } from "@/contexts/AuthContext"
-import { triggerReconnect } from "@/api/connectionApi"
 import { PanelVersionHistory } from "@/components/updates/PanelVersionHistory"
 import { UserManagementDialog } from "@/components/settings/UserManagementDialog"
 import { LanguageSwitcher } from "@/features/language-switcher/ui/LanguageSwitcher"
@@ -82,28 +80,8 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 						<DropdownMenuContent align="end" className="w-56" sideOffset={5}>
 							<DropdownMenuLabel className="text-base">{t('header.myAccount')}</DropdownMenuLabel>
 							<DropdownMenuSeparator />
-							<DropdownMenuItem className="cursor-pointer text-base">
-								<User className="h-4 w-4 mr-2" />
-								<span>{t('header.profile')}</span>
-							</DropdownMenuItem>
 							{isAdmin && <DropdownMenuItem className="cursor-pointer text-base" onSelect={()=>setVersionsOpen(true)}><RefreshCcw className="h-4 w-4 mr-2"/><span>{t("panelHistory.title")}</span></DropdownMenuItem>}
 							{isAdmin && <DropdownMenuItem className="cursor-pointer text-base" onSelect={() => setUsersOpen(true)}><User className="h-4 w-4 mr-2" /><span>{t('users.title')}</span></DropdownMenuItem>}
-							{isAdmin && (
-								<DropdownMenuItem 
-									className="cursor-pointer text-base"
-									onClick={(e) => {
-										e.preventDefault();
-										triggerReconnect();
-									}}
-								>
-									<RefreshCcw className="h-4 w-4 mr-2" />
-									<span>{t('header.reconnect')}</span>
-								</DropdownMenuItem>
-							)}
-							<DropdownMenuItem className="cursor-pointer text-base">
-								<Settings className="h-4 w-4 mr-2" />
-								<span>{t('header.settings')}</span>
-							</DropdownMenuItem>
 							<DropdownMenuSeparator />
 							<DropdownMenuItem 
 								className="cursor-pointer text-destructive focus:text-destructive text-base"
