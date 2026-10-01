@@ -1,47 +1,86 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MutationObserver, QueryClient } from '@tanstack/react-query';
-import { settingsMutationOptions } from './settingsQueue';
+import { mergeSettingsDashboard, settingsMutationOptions } from './settingsQueue';
 afterEach(() => vi.useRealTimers());
 const deferred = () => { let resolve!: () => void; let reject!: (error: Error) => void; const promise = new Promise<void>((a,b) => {resolve=a;reject=b;}); return {promise,resolve,reject}; };
-describe('shared settings mutations', () => {
-  it('queues different fields behind a slow write, including its readback', async () => {
-    vi.useFakeTimers();
-    const client = new QueryClient();
-    const write = deferred(); const read = deferred(); const events: string[] = [];
-    vi.spyOn(client, 'invalidateQueries').mockImplementationOnce(() => {events.push('read1');return read.promise;}).mockResolvedValue(undefined);
-    const make = (name: string, wait: Promise<void>) => new MutationObserver(client, settingsMutationOptions(client, {
-      onMutate: async () => {events.push('snapshot'+name);},
-      mutationFn: async (_value: number) => {events.push('write'+name);await wait;},
-    }));
-    const a = make('volume',write.promise).mutate(15000);
-    const b = make('temperature',Promise.resolve()).mutate(22);
-    await vi.advanceTimersByTimeAsync(15000);
-    expect(events).toEqual(['snapshotvolume','writevolume']);
-    write.resolve();await vi.advanceTimersByTimeAsync(0);
-    expect(events).toEqual(['snapshotvolume','writevolume','read1']);
-    read.resolve();await Promise.all([a,b]);
-    expect(events).toEqual(['snapshotvolume','writevolume','read1','snapshottemperature','writetemperature']);
-    client.clear();
+type Dashboard = { settings: { volume: number; temperature: number }; sensor: number };
+function setup() {
+  const client = new QueryClient();
+  let server: Dashboard = {settings:{volume:3000,temperature:20},sensor:10};
+  const poll = (next: Dashboard) => {server=next;client.setQueryData(['dashboard'],mergeSettingsDashboard(client,next));};
+  poll(server);
+  vi.spyOn(client,'invalidateQueries').mockImplementation(async () => {poll(server);});
+  const data = () => client.getQueryData<Dashboard>(['dashboard'])!;
+  const make = (field: 'volume'|'temperature', wait: Promise<void>, calls: number[]) => new MutationObserver(client,settingsMutationOptions(client,{
+    onMutate: async (value:number) => {client.setQueryData<Dashboard>(['dashboard'],old => old && ({...old,settings:{...old.settings,[field]:value}}));},
+    mutationFn: async (value:number) => {calls.push(value);await wait;server={...server,settings:{...server.settings,[field]:value}};},
+  }));
+  return {client,poll,data,make};
+}
+describe('per-setting protection with a shared write queue',()=>{
+  it('continues updating sensors and untouched settings during a 15-second write',async()=>{
+    vi.useFakeTimers();const {client,poll,data,make}=setup();const write=deferred();
+    const saved=make('volume',write.promise,[]).mutate(15000);
+    await vi.advanceTimersByTimeAsync(0);
+    for (let tick=1;tick<=3;tick++) {
+      await vi.advanceTimersByTimeAsync(5000);
+      poll({settings:{volume:3000,temperature:20+tick},sensor:10+tick});
+      expect(data()).toEqual({settings:{volume:15000,temperature:20+tick},sensor:10+tick});
+    }
+    write.resolve();await saved;
+    poll({settings:{volume:16000,temperature:24},sensor:14});
+    expect(data().settings.volume).toBe(16000);client.clear();
   });
-  it('failure restores only its own snapshot and does not erase or block later edits', async () => {
-    const client = new QueryClient();vi.spyOn(client,'invalidateQueries').mockResolvedValue(undefined);
-    client.setQueryData(['dashboard'], {eco:3000, normal:5000});
-    const save = deferred();
-    const make = (field: 'eco' | 'normal', fail: boolean) => new MutationObserver(client, settingsMutationOptions(client, {
-      onMutate: async (value: number) => {const before=client.getQueryData(['dashboard']);client.setQueryData(['dashboard'],(old: object) => ({...old,[field]:value}));return before;},
-      mutationFn: async (_value: number) => {if(fail) await save.promise;},
-      onError: (_error,_value,before) => {client.setQueryData(['dashboard'],before);},
-    }));
-    const a = make('eco',true).mutate(6000).catch(() => undefined);
-    const b = make('normal',false).mutate(15000);
-    save.reject(new Error('timeout'));await Promise.all([a,b]);
-    expect(client.getQueryData(['dashboard'])).toEqual({eco:3000,normal:15000});client.clear();
+  it('protects queued fields immediately and sends writes in order',async()=>{
+    vi.useFakeTimers();const {client,poll,data,make}=setup();const a=deferred();const b=deferred();const calls:number[]=[];
+    const first=make('volume',a.promise,calls).mutate(15000);
+    const second=make('temperature',b.promise,calls).mutate(22);
+    await vi.advanceTimersByTimeAsync(0);
+    poll({settings:{volume:3000,temperature:20},sensor:50});
+    expect(data()).toEqual({settings:{volume:15000,temperature:22},sensor:50});expect(calls).toEqual([15000]);
+    a.resolve();await first;await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toEqual([15000,22]);expect(data().settings.temperature).toBe(22);
+    b.resolve();await second;expect(data().settings).toEqual({volume:15000,temperature:22});client.clear();
   });
-  it('preserves two edits to the same field in FIFO order and does not retry failed writes', async () => {
-    const client = new QueryClient();vi.spyOn(client,'invalidateQueries').mockResolvedValue(undefined);
-    const calls: number[]=[];
-    const make = () => new MutationObserver(client,settingsMutationOptions(client,{mutationFn:async (value:number)=>{calls.push(value);if(value===100)throw new Error('offline');}}));
-    const first=make().mutate(100).catch(()=>undefined);const second=make().mutate(200);
-    await Promise.all([first,second]);expect(calls).toEqual([100,200]);client.clear();
+  it('a failed write does not roll sensors or another pending setting back',async()=>{
+    vi.useFakeTimers();const {client,poll,data,make}=setup();const a=deferred();const b=deferred();
+    const first=make('volume',a.promise,[]).mutate(15000).catch(()=>undefined);
+    const second=make('temperature',b.promise,[]).mutate(22);
+    await vi.advanceTimersByTimeAsync(0);poll({settings:{volume:3500,temperature:20},sensor:99});
+    a.reject(new Error('timeout'));await first;
+    expect(data()).toEqual({settings:{volume:3500,temperature:22},sensor:99});
+    b.resolve();await second;expect(data().sensor).toBe(99);client.clear();
+  });
+  it('the first completion cannot erase a newer edit to the same field',async()=>{
+    vi.useFakeTimers();const {client,poll,data,make}=setup();const a=deferred();const b=deferred();const calls:number[]=[];
+    const first=make('volume',a.promise,calls).mutate(15000);
+    const second=make('volume',b.promise,calls).mutate(21000);
+    await vi.advanceTimersByTimeAsync(0);a.resolve();await first;
+    poll({settings:{volume:15000,temperature:20},sensor:11});
+    expect(data().settings.volume).toBe(21000);
+    b.resolve();await second;expect(calls).toEqual([15000,21000]);expect(data().settings.volume).toBe(21000);client.clear();
+  });
+  it('releases protection even when readback fails, without retrying a write',async()=>{
+    const {client,poll,data,make}=setup();const calls:number[]=[];
+    vi.mocked(client.invalidateQueries).mockRejectedValueOnce(new Error('offline'));
+    await expect(make('volume',Promise.resolve(),calls).mutate(15000)).rejects.toThrow('offline');
+    poll({settings:{volume:16000,temperature:20},sensor:12});
+    expect(data().settings.volume).toBe(16000);expect(calls).toEqual([15000]);client.clear();
+  });
+  it('does not start the next write until the readback finishes', async()=>{
+    vi.useFakeTimers();const {client,make}=setup();const read=deferred();const calls:number[]=[];
+    vi.mocked(client.invalidateQueries).mockImplementationOnce(()=>read.promise);
+    const first=make('volume',Promise.resolve(),calls).mutate(15000);
+    const second=make('temperature',Promise.resolve(),calls).mutate(22);
+    await vi.advanceTimersByTimeAsync(15000);expect(calls).toEqual([15000]);
+    read.resolve();await Promise.all([first,second]);expect(calls).toEqual([15000,22]);client.clear();
+  });
+  it('a failed earlier edit cannot erase a later edit of the same field',async()=>{
+    vi.useFakeTimers();const {client,data,make}=setup();const firstWrite=deferred();const secondWrite=deferred();
+    const first=make('volume',firstWrite.promise,[]).mutate(15000).catch(()=>undefined);
+    const second=make('volume',secondWrite.promise,[]).mutate(21000);
+    await vi.advanceTimersByTimeAsync(0);firstWrite.reject(new Error('timeout'));await first;
+    expect(data().settings.volume).toBe(21000);secondWrite.resolve();await second;
+    expect(data().settings.volume).toBe(21000);client.clear();
   });
 });

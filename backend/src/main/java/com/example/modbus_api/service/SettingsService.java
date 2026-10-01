@@ -96,13 +96,6 @@ public class SettingsService {
 			throw new IOException("Расписание UserSet (mode=5) не найдено");
 		}
 
-		int stateRegister = userSetBase + ModbusRegisterMap.SCHEDULE_STATE_OFFSET;
-		Integer scheduleState = modbusClient.readRegister(SAUNA_PLC, stateRegister);
-		if (scheduleState == null || scheduleState == INVALID_VALUE) {
-			throw new IOException("Не удалось прочитать состояние UserSet");
-		}
-		Integer aggregateState = modbusClient.readRegister(SAUNA_PLC, ModbusRegisterMap.AGGREGATE_STATE);
-
 		forceAutoTemperature(userSetBase, request.getZone1Mode() != null, request.getZone2Mode() != null);
 
 		if (request.getZone1Mode() != null) {
@@ -122,14 +115,8 @@ public class SettingsService {
 				request.getZone2Mode());
 		}
 
-		int selectedState = scheduleState | ModbusRegisterMap.SCHEDULE_SELECTED_MASK;
-		if (selectedState != scheduleState) {
-			modbusClient.writeRegister(SAUNA_PLC, stateRegister, selectedState);
-		}
-		boolean running = aggregateState != null
-			&& aggregateState != INVALID_VALUE
-			&& (aggregateState & MASK_STATE_VENTILATION) != 0;
-		modbusClient.writeRegister(SAUNA_PLC, ModbusRegisterMap.AGGREGATE_COMMAND, running ? 6 : 1);
+		// Changing temperature control must preserve schedule/screen selection.
+		performFastModeChange();
 	}
 
 	public synchronized void updateTemperatureSetpoints(UpdateTemperatureSetpointsRequest request) throws IOException {
@@ -141,7 +128,8 @@ public class SettingsService {
 		validateTemperature("ПВ зоны 2", request.getInflowTargetZone2());
 		validateOrp("ОРП зоны 1", request.getOrpZone1());
 		validateOrp("ОРП зоны 2", request.getOrpZone2());
-		forceAutoTemperature(requireTemperatureUserSetBase(),
+		int userSetBase = requireTemperatureUserSetBase();
+        forceAutoTemperature(userSetBase,
             request.getOutflowTarget() != null || request.getInflowTargetZone1() != null || request.getOrpZone1() != null,
             request.getOutflowTarget() != null || request.getInflowTargetZone2() != null || request.getOrpZone2() != null);
 
@@ -152,6 +140,12 @@ public class SettingsService {
 			modbusClient.writeRegister(SAUNA_PLC,
 				ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.OUTFLOW_TARGET_OFFSET, rawValue);
 		}
+        // UserSet supplies these targets again when the controller recalculates.
+        // Keep its stored values consistent without selecting or activating it.
+        writeScaledTemperatureIfPresent(userSetBase + ModbusRegisterMap.SCHEDULE_TARGET_TEMPERATURE_ZONE_1_OFFSET,
+            request.getInflowTargetZone1() != null ? request.getInflowTargetZone1() : request.getOutflowTarget());
+        writeScaledTemperatureIfPresent(userSetBase + ModbusRegisterMap.SCHEDULE_TARGET_TEMPERATURE_ZONE_2_OFFSET,
+            request.getInflowTargetZone2() != null ? request.getInflowTargetZone2() : request.getOutflowTarget());
 		writeScaledTemperatureIfPresent(
 			ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.INFLOW_TARGET_OFFSET,
 			request.getInflowTargetZone1());
@@ -306,8 +300,13 @@ public class SettingsService {
 		Integer controlAlgorithm,
 		Integer tempTrackingInterval
 	) throws IOException {
-		if (targetZone1 != null || targetZone2 != null) {
-            forceAutoTemperature(requireTemperatureUserSetBase(), targetZone1 != null, targetZone2 != null);
+        if (targetZone1 != null || targetZone2 != null) {
+            validateTemperature("ПВ зоны 1", targetZone1);
+            validateTemperature("ПВ зоны 2", targetZone2);
+            int userSetBase = requireTemperatureUserSetBase();
+            forceAutoTemperature(userSetBase, targetZone1 != null, targetZone2 != null);
+            writeScaledTemperatureIfPresent(userSetBase + ModbusRegisterMap.SCHEDULE_TARGET_TEMPERATURE_ZONE_1_OFFSET, targetZone1);
+            writeScaledTemperatureIfPresent(userSetBase + ModbusRegisterMap.SCHEDULE_TARGET_TEMPERATURE_ZONE_2_OFFSET, targetZone2);
         }
 		/*
 		 * Порядок важен: сначала приоритет 0 по температуре (п.1–3), значения как в Modbus, без REG_POWERPROC:

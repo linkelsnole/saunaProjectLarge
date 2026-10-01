@@ -1,4 +1,5 @@
-import { useQuery, useIsMutating } from "@tanstack/react-query";
+import { mergeSettingsDashboard } from './settingsQueue';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { DashboardData } from "./typesApi";
 import { fetchWithAuth } from "./authApi";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,16 +8,16 @@ export const useDashboardData = () => {
 	const { role } = useAuth();
 	const isConfig = role === "ROLE_CONFIG";
 
-	const savingVolume = useIsMutating({ mutationKey: ['settings-write'] }) > 0;
+	const client = useQueryClient();
 	const query = useQuery<DashboardData>({
 		queryKey: ["dashboard"],
 		queryFn: async ({ signal }) => {
 			const response = await fetchWithAuth("/api/v1/devices/dashboard", { signal });
 			if (!response.ok) throw new Error("Network response was not ok");
-			return response.json();
+			return mergeSettingsDashboard(client, await response.json());
 		},
-		refetchInterval: isConfig || savingVolume ? false : 7000,
-		refetchOnWindowFocus: !savingVolume,
+		refetchInterval: isConfig ? false : 7000,
+		refetchOnWindowFocus: true,
 	});
 
 	return {

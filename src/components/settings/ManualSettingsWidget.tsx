@@ -1,4 +1,3 @@
-import { useIsMutating } from '@tanstack/react-query';
 import { LatestSaveQueue } from './latestSaveQueue';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
@@ -48,11 +47,10 @@ const NumberEditor = ({
 }: NumberEditorProps) => {
   const [localValue, setLocalValue] = useState('');
   const [editing, setEditing] = useState(false);
-  const saving = useIsMutating({ mutationKey: ['settings-write'] }) > 0;
 
   useEffect(() => {
-    if (!editing && !saving) setLocalValue(value === null || value === undefined ? '' : formatValue(value));
-  }, [editing, value, saving]);
+    if (!editing) setLocalValue(value === null || value === undefined ? '' : formatValue(value));
+  }, [editing, value]);
 
   const commit = () => {
     setEditing(false);

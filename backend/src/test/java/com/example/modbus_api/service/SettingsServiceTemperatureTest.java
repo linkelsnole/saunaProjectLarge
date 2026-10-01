@@ -40,7 +40,7 @@ class SettingsServiceTemperatureTest {
     }
 
     @Test
-    void selectingZoneModeWritesOnlyThatZoneAndActivatesUserSet() throws IOException {
+    void selectingZoneModeWritesOnlyThatZoneAndPreservesSource() throws IOException {
         ModbusClientAdapter client = mock(ModbusClientAdapter.class);
         int userSetBase = ModbusRegisterMap.scheduleBase(1);
         when(client.readRegisters(eq(SAUNA_PLC), anyList()))
@@ -57,9 +57,9 @@ class SettingsServiceTemperatureTest {
             ModbusRegisterMap.HEATER_ZONE_1 + ModbusRegisterMap.TEMPERATURE_CONTROL_OFFSET, 0);
         verify(client).writeRegister(SAUNA_PLC,
             userSetBase + ModbusRegisterMap.SCHEDULE_TEMPERATURE_CONTROL_ZONE_1_OFFSET, 0);
-        verify(client).writeRegister(SAUNA_PLC,
-            userSetBase + ModbusRegisterMap.SCHEDULE_STATE_OFFSET, 1);
-        verify(client).writeRegister(SAUNA_PLC, ModbusRegisterMap.AGGREGATE_COMMAND, 1);
+        verify(client, never()).writeRegister(eq(SAUNA_PLC),
+            eq(userSetBase + ModbusRegisterMap.SCHEDULE_STATE_OFFSET), anyInt());
+        verify(client).writeRegister(SAUNA_PLC, ModbusRegisterMap.AGGREGATE_COMMAND, 6);
         verify(client, never()).writeRegister(eq(SAUNA_PLC),
             eq(ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.TEMPERATURE_CONTROL_OFFSET), anyInt());
     }
@@ -147,7 +147,9 @@ class SettingsServiceTemperatureTest {
         new SettingsService(client).updateTemperatureSetpoints(request);
         org.mockito.InOrder order=inOrder(client);
         order.verify(client).writeRegister(SAUNA_PLC,base+15,2);
+        order.verify(client).writeRegister(SAUNA_PLC,base+17,225);
         order.verify(client).writeRegister(SAUNA_PLC,ModbusRegisterMap.HEATER_ZONE_2+25,225);
+        verify(client,never()).writeRegister(eq(SAUNA_PLC),eq(base+1),anyInt());
         order.verify(client).writeRegister(SAUNA_PLC,ModbusRegisterMap.AGGREGATE_COMMAND,6);
         verify(client,never()).writeRegister(eq(SAUNA_PLC),eq(base+12),anyInt());
     }
@@ -160,5 +162,46 @@ class SettingsServiceTemperatureTest {
         assertThrows(IOException.class,()->new SettingsService(client).updateTemperatureSetpoints(request));
         verify(client,never()).writeRegister(eq(SAUNA_PLC),eq(ModbusRegisterMap.HEATER_ZONE_2+25),anyInt());
         verify(client,never()).writeRegister(eq(SAUNA_PLC),eq(ModbusRegisterMap.AGGREGATE_COMMAND),anyInt());
+    }
+    @Test void everyTemperatureModePreservesScheduleOrScreenSelection() throws IOException {
+        for (int selected : new int[]{0, 1}) for (int mode : new int[]{0, 1, 2}) {
+            ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+            int base = ModbusRegisterMap.scheduleBase(3);
+            java.util.Map<Integer,Integer> registers = new java.util.HashMap<>();
+            registers.put(base, 5); registers.put(base+1, selected);
+            when(client.readRegisters(eq(SAUNA_PLC), anyList())).thenReturn(registers);
+            when(client.readRegister(eq(SAUNA_PLC), anyInt())).thenAnswer(i -> registers.getOrDefault((Integer)i.getArgument(1), 0));
+            doAnswer(i -> { registers.put(i.getArgument(1), i.getArgument(2)); return null; })
+                .when(client).writeRegister(eq(SAUNA_PLC), anyInt(), anyInt());
+            new SettingsService(client).setTemperatureControlModes(new UpdateTemperatureControlRequest(mode, mode));
+            org.junit.jupiter.api.Assertions.assertEquals(selected, registers.get(base+1).intValue());
+            verify(client, never()).writeRegister(eq(SAUNA_PLC), eq(base+1), anyInt());
+        }
+    }
+
+    @Test void pvTargetSurvivesRecalculationFromUserSetForBothZones() throws IOException {
+        for (int zone : new int[]{1, 2}) {
+            ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+            int base = ModbusRegisterMap.scheduleBase(3);
+            int stored = base + (zone == 1 ? 14 : 17);
+            int actual = (zone == 1 ? ModbusRegisterMap.HEATER_ZONE_1 : ModbusRegisterMap.HEATER_ZONE_2) + 25;
+            java.util.Map<Integer,Integer> registers = new java.util.HashMap<>();
+            registers.put(base, 5); registers.put(base+1, 1); registers.put(stored, 0);
+            when(client.readRegisters(eq(SAUNA_PLC), anyList())).thenAnswer(i -> new java.util.HashMap<>(registers));
+            doAnswer(i -> {
+                int address = i.getArgument(1); int value = i.getArgument(2);
+                registers.put(address, value);
+                if (address == ModbusRegisterMap.AGGREGATE_COMMAND && value == 6)
+                    registers.put(actual, registers.get(stored));
+                return null;
+            }).when(client).writeRegister(eq(SAUNA_PLC), anyInt(), anyInt());
+            UpdateTemperatureSetpointsRequest request = new UpdateTemperatureSetpointsRequest();
+            if (zone == 1) request.setInflowTargetZone1(22.5); else request.setInflowTargetZone2(22.5);
+            new SettingsService(client).updateTemperatureSetpoints(request);
+            org.junit.jupiter.api.Assertions.assertEquals(225, registers.get(actual).intValue());
+            org.junit.jupiter.api.Assertions.assertEquals(1, registers.get(base+1).intValue());
+            verify(client, never()).writeRegister(eq(SAUNA_PLC), eq(base+1), anyInt());
+            verify(client, never()).writeRegister(eq(SAUNA_PLC), eq(base+(zone == 1 ? 17 : 14)), anyInt());
+        }
     }
 }

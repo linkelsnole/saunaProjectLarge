@@ -94,7 +94,6 @@ export const useUpdateManualSettings = () => {
 
     // Оптимистичное обновление
     onMutate: async (newSettings) => {
-      await queryClient.cancelQueries({ queryKey: dashboardKey });
       const previousDashboard = queryClient.getQueryData<DashboardData>(dashboardKey);
 
       queryClient.setQueryData<DashboardData>(dashboardKey, (old) => {
@@ -122,10 +121,7 @@ export const useUpdateManualSettings = () => {
       toast.success(i18n.t('toasts.volumeSaved'));
     },
 
-    onError: (_err, _newSettings, context) => {
-      if (context?.previousDashboard) {
-        queryClient.setQueryData(dashboardKey, context.previousDashboard);
-      }
+    onError: (_err, _newSettings, _context) => {
       toast.error(i18n.t('toasts.saveError'));
     },
 
@@ -139,7 +135,6 @@ export const useSetVentilationMode = () => {
   return useQueuedSettingsMutation({
     mutationFn: setVentilationMode,
     onMutate: async (modeCode: number) => {
-      await queryClient.cancelQueries({ queryKey: dashboardKey });
       const previousDashboard = queryClient.getQueryData<DashboardData>(dashboardKey);
       const names: Record<number, string> = { 1: 'ЭКО', 2: 'АВТО', 3: 'Интенсив', 4: 'Ручной' };
       queryClient.setQueryData<DashboardData>(dashboardKey, (old) => old ? {
@@ -150,10 +145,7 @@ export const useSetVentilationMode = () => {
       } : old);
       return { previousDashboard };
     },
-    onError: (_error, _modeCode, context) => {
-      if (context?.previousDashboard) {
-        queryClient.setQueryData(dashboardKey, context.previousDashboard);
-      }
+    onError: (_error, _modeCode, _context) => {
       toast.error(i18n.t('toasts.modeSaveError'));
     },
   });
@@ -166,7 +158,6 @@ export const useUpdateVolumeSettings = () => {
   return useQueuedSettingsMutation({
     mutationFn: (payload: UpdateVolumeSettingsRequest) => updateVolumeSettings(payload),
     onMutate: async (payload) => {
-      await queryClient.cancelQueries({ queryKey: dashboardKey });
       const previousDashboard = queryClient.getQueryData<DashboardData>(dashboardKey);
       queryClient.setQueryData<DashboardData>(dashboardKey, (old) => {
         if (!old) return old;
@@ -190,10 +181,7 @@ export const useUpdateVolumeSettings = () => {
       return { previousDashboard };
     },
     onSuccess: () => toast.success(i18n.t('toasts.volumeSaved')),
-    onError: (_error, _payload, context) => {
-      if (context?.previousDashboard) {
-        queryClient.setQueryData(dashboardKey, context.previousDashboard);
-      }
+    onError: (_error, _payload, _context) => {
       toast.error(i18n.t('toasts.saveError'));
     },
   });
@@ -205,7 +193,6 @@ export const useSetTemperatureControl = () => {
   return useQueuedSettingsMutation({
     mutationFn: (payload: UpdateTemperatureControlRequest) => setTemperatureControl(payload),
     onMutate: async (payload) => {
-      await queryClient.cancelQueries({ queryKey: dashboardKey });
       const previousDashboard = queryClient.getQueryData<DashboardData>(dashboardKey);
       const names: Record<number, string> = { 0: 'ОРП', 1: 'ПВ', 2: 'ОВ' };
       queryClient.setQueryData<DashboardData>(dashboardKey, (old) => old ? {
@@ -218,12 +205,10 @@ export const useSetTemperatureControl = () => {
           temperatureControlModeZone2Code: payload.zone2Mode,
           temperatureControlModeZone2Name: names[payload.zone2Mode],
         } : {}),
-        screenMode: true,
       } : old);
       return { previousDashboard };
     },
-    onError: (_error, _payload, context) => {
-      if (context?.previousDashboard) queryClient.setQueryData(dashboardKey, context.previousDashboard);
+    onError: (_error, _payload, _context) => {
       toast.error(i18n.t('toasts.modeSaveError'));
     },
   });
@@ -235,7 +220,6 @@ export const useUpdateTemperatureSetpoints = () => {
   return useQueuedSettingsMutation({
     mutationFn: (payload: UpdateTemperatureSetpointsRequest) => updateTemperatureSetpoints(payload),
     onMutate: async (payload) => {
-      await queryClient.cancelQueries({ queryKey: dashboardKey });
       const previousDashboard = queryClient.getQueryData<DashboardData>(dashboardKey);
       queryClient.setQueryData<DashboardData>(dashboardKey, (old) => {
         if (!old?.tempSettings) return old;
@@ -255,8 +239,7 @@ export const useUpdateTemperatureSetpoints = () => {
       return { previousDashboard };
     },
     onSuccess: () => toast.success(i18n.t('toasts.tempSaved')),
-    onError: (_error, _payload, context) => {
-      if (context?.previousDashboard) queryClient.setQueryData(dashboardKey, context.previousDashboard);
+    onError: (_error, _payload, _context) => {
       toast.error(i18n.t('toasts.saveError'));
     },
   });
@@ -273,7 +256,6 @@ export const useUpdateTempSettings = () => {
 
 
     onMutate: async (newSettings) => {
-      await queryClient.cancelQueries({ queryKey: dashboardKey });
       const previousDashboard = queryClient.getQueryData<DashboardData>(dashboardKey);
 
       queryClient.setQueryData<DashboardData>(dashboardKey, (old) => {
@@ -309,10 +291,7 @@ export const useUpdateTempSettings = () => {
       toast.success(i18n.t('toasts.tempSaved'));
     },
 
-    onError: (_err, _newSettings, context) => {
-      if (context?.previousDashboard) {
-        queryClient.setQueryData(dashboardKey, context.previousDashboard);
-      }
+    onError: (_err, _newSettings, _context) => {
       toast.error(i18n.t('toasts.tempSaveError'));
     },
 
@@ -435,7 +414,6 @@ export const useUpdateRecuperatorSettings = () => {
     },
 
     onMutate: async (newSettings) => {
-      await queryClient.cancelQueries({ queryKey: dashboardKey });
       const previousDashboard = queryClient.getQueryData<DashboardData>(dashboardKey);
 
       queryClient.setQueryData<DashboardData>(dashboardKey, (old) => {
@@ -463,10 +441,7 @@ export const useUpdateRecuperatorSettings = () => {
       toast.success(i18n.t('toasts.recupSaved'));
     },
 
-    onError: (_err, _newSettings, context) => {
-      if (context?.previousDashboard) {
-        queryClient.setQueryData(dashboardKey, context.previousDashboard);
-      }
+    onError: (_err, _newSettings, _context) => {
       toast.error(i18n.t('toasts.recupSaveError'));
     },
 
