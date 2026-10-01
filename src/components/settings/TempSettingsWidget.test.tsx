@@ -17,3 +17,5 @@ it('renders all ORP temperatures including zero and negative values in compact f
   expect(fields).toHaveLength(12);
   expect(fields.map(s => s.match(/value="([^"]*)"/)?.[1])).toEqual(['15','20','20','18','22','14','0','-5','11','12','13','14']);
 });
+
+vi.mock('@tanstack/react-query', () => ({useIsMutating: () => 0}));

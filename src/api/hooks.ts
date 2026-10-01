@@ -1,3 +1,4 @@
+import { useQueuedSettingsMutation } from './settingsQueue';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   updateManualSettings,
@@ -86,7 +87,7 @@ export const useUpdateManualSettings = () => {
   const queryClient = useQueryClient();
   const dashboardKey = deviceKeys.dashboard();
 
-  return useMutation({
+  return useQueuedSettingsMutation({
     mutationFn: async (payload: UpdateManualSettingsRequest) => {
       return updateManualSettings(payload);
     },
@@ -128,9 +129,6 @@ export const useUpdateManualSettings = () => {
       toast.error(i18n.t('toasts.saveError'));
     },
 
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: dashboardKey });
-    },
   });
 };
 
@@ -138,7 +136,7 @@ export const useSetVentilationMode = () => {
   const queryClient = useQueryClient();
   const dashboardKey = deviceKeys.dashboard();
 
-  return useMutation({
+  return useQueuedSettingsMutation({
     mutationFn: setVentilationMode,
     onMutate: async (modeCode: number) => {
       await queryClient.cancelQueries({ queryKey: dashboardKey });
@@ -158,7 +156,6 @@ export const useSetVentilationMode = () => {
       }
       toast.error(i18n.t('toasts.modeSaveError'));
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: dashboardKey }),
   });
 };
 
@@ -166,8 +163,7 @@ export const useUpdateVolumeSettings = () => {
   const queryClient = useQueryClient();
   const dashboardKey = deviceKeys.dashboard();
 
-  return useMutation({
-    mutationKey: ['volume-settings'],
+  return useQueuedSettingsMutation({
     mutationFn: (payload: UpdateVolumeSettingsRequest) => updateVolumeSettings(payload),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: dashboardKey });
@@ -200,14 +196,13 @@ export const useUpdateVolumeSettings = () => {
       }
       toast.error(i18n.t('toasts.saveError'));
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: dashboardKey }),
   });
 };
 
 export const useSetTemperatureControl = () => {
   const queryClient = useQueryClient();
   const dashboardKey = deviceKeys.dashboard();
-  return useMutation({
+  return useQueuedSettingsMutation({
     mutationFn: (payload: UpdateTemperatureControlRequest) => setTemperatureControl(payload),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: dashboardKey });
@@ -231,14 +226,13 @@ export const useSetTemperatureControl = () => {
       if (context?.previousDashboard) queryClient.setQueryData(dashboardKey, context.previousDashboard);
       toast.error(i18n.t('toasts.modeSaveError'));
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: dashboardKey }),
   });
 };
 
 export const useUpdateTemperatureSetpoints = () => {
   const queryClient = useQueryClient();
   const dashboardKey = deviceKeys.dashboard();
-  return useMutation({
+  return useQueuedSettingsMutation({
     mutationFn: (payload: UpdateTemperatureSetpointsRequest) => updateTemperatureSetpoints(payload),
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: dashboardKey });
@@ -265,7 +259,6 @@ export const useUpdateTemperatureSetpoints = () => {
       if (context?.previousDashboard) queryClient.setQueryData(dashboardKey, context.previousDashboard);
       toast.error(i18n.t('toasts.saveError'));
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: dashboardKey }),
   });
 };
 
@@ -273,7 +266,7 @@ export const useUpdateTempSettings = () => {
   const queryClient = useQueryClient();
   const dashboardKey = deviceKeys.dashboard();
 
-  return useMutation({
+  return useQueuedSettingsMutation({
     mutationFn: async (payload: UpdateTempSettingsRequest) => {
       return updateTempSettings(payload);
     },
@@ -323,9 +316,6 @@ export const useUpdateTempSettings = () => {
       toast.error(i18n.t('toasts.tempSaveError'));
     },
 
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: dashboardKey });
-    },
   });
 };
 
@@ -439,7 +429,7 @@ export const useUpdateRecuperatorSettings = () => {
   const queryClient = useQueryClient();
   const dashboardKey = deviceKeys.dashboard();
 
-  return useMutation({
+  return useQueuedSettingsMutation({
     mutationFn: async (payload: UpdateRecuperatorSettingsRequest) => {
       return updateRecuperatorSettings(payload);
     },
@@ -480,8 +470,5 @@ export const useUpdateRecuperatorSettings = () => {
       toast.error(i18n.t('toasts.recupSaveError'));
     },
 
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: dashboardKey });
-    },
   });
 };

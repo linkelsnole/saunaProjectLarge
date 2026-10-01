@@ -7,7 +7,7 @@ export const useDashboardData = () => {
 	const { role } = useAuth();
 	const isConfig = role === "ROLE_CONFIG";
 
-	const savingVolume = useIsMutating({ mutationKey: ['volume-settings'] }) > 0;
+	const savingVolume = useIsMutating({ mutationKey: ['settings-write'] }) > 0;
 	const query = useQuery<DashboardData>({
 		queryKey: ["dashboard"],
 		queryFn: async ({ signal }) => {

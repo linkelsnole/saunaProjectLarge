@@ -1,3 +1,4 @@
+import { useIsMutating } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
 import { useSetTemperatureControl, useUpdateTemperatureSetpoints, useUpdateTempSettings } from '@/api/hooks';
@@ -25,10 +26,11 @@ interface TempInputProps {
 const TempInput = ({ label, value, onChange, unit = '°C', decimals = 1, readOnly = false, inputClassName, compact = false }: TempInputProps) => {
   const [localValue, setLocalValue] = useState(value == null ? '' : value.toFixed(decimals));
   const [isEditing, setIsEditing] = useState(false);
+  const saving = useIsMutating({ mutationKey: ['settings-write'] }) > 0;
 
   useEffect(() => {
-    if (!isEditing) setLocalValue(value == null ? '' : value.toFixed(decimals));
-  }, [value, isEditing, decimals]);
+    if (!isEditing && !saving) setLocalValue(value == null ? '' : value.toFixed(decimals));
+  }, [value, isEditing, decimals, saving]);
 
   const finishEditing = () => {
     setIsEditing(false);

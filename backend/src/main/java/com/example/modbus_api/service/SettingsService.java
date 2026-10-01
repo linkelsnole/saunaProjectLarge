@@ -16,6 +16,8 @@ import static com.example.modbus_api.service.ModbusConstants.*;
 
 @Service
 public class SettingsService {
+    // Serialize complete setting operations across HTTP clients, including float words
+    // and the final apply command. The intrinsic lock is reentrant and released on errors.
 	private static final double AIRFLOW_MIN = 0.0;
 	private static final double AIRFLOW_MAX = 21000.0;
 	private static final double BOOST_MIN = -100.0;
@@ -27,14 +29,14 @@ public class SettingsService {
 		this.modbusClient = modbusClient;
 	}
 
-	public void updateManualSettings(Double supplySpeed, Double boostPercent) throws IOException {
+	public synchronized void updateManualSettings(Double supplySpeed, Double boostPercent) throws IOException {
 		UpdateVolumeSettingsRequest request = new UpdateVolumeSettingsRequest();
 		request.setManualAirflow(supplySpeed);
 		request.setBoostPercent(boostPercent);
 		updateVolumeSettings(request);
 	}
 
-	public void setVentilationMode(int modeCode) throws IOException {
+	public synchronized void setVentilationMode(int modeCode) throws IOException {
 		if (modeCode < 1 || modeCode > 4) {
 			throw new IllegalArgumentException("Режим вентиляции должен быть в диапазоне 1–4");
 		}
@@ -69,7 +71,7 @@ public class SettingsService {
 		modbusClient.writeRegister(SAUNA_PLC, ModbusRegisterMap.AGGREGATE_COMMAND, running ? 6 : 1);
 	}
 
-	public void setTemperatureControlModes(UpdateTemperatureControlRequest request) throws IOException {
+	public synchronized void setTemperatureControlModes(UpdateTemperatureControlRequest request) throws IOException {
 		if (request == null || (request.getZone1Mode() == null && request.getZone2Mode() == null)) {
 			throw new IllegalArgumentException("Не передан режим регулирования температуры");
 		}
@@ -130,7 +132,7 @@ public class SettingsService {
 		modbusClient.writeRegister(SAUNA_PLC, ModbusRegisterMap.AGGREGATE_COMMAND, running ? 6 : 1);
 	}
 
-	public void updateTemperatureSetpoints(UpdateTemperatureSetpointsRequest request) throws IOException {
+	public synchronized void updateTemperatureSetpoints(UpdateTemperatureSetpointsRequest request) throws IOException {
 		if (request == null || request.isEmpty()) {
 			throw new IllegalArgumentException("Не переданы температурные уставки");
 		}
@@ -210,7 +212,7 @@ public class SettingsService {
 		}
 	}
 
-	public void updateVolumeSettings(UpdateVolumeSettingsRequest request) throws IOException {
+	public synchronized void updateVolumeSettings(UpdateVolumeSettingsRequest request) throws IOException {
 		if (request == null || request.isEmpty()) {
 			throw new IllegalArgumentException("Не переданы настройки объёма");
 		}
@@ -289,7 +291,7 @@ public class SettingsService {
         return (int)Math.round(percent * 10.0);
     }
 
-	public void updateTempSettings(
+	public synchronized void updateTempSettings(
 		Double targetZone1, 
 		Double targetZone2,
 		Double waterWarn, 
@@ -373,7 +375,7 @@ public class SettingsService {
 		performFastModeChange();
 	}
 
-	public void updateRecuperatorSettings(
+	public synchronized void updateRecuperatorSettings(
 		Double targetRpmMin,
 		Double targetRpmMax,
 		Double targetRpmStep,
@@ -402,7 +404,7 @@ public class SettingsService {
 		performFastModeChange();
 	}
 
-	public void performFastModeChange() throws IOException {
+	public synchronized void performFastModeChange() throws IOException {
 		System.out.println("DEBUG: performFastModeChange вызван, отправка команды " + CMD_FAST_MODE_CHANGE);
 		sendAggregateCommand(CMD_FAST_MODE_CHANGE);
 		System.out.println("DEBUG: Команда " + CMD_FAST_MODE_CHANGE + " отправлена в регистр 0x" + Integer.toHexString(REG_AGGREGATE_CMD).toUpperCase());

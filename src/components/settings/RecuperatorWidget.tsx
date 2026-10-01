@@ -1,3 +1,4 @@
+import { useIsMutating } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
 import { useUpdateRecuperatorSettings } from '@/api/hooks';
@@ -39,12 +40,13 @@ const RecuperatorInput = ({ label, value, onChange, unit, decimals = 1, readOnly
   const { t } = useTranslation();
   const [localValue, setLocalValue] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const saving = useIsMutating({ mutationKey: ['settings-write'] }) > 0;
 
   useEffect(() => {
-    if (!isEditing && value !== null && value !== undefined) {
+    if (!isEditing && !saving && value !== null && value !== undefined) {
       setLocalValue(value.toFixed(decimals));
     }
-  }, [value, isEditing, decimals]);
+  }, [value, isEditing, decimals, saving]);
 
   const handleBlur = () => {
     setIsEditing(false);

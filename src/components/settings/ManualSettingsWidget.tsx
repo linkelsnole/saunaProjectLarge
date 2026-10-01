@@ -1,3 +1,4 @@
+import { useIsMutating } from '@tanstack/react-query';
 import { LatestSaveQueue } from './latestSaveQueue';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
@@ -47,10 +48,11 @@ const NumberEditor = ({
 }: NumberEditorProps) => {
   const [localValue, setLocalValue] = useState('');
   const [editing, setEditing] = useState(false);
+  const saving = useIsMutating({ mutationKey: ['settings-write'] }) > 0;
 
   useEffect(() => {
-    if (!editing) setLocalValue(value === null || value === undefined ? '' : formatValue(value));
-  }, [editing, value]);
+    if (!editing && !saving) setLocalValue(value === null || value === undefined ? '' : formatValue(value));
+  }, [editing, value, saving]);
 
   const commit = () => {
     setEditing(false);
@@ -234,7 +236,7 @@ export const ManualSettingsWidget = () => {
                   type="range"
                   min={AIRFLOW_MIN}
                   max={AIRFLOW_MAX}
-                  step={10}
+                  step={100}
                   value={manualAirflow}
                   disabled={sliderDisabled}
                   aria-label={t('volumeWidget.manualTarget')}
