@@ -234,7 +234,7 @@ export const ManualSettingsWidget = () => {
                   type="range"
                   min={AIRFLOW_MIN}
                   max={AIRFLOW_MAX}
-                  step={100}
+                  step={500}
                   value={manualAirflow}
                   disabled={sliderDisabled}
                   aria-label={t('volumeWidget.manualTarget')}

@@ -15,7 +15,7 @@ describe('airflow controls', () => {
     const html=renderToStaticMarkup(<ManualSettingsWidget/>);
     const range=html.match(/<input[^>]*type="range"[^>]*>/)?.[0] ?? '';
     expect(range).toContain('min="0"'); expect(range).toContain('max="21000"');
-    expect(range).toContain('step="100"'); expect(range).toContain(`value="${value}"`);
+    expect(range).toContain('step="500"'); expect(range).toContain(`value="${value}"`);
     expect(html).toContain(`width:${percent}%`);
     expect(html).toContain(`left:calc(${percent}% + 4px)`);
     const presets=[...html.matchAll(/<input[^>]*type="number"[^>]*>/g)].slice(0,3);
