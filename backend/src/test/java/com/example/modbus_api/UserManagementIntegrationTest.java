@@ -299,4 +299,21 @@ class UserManagementIntegrationTest {
         mvc.perform(patch("/api/v1/admin/users/"+target.getId()+"/password").header("Authorization",auth()).contentType("application/json").content("{\"password\":\"new-reader-password-42\"}")).andExpect(status().isNoContent());
         initializer.run();assertTrue(encoder.matches("new-reader-password-42",users.findById(target.getId()).get().getPassword()));
     }
+    @Test void sixCharacterPasswordsAreAcceptedAndHashedForCreationAndChanges() throws Exception {
+        String name = "six_" + UUID.randomUUID().toString().substring(0, 12);
+        mvc.perform(post("/api/v1/admin/users").header("Authorization", auth()).contentType("application/json")
+            .content(createBody(name, "plain6", "ROLE_TESTER"))).andExpect(status().isCreated());
+        AppUser created = users.findByUsername(name).get();
+        assertNotEquals("plain6", created.getPassword());
+        assertTrue(encoder.matches("plain6", created.getPassword()));
+        mvc.perform(post("/api/v1/auth/login").contentType("application/json")
+            .content("{\"username\":\"" + name + "\",\"password\":\"plain6\"}")).andExpect(status().isOk());
+        mvc.perform(patch("/api/v1/admin/users/" + created.getId() + "/password").header("Authorization", auth()).contentType("application/json")
+            .content("{\"password\":\"other6\"}")).andExpect(status().isNoContent());
+        assertTrue(encoder.matches("other6", users.findById(created.getId()).get().getPassword()));
+        mvc.perform(post("/api/v1/admin/users").header("Authorization", auth()).contentType("application/json")
+            .content(createBody(name + "_short", "abcde", "ROLE_TESTER"))).andExpect(status().isBadRequest());
+        mvc.perform(patch("/api/v1/admin/users/" + created.getId() + "/password").header("Authorization", auth()).contentType("application/json")
+            .content("{\"password\":\"abcde\"}")).andExpect(status().isBadRequest());
+    }
 }

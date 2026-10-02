@@ -21,8 +21,8 @@ public class TesterAccountInitializer implements CommandLineRunner {
         if(password==null || password.isEmpty()) return;
         if(deleted.contains(username)) return;
         if(users.existsByUsername(username)) return;
-        if(!username.matches("[A-Za-z0-9_.-]{3,32}") || password.length()<12 || password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>72)
-            throw new IllegalArgumentException("Для тестировщика нужен логин 3–32 символа и пароль от 12 символов, до 72 байт UTF-8");
+        if(!username.matches("[A-Za-z0-9_.-]{3,32}") || password.length()<6 || password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>72)
+            throw new IllegalArgumentException("Для тестировщика нужен логин 3–32 символа и пароль от 6 символов, до 72 байт UTF-8");
         users.save(AppUser.builder().username(username).password(encoder.encode(password)).role(Role.ROLE_TESTER).build());
     }
 }

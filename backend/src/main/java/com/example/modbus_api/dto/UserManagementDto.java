@@ -7,11 +7,11 @@ public final class UserManagementDto {
     @Data @AllArgsConstructor public static class UserView { private Long id; private String username; private Role role; }
     @Data @NoArgsConstructor @AllArgsConstructor public static class Create {
         @NotBlank @Pattern(regexp="[A-Za-z0-9_.-]{3,32}") private String username;
-        @NotNull @Size(min=12,max=72) @ToString.Exclude private String password;
+        @NotNull @Size(min=6,max=72) @ToString.Exclude private String password;
         @NotNull private Role role;
     }
     @Data @NoArgsConstructor @AllArgsConstructor public static class ChangePassword {
-        @NotNull @Size(min=12,max=72) @ToString.Exclude private String password;
+        @NotNull @Size(min=6,max=72) @ToString.Exclude private String password;
     }
     @Data @NoArgsConstructor @AllArgsConstructor public static class ChangeRole {
         @NotNull private Role role;

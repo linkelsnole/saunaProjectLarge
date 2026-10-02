@@ -20,3 +20,10 @@ it('shows rejected deletion as an error',async()=>{
 
 it('changes password with PATCH and accepts empty success',async()=>{vi.mocked(fetchWithAuth).mockResolvedValue(new Response(null,{status:204}));await changeUserPassword({id:7,username:'test',role:'ROLE_USER'},'synthetic-password');expect(fetchWithAuth).toHaveBeenCalledWith('/api/v1/admin/users/7/password',expect.objectContaining({method:'PATCH',body:JSON.stringify({password:'synthetic-password'})}));});
 it('validates password size in UTF8 bytes',()=>{expect(validPassword('long-enough-password')).toBe(true);expect(validPassword('short')).toBe(false);expect(validPassword('я'.repeat(37))).toBe(false);});
+
+it('accepts six-character passwords for creation and password changes', () => {
+ expect(validPassword('plain6')).toBe(true);
+ expect(validPassword('abcde')).toBe(false);
+ expect(validNewUser({username:'tester',password:'plain6',role:'ROLE_TESTER'})).toBe(true);
+ expect(validNewUser({username:'tester',password:'abcde',role:'ROLE_TESTER'})).toBe(false);
+});

@@ -571,7 +571,7 @@
     "login": "Username",
     "loginHint": "3–32 characters: Latin letters, digits, period, hyphen, _",
     "password": "Password",
-    "passwordHint": "At least 12 characters, up to 72 UTF-8 bytes. Stored as a hash.",
+    "passwordHint": "At least 6 characters.",
     "create": "Create user",
     "search": "Search by username",
     "loading": "Loading users…",

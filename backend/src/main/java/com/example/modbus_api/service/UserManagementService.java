@@ -29,7 +29,7 @@ public class UserManagementService {
         return transaction.execute(status->{
             requireAdmin(actor);
             if(request.getUsername()==null || !request.getUsername().matches("[A-Za-z0-9_.-]{3,32}")) throw new IllegalArgumentException("Логин: 3–32 латинских символа, цифры, точка, дефис или подчёркивание");
-            if(request.getPassword()==null || request.getPassword().length()<12 || request.getPassword().getBytes(StandardCharsets.UTF_8).length>72) throw new IllegalArgumentException("Пароль: не менее 12 символов и не более 72 байт UTF-8");
+            if(request.getPassword()==null || request.getPassword().length()<6 || request.getPassword().getBytes(StandardCharsets.UTF_8).length>72) throw new IllegalArgumentException("Пароль: не менее 6 символов и не более 72 байт UTF-8");
             if(request.getRole()==null) throw new IllegalArgumentException("Выберите роль");
             if(users.existsByUsernameIgnoreCase(request.getUsername())) throw new ConcurrentModificationException("Такой логин уже занят");
             return view(users.saveAndFlush(AppUser.builder().username(request.getUsername()).password(encoder.encode(request.getPassword())).role(request.getRole()).build()));
@@ -53,8 +53,8 @@ public class UserManagementService {
         transaction.execute(status->{
             requireAdmin(actor);
             String password=request.getPassword();
-            if(password==null || password.length()<12 || password.getBytes(StandardCharsets.UTF_8).length>72)
-                throw new IllegalArgumentException("Пароль: не менее 12 символов и не более 72 байт UTF-8");
+            if(password==null || password.length()<6 || password.getBytes(StandardCharsets.UTF_8).length>72)
+                throw new IllegalArgumentException("Пароль: не менее 6 символов и не более 72 байт UTF-8");
             AppUser user=users.findById(id).orElseThrow(()->new NoSuchElementException("Пользователь не найден"));
             user.setPassword(encoder.encode(password));
             users.saveAndFlush(user);
