@@ -1,4 +1,4 @@
-import { TestingPage } from "@/components/testing/TestingWorkspace";
+import { TestingWorkspace } from "@/components/testing/TestingWorkspace";
 import { PanelUpdateNotice } from "@/components/updates/PanelUpdateNotice";
 import { useRef, useCallback } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
@@ -37,6 +37,8 @@ const SettingsTabs = ({
 	compact?: boolean;
 }) => {
 	const { t } = useTranslation();
+	const { role } = useAuth();
+	const isTester = role === "ROLE_TESTER";
 
 	return (
 		<Tabs defaultValue="volume" className="h-full flex flex-col min-h-0">
@@ -53,6 +55,7 @@ const SettingsTabs = ({
 				<TabsTrigger value="schedule" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>
 					{t('app.tabs.schedule')}
 				</TabsTrigger>
+            {isTester && <TabsTrigger value="testing" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>{t('testing.title')}</TabsTrigger>}
 				{canSeeConfigurator && (
 					<TabsTrigger value="config" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>
 						{t('app.tabs.config')}
@@ -74,6 +77,9 @@ const SettingsTabs = ({
 			<TabsContent value="schedule" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
 				<ScheduleWorkspace />
 			</TabsContent>
+        {isTester && <TabsContent value="testing" className="flex-1 overflow-y-auto animate-in fade-in duration-200 motion-reduce:animate-none">
+          <TestingWorkspace embedded />
+        </TabsContent>}
 			{canSeeConfigurator && (
 				<TabsContent value="config" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
 					<ConfiguratorWidget />
@@ -117,7 +123,6 @@ const MainDashboard = () => {
 		}
 	}, [sheet]);
 
-	if (role === 'ROLE_TESTER') return <TestingPage />;
 
 	return (
 		<div className="w-full h-full pb-3">

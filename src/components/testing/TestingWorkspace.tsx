@@ -18,7 +18,7 @@ const sections = [
   { key: 'dampers', Icon: Wind }, { key: 'valves', Icon: Droplets },
 ] as const;
 
-export function TestingWorkspace() {
+export function TestingWorkspace({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [busy, setBusy] = useState<string | null>(null);
@@ -95,7 +95,7 @@ export function TestingWorkspace() {
       {commandButton(command, label('read'), index)}
     </div>;
   }
-  return <main className="testing-workspace">
+  return <main className={`testing-workspace${embedded ? ' testing-workspace-embedded' : ''}`}>
     <header className="testing-header"><div className="testing-title"><span className="testing-icon testing-purple"><FlaskConical size={25} /></span>
       <div><h1>{label('title')}</h1><p>{label('subtitle')}</p></div></div>
       <div className={`testing-status ${enabled ? 'is-enabled' : ''}`}><span />{status.isPending ? label('connecting') : status.isError ? label('offline') : enabled ? label('active') : label('inactive')}</div>
@@ -151,14 +151,4 @@ export function TestingWorkspace() {
     </Tabs>
     <footer className="testing-footer"><Activity size={16}/>{label('footer')}</footer>
   </main>;
-}
-
-export function TestingPage() {
-  const { t } = useTranslation();
-  return <div className="h-full overflow-y-auto pb-6">
-    <Tabs defaultValue="testing">
-      <TabsList className="mb-4"><TabsTrigger value="testing">{t('testing.title')}</TabsTrigger></TabsList>
-      <TabsContent value="testing"><TestingWorkspace /></TabsContent>
-    </Tabs>
-  </div>;
 }

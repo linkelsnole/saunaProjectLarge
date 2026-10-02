@@ -589,7 +589,7 @@
       "ROLE_ADMIN": "Installation settings and user management",
       "ROLE_USER": "Installation control and regular schedules",
       "ROLE_READONLY": "View without changing settings",
-      "ROLE_TESTER": "Installation device testing",
+      "ROLE_TESTER": "Installation viewing and device testing",
       "ROLE_MGM": "Installation operator",
       "ROLE_CONFIG": "Installation configuration"
     },

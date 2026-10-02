@@ -316,4 +316,12 @@ class UserManagementIntegrationTest {
         mvc.perform(patch("/api/v1/admin/users/" + created.getId() + "/password").header("Authorization", auth()).contentType("application/json")
             .content("{\"password\":\"abcde\"}")).andExpect(status().isBadRequest());
     }
+    @Test void testerCanReadRegularDashboardAndSchedulesButNotAdminTools() throws Exception {
+        String header = "Bearer " + login(account(Role.ROLE_TESTER));
+        when(modbus.readRegisters(eq(SAUNA_PLC), anyList())).thenReturn(Collections.emptyMap());
+        mvc.perform(get("/api/v1/devices/dashboard").header("Authorization", header)).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/devices/schedules").header("Authorization", header)).andExpect(status().isOk());
+        mvc.perform(get("/api/v1/admin/users").header("Authorization", header)).andExpect(status().isForbidden());
+        mvc.perform(get("/api/v1/devices/physical-schedules").header("Authorization", header)).andExpect(status().isForbidden());
+    }
 }

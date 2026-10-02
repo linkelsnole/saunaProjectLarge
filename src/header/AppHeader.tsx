@@ -51,7 +51,7 @@ const AppHeader: React.FC<AppHeaderProps> = () => {
 	return (
 		<header className="flex h-8 min-[360px]:h-12 items-center gap-4 bg-transparent w-full">
 			<div className="flex items-center gap-4 lg:gap-6 w-full">
-				{settingsSheet && role !== 'ROLE_TESTER' && (
+				{settingsSheet && (
 					<Button
 						variant="ghost"
 						size="icon"

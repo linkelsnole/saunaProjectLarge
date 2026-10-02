@@ -54,7 +54,7 @@ public class DeviceController {
 
 	@Operation(summary = "Получить данные всех датчиков для дашборда")
 	@GetMapping("/dashboard")
-	@PreAuthorize("hasAnyRole('ADMIN','USER','READONLY')")
+	@PreAuthorize("hasAnyRole('ADMIN','USER','READONLY','TESTER')")
 	public ResponseEntity<?> getDashboardData() {
 		try {
 			DashboardData data = deviceService.getDashboardData();
@@ -136,7 +136,7 @@ public class DeviceController {
 
 	@Operation(summary = "Получить все слоты расписания")
 	@GetMapping("/schedules")
-	@PreAuthorize("hasAnyRole('ADMIN','USER','READONLY','MGM')")
+	@PreAuthorize("hasAnyRole('ADMIN','USER','READONLY','TESTER','MGM')")
 	public ResponseEntity<?> getSchedules() {
 		try {
 			return ResponseEntity.ok(scheduleService.getAllSchedules());

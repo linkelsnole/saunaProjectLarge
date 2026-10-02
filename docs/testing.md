@@ -1,6 +1,6 @@
 # Testing panel
 
-Available only to ROLE_TESTER, including every /api/v1/testing endpoint. Both installation variants share the same implementation and retain their existing PLC/logName configuration.
+The Testing tab is added only for ROLE_TESTER to the existing settings widget beside the installation diagram (and to the same mobile settings sheet). The regular Volume, Temperature, Recuperator and Schedule tabs remain visible. Only ROLE_TESTER can access /api/v1/testing endpoints. Testers can read dashboard data and schedules; ordinary controls retain their existing role restrictions. Both installation variants share the same implementation and retain their existing PLC/logName configuration.
 
 Mode uses command 14 at 0x0300 and bit 3 (zero-based) of 0x0302, following the supplied drawing. POST /mode takes the desired boolean state; it reads the current state before toggling and returns the observed state. The UI reports an unconfirmed switch instead of presenting the requested state as confirmed.
 

@@ -387,3 +387,11 @@
     transition: none !important;
   }
 }
+
+.testing-workspace.testing-workspace-embedded {
+  max-width: none;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
