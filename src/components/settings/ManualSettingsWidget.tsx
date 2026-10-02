@@ -89,6 +89,7 @@ export const ManualSettingsWidget = () => {
   const { mutate: selectMode, isPending: modePending } = useSetVentilationMode();
   const { mutate: saveVolume, mutateAsync: saveVolumeAsync } = useUpdateVolumeSettings();
 
+  const [manualDraft, setManualDraft] = useState<string | null>(null);
   const [manualAirflow, setManualAirflow] = useState(data?.volumeSettings?.manualAirflow ?? 0);
 
   const isAdmin = role === 'ROLE_ADMIN';
@@ -199,12 +200,24 @@ export const ManualSettingsWidget = () => {
               </svg>
               <div className="volume-gauge-label">
                 <h3>{t('volumeWidget.manualTarget')}</h3>
-                <strong>{formatValue(manualAirflow)}</strong><span>{t('units.m3h')}</span>
+                <input className="volume-center-input" type="text" inputMode="decimal"
+                  aria-label={t('volumeWidget.manualTarget')} readOnly={sliderDisabled}
+                  value={manualDraft ?? formatValue(manualAirflow)}
+                  onPointerDown={event => event.stopPropagation()}
+                  onKeyDown={event => {
+                    event.stopPropagation();
+                    if(event.key === 'Enter') event.currentTarget.blur();
+                    if(event.key === 'Escape') { event.currentTarget.value = formatValue(manualAirflow); setManualDraft(null); event.currentTarget.blur(); }
+                  }}
+                  onFocus={event => { if(!sliderDisabled) { setManualDraft(formatValue(manualAirflow)); event.currentTarget.select(); } }}
+                  onChange={event => setManualDraft(event.target.value)}
+                  onBlur={event => {
+                    const text = event.currentTarget.value.trim().replace(',', '.');
+                    const value = Number(text);
+                    if(manualDraft !== null && text !== '' && Number.isFinite(value) && value >= AIRFLOW_MIN && value <= AIRFLOW_MAX && value !== manualAirflow) changeManualAirflow(value);
+                    setManualDraft(null);
+                  }} /><span>{t('units.m3h')}</span>
               </div>
-            </div>
-            <div className="volume-slider-row">
-              <div className="volume-manual-input"><NumberEditor value={manualAirflow} onCommit={changeManualAirflow}
-                readOnly={sliderDisabled} min={AIRFLOW_MIN} max={AIRFLOW_MAX} unit={t('units.m3h')} ariaLabel={t('volumeWidget.manualTarget')} /></div>
             </div>
           </section>
         <section className="volume-surface volume-presets">
