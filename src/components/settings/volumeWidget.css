@@ -88,7 +88,7 @@
 .volume-panel input[type=number]{transition:border-color 150ms ease,box-shadow 150ms ease,background-color 150ms ease}
 .volume-dial-fill{transition:stroke-dasharray 140ms ease-out}
 .volume-dial-knob{transform-origin:160px 160px;transition:transform 140ms ease-out}
-@container (min-width:581px) and (max-width:780px){.volume-presets{padding:16px}.volume-preset-label{font-size:13px;gap:7px}.volume-icon-disc{width:34px;height:34px}.volume-icon-disc svg{width:23px;height:23px}.volume-preset{gap:7px}.volume-boost{grid-template-columns:1fr}.volume-boost-label{gap:8px}}
+@container (min-width:581px) and (max-width:780px){.volume-presets{padding:16px}.volume-preset-label{font-size:13px;gap:7px}.volume-icon-disc{width:34px;height:34px}.volume-icon-disc svg{width:23px;height:23px}.volume-preset{gap:7px}.volume-boost{grid-template-columns:minmax(0,1.3fr) minmax(80px,1fr);gap:8px;padding:12px 8px}.volume-boost-label{gap:8px}}
 @container (max-width:360px){.volume-presets{padding:16px}.volume-preset-label{font-size:14px;gap:8px}.volume-icon-disc{width:38px;height:38px}.volume-preset{gap:8px}.volume-boost{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);padding:12px 8px;gap:8px}.volume-boost-label{gap:6px}.volume-boost .volume-icon-disc{width:30px;height:30px}.volume-boost h3{font-size:15px}.volume-boost p{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.volume-panel *{transition:none!important}}
 
