@@ -2,8 +2,9 @@ import { LatestSaveQueue } from './latestSaveQueue';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
 import { useSetVentilationMode, useUpdateVolumeSettings } from '@/api/hooks';
-import { Wind, Target, Leaf, Fan, SlidersHorizontal } from 'lucide-react';
+import { Wind, Target, Leaf, Fan, SlidersHorizontal } from './volumeIcons';
 import './volumeWidget.css';
+import { radialValue } from './radialValue';
 import { NeoInput } from '@/shared/ui/NeoInput';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -127,9 +128,6 @@ export const ManualSettingsWidget = () => {
     { key: 'intensiveAirflow', label: t('volumeWidget.modes.intensive'), Icon: Wind },
   ];
 
-  const currentModeLabel = activeMode === null
-    ? '—'
-    : t(`volumeWidget.currentModes.${activeMode}`, { defaultValue: data?.ventilationModeName ?? '—' });
   const modeDisabled = !canOperate || !screenMode || !unitRunning || modePending;
   const sliderDisabled = !canOperate || !screenMode || !unitRunning;
   const sliderProgress = Math.max(0, Math.min(100, (manualAirflow / AIRFLOW_MAX) * 100));
@@ -166,24 +164,43 @@ export const ManualSettingsWidget = () => {
           </button>
         ))}
       </div>
-      <div className="volume-mode-caption">
-        <span>{t('volumeWidget.currentMode')}: <strong>{currentModeLabel}</strong></span>
-        {!screenMode && <span className="text-amber-700">{t('volumeWidget.screenModeHint')}</span>}
-      </div>
+      {!screenMode && <div className="volume-mode-caption text-amber-700">{t('volumeWidget.screenModeHint')}</div>}
       <div className={`volume-controls ${activeMode === 4 ? '' : 'volume-controls-presets-only'}`}>
         {activeMode === 4 && (
           <section className="volume-surface volume-manual">
-            <div className="volume-gauge">
+            <div className="volume-gauge" role="slider" tabIndex={sliderDisabled ? -1 : 0}
+              aria-label={t('volumeWidget.manualTarget')} aria-valuemin={0} aria-valuemax={AIRFLOW_MAX}
+              aria-valuenow={manualAirflow} aria-disabled={sliderDisabled}
+              onPointerDown={event => {
+                if (sliderDisabled || event.button !== 0) return;
+                event.currentTarget.setPointerCapture(event.pointerId);
+                const rect = event.currentTarget.getBoundingClientRect();
+                changeManualAirflow(radialValue((event.clientX-rect.left)/rect.width*320-160, (event.clientY-rect.top)/rect.height*290-160, AIRFLOW_MAX, 500));
+              }}
+              onPointerMove={event => {
+                if (sliderDisabled || !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+                const rect = event.currentTarget.getBoundingClientRect();
+                changeManualAirflow(radialValue((event.clientX-rect.left)/rect.width*320-160, (event.clientY-rect.top)/rect.height*290-160, AIRFLOW_MAX, 500));
+              }}
+              onPointerUp={event => { if(event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }}
+              onKeyDown={event => {
+                if(sliderDisabled) return;
+                const direction = ['ArrowRight','ArrowUp'].includes(event.key) ? 1 : ['ArrowLeft','ArrowDown'].includes(event.key) ? -1 : 0;
+                if(direction || event.key === 'Home' || event.key === 'End') {
+                  event.preventDefault();
+                  changeManualAirflow(event.key === 'Home' ? 0 : event.key === 'End' ? AIRFLOW_MAX : manualAirflow + direction * 500);
+                }
+              }}>
               <svg viewBox="0 0 320 290" aria-hidden="true">
                 <defs>
                   <linearGradient id={gaugeId} x1="0" y1="1" x2="1" y2="0">
-                    <stop offset="0%" stopColor="#237bff" /><stop offset="100%" stopColor="#a8e4fa" />
+                    <stop offset="0%" stopColor="#080b10" /><stop offset="100%" stopColor="#465264" />
                   </linearGradient>
                 </defs>
                 <circle cx="160" cy="160" r="147" fill="none" stroke="white" strokeWidth="2" />
-                <path d="M 73.73 246.27 A 122 122 0 1 1 246.27 246.27" fill="none" stroke="#e0eef8" strokeWidth="24" strokeLinecap="round" />
+                <path d="M 73.73 246.27 A 122 122 0 1 1 246.27 246.27" fill="none" stroke="#e4e8ee" strokeWidth="24" strokeLinecap="round" />
                 <path d="M 73.73 246.27 A 122 122 0 1 1 246.27 246.27" fill="none" stroke={`url(#${gaugeId})`} strokeWidth="24" strokeLinecap="round" pathLength="100" strokeDasharray={`${sliderProgress} 100`} />
-                <circle cx={knobX} cy={knobY} r="16" fill="#38c8ed" stroke="white" strokeWidth="6" />
+                <circle cx={knobX} cy={knobY} r="16" fill="#151b25" stroke="white" strokeWidth="6" />
               </svg>
               <div className="volume-gauge-label">
                 <h3>{t('volumeWidget.manualTarget')}</h3>
@@ -191,17 +208,6 @@ export const ManualSettingsWidget = () => {
               </div>
             </div>
             <div className="volume-slider-row">
-              <div className="relative h-7 min-w-0 flex-1 px-1">
-                <div className="absolute left-1 right-1 top-2 h-3 overflow-hidden rounded-full bg-sky-100">
-                  <div className="h-full rounded-full bg-gradient-to-r from-slate-700 to-blue-500" style={{ width: `${sliderProgress}%` }} />
-                </div>
-                <input type="range" min={AIRFLOW_MIN} max={AIRFLOW_MAX} step={500}
-                  value={manualAirflow} disabled={sliderDisabled} aria-label={t('volumeWidget.manualTarget')}
-                  onChange={(event) => changeManualAirflow(Number(event.target.value))}
-                  className="volume-range absolute inset-0 z-20 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" />
-                <div className="volume-slider-knob pointer-events-none absolute top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-white bg-cyan-400 shadow-md"
-                  style={{ left: `calc(${sliderProgress}% + 4px)` }} />
-              </div>
               <div className="volume-manual-input"><NumberEditor value={manualAirflow} onCommit={changeManualAirflow}
                 readOnly={sliderDisabled} min={AIRFLOW_MIN} max={AIRFLOW_MAX} unit={t('units.m3h')} ariaLabel={t('volumeWidget.manualTarget')} /></div>
             </div>

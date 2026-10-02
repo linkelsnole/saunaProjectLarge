@@ -108,11 +108,11 @@
     "screenModeHint": "Для выбора режима переключитесь на «Экран».",
     "currentMode": "Текущий режим",
     "targetAirflow": "Целевой приток",
-    "realAirflow": "Реальный приток",
+    "realAirflow": "Фактический приток",
     "presetsTitle": "Объём по режимам",
     "readOnly": "Только чтение",
-    "manualTarget": "Ручной объём вентиляции",
-    "boost": "Наддув (приток над вытяжкой)"
+    "manualTarget": "Ручной объём",
+    "boost": "Наддув"
   },
   "tempWidget": {
     "zone1": "Зона 1",
