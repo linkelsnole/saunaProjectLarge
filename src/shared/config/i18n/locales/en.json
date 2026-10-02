@@ -638,14 +638,14 @@
   "testing": {
     "title": "Testing",
     "subtitle": "Installation device checks",
-    "mode": "Testing mode",
-    "modeHint": "Enable testing mode to send manual commands",
-    "active": "Mode enabled",
-    "inactive": "Mode disabled",
+    "mode": "Test mode",
+    "modeHint": "Enable test mode for manual control.",
+    "active": "Enabled",
+    "inactive": "Disabled",
     "connecting": "Connecting…",
     "offline": "Offline",
-    "enable": "Enable mode",
-    "disable": "Disable mode",
+    "enable": "Enable",
+    "disable": "Disable",
     "enableHint": "Enable testing mode to control devices",
     "ready": "Select a device and run a command",
     "executing": "Running command…",
@@ -681,10 +681,11 @@
     "errorMask": "Error mask",
     "position": "Position",
     "rpm": "rpm",
-    "recupErrorsUnavailable": "Recuperator drive and pump errors require confirmed register addresses.",
-    "valveUnavailable": "Position reading is not yet supported by the controller",
+    "recupErrorsUnavailable": "Recuperator and pump diagnostics are unavailable.",
+    "valveUnavailable": "Position reading is unavailable.",
     "footer": "Commands run sequentially. Readings update on request.",
     "invalidPercent": "Enter a value from 0 to 100%",
-    "integerPercent": "Enter a whole percentage"
+    "integerPercent": "Enter a whole percentage",
+    "noData": "No data"
   }
 }

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Activity, ArrowRightLeft, Check, Fan, FlaskConical, Gauge, LoaderCircle, Power, RefreshCw, ShieldAlert, Square, Wind, Droplets } from 'lucide-react';
+import { Info, ArrowRightLeft, Check, Fan, FlaskConical, Gauge, LoaderCircle, Power, RefreshCw, ShieldAlert, Square, Wind, Droplets } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
 import { testingApi, percentParameter, type TestRequest } from './testingApi';
 import './testing.css';
@@ -88,19 +88,20 @@ export function TestingWorkspace({ embedded = false }: { embedded?: boolean }) {
   }
   function reading(command: number, name: string, unit: string, index?: number, mask = false) {
     const data = readings[readingKey(command, index)];
-    const formatted = data ? (mask ? `0x${(data.value >>> 0).toString(16).toUpperCase()}` : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(data.value)) : '—';
+    const formatted = data ? (mask ? `0x${(data.value >>> 0).toString(16).toUpperCase()}` : new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(data.value)) : label('noData');
     return <div className="testing-reading">
-      <div><span className="testing-reading-label">{label(name)}</span><div className="testing-reading-value">{formatted}<span>{data ? unit : ''}</span></div>
-        <small>{data ? `${label('updated')} ${data.time}` : label('noReading')}</small></div>
+      <div><span className="testing-reading-label">{label(name)}</span><div className={`testing-reading-value${data ? '' : ' is-empty'}`}>{formatted}<span>{data ? unit : ''}</span></div>
+        {data && <small>{data.time}</small>}</div>
       {commandButton(command, label('read'), index)}
     </div>;
   }
   return <main className={`testing-workspace${embedded ? ' testing-workspace-embedded' : ''}`}>
-    <header className="testing-header"><div className="testing-title"><span className="testing-icon testing-purple"><FlaskConical size={25} /></span>
-      <div><h1>{label('title')}</h1><p>{label('subtitle')}</p></div></div>
-      <div className={`testing-status ${enabled ? 'is-enabled' : ''}`}><span />{status.isPending ? label('connecting') : status.isError ? label('offline') : enabled ? label('active') : label('inactive')}</div>
-    </header>
-    <section className="testing-mode"><div><h2>{label('mode')}</h2><p>{label('modeHint')}</p></div>
+    <section className="testing-mode">
+      <div className="testing-mode-info"><span className="testing-icon"><FlaskConical size={23} /></span>
+        <div><h2>{label('mode')}</h2><p>{label('modeHint')}</p></div>
+      </div>
+      <div className="testing-mode-actions">
+        <span className={`testing-status ${enabled ? 'is-enabled' : ''}`}>{busy ? <LoaderCircle size={12} className="testing-spinner" /> : <span />}{status.isPending ? label('connecting') : status.isError ? label('offline') : label(enabled ? 'active' : 'inactive')}</span>
       <button type="button" className={`testing-button ${enabled ? '' : 'testing-button-primary'}`} disabled={!!busy || status.isPending || status.isError}
         onClick={() => void run('mode', async () => {
           try {
@@ -109,46 +110,41 @@ export function TestingWorkspace({ embedded = false }: { embedded?: boolean }) {
             if (result.enabled === enabled) throw new Error(label('modeUnconfirmed'));
           } finally { void queryClient.invalidateQueries({ queryKey: ['testing-status'] }); }
         })}>{busy === 'mode' ? <LoaderCircle size={17} className="testing-spinner" /> : <Power size={17} />}{label(enabled ? 'disable' : 'enable')}</button>
+      </div>
     </section>
-    <div className="testing-feedback" aria-live="polite">
+    <div className={error || status.isError ? 'testing-feedback' : 'sr-only'} aria-live="polite">
       {error || status.isError ? <div className="testing-error"><ShieldAlert size={18} /><span>{error || label('offlineHint')}</span>
         {status.isError && <button className="testing-button" disabled={!!busy} onClick={() => void status.refetch()}>{label('retry')}</button>}</div>
-        : busy ? <span><LoaderCircle size={16} className="testing-spinner" />{label('executing')}</span>
-        : notice ? <span><Check size={16} />{notice}</span> : <span>{label(enabled ? 'ready' : 'enableHint')}</span>}
+        : busy ? label('executing') : notice}
     </div>
     <Tabs defaultValue="recuperator" className="testing-tabs">
       <TabsList className="testing-nav">{sections.map(({ key, Icon }) => <TabsTrigger key={key} value={key} disabled={!!busy}><Icon size={18} />{label(key)}</TabsTrigger>)}</TabsList>
       <TabsContent value="recuperator" className="testing-panel">
-        <div className="testing-section-title"><span className="testing-icon testing-green"><RefreshCw size={25} /></span><div><h2>{label('recuperator')}</h2><p>{label('recuperatorHint')}</p></div></div>
         <div className="testing-actions">
           <button className="testing-button testing-button-primary" disabled={blocked} onClick={() => void execute({ command: 2 })}><Power size={17}/>{label('start')}</button>
           <button className="testing-button" disabled={blocked} onClick={() => void execute({ command: 3 })}><Square size={17}/>{label('stop')}</button>
           <button className="testing-button" disabled={blocked} onClick={() => void execute({ command: 4 })}><ArrowRightLeft size={17}/>{label('reverse')}</button>
-          {commandButton(1, label('reset'))}
+          <button className="testing-button" disabled={blocked} onClick={() => void execute({ command: 1 })}><RefreshCw size={17}/>{label('reset')}</button>
         </div>
-        {percentControl(5, 'recuperator')}
-        {reading(6, 'currentSpeed', label('rpm'))}
-        <p className="testing-footnote">{label('recupErrorsUnavailable')}</p>
+        <div className="testing-controls">{percentControl(5, 'recuperator')}{reading(6, 'currentSpeed', label('rpm'))}</div>
+        <p className="testing-footnote"><Info size={16}/>{label('recupErrorsUnavailable')}</p>
       </TabsContent>
       <TabsContent value="motors" className="testing-panel">
-        <div className="testing-section-title"><span className="testing-icon testing-blue"><Fan size={25}/></span><div><h2>{label('motors')}</h2><p>{label('motorsHint')}</p></div></div>
-        {selector('motors')}{percentControl(7, 'motors', indices.motors)}
+        <div className="testing-controls">{selector('motors')}{percentControl(7, 'motors', indices.motors)}</div>
+        <div className="testing-readings">
         {reading(8, 'currentSpeed', label('rpm'), indices.motors)}
         {reading(9, 'relativeSpeed', '%', indices.motors)}
         {reading(10, 'maxSpeed', label('rpm'), indices.motors)}
-        {reading(11, 'errorMask', '', indices.motors, true)}
+        {reading(11, 'errorMask', '', indices.motors, true)}</div>
       </TabsContent>
       <TabsContent value="dampers" className="testing-panel">
-        <div className="testing-section-title"><span className="testing-icon testing-amber"><Wind size={25}/></span><div><h2>{label('dampers')}</h2><p>{label('dampersHint')}</p></div></div>
         {selector('dampers')}<div className="testing-actions">{commandButton(12, label('open'), indices.dampers, 1, true)}{commandButton(12, label('close'), indices.dampers, 0)}</div>
         {reading(13, 'position', '%', indices.dampers)}
       </TabsContent>
       <TabsContent value="valves" className="testing-panel">
-        <div className="testing-section-title"><span className="testing-icon testing-blue"><Droplets size={25}/></span><div><h2>{label('valves')}</h2><p>{label('valvesHint')}</p></div></div>
-        {selector('valves')}{percentControl(14, 'valves', indices.valves)}
+        <div className="testing-controls">{selector('valves')}{percentControl(14, 'valves', indices.valves)}</div>
         <div className="testing-reading"><div><span className="testing-reading-label">{label('position')}</span><div className="testing-reading-value">—</div><small>{label('valveUnavailable')}</small></div><Gauge size={25} className="testing-muted"/></div>
       </TabsContent>
     </Tabs>
-    <footer className="testing-footer"><Activity size={16}/>{label('footer')}</footer>
   </main>;
 }
