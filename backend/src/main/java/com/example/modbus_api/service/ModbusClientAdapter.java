@@ -253,6 +253,12 @@ public class ModbusClientAdapter {
 				}
     }
     
+    /** Commands may toggle state: an uncertain write must never be automatically replayed. */
+    public void writeCommandOnce(String logUnit, int register, int value) throws IOException {
+        ensureConnection();
+        performWrite(logUnit, register, value);
+    }
+
     public void writeRegister(String logUnit, int register, int value) throws IOException {
 
 				try {

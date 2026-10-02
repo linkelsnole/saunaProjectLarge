@@ -1,3 +1,4 @@
+import { TestingPage } from "@/components/testing/TestingWorkspace";
 import { PanelUpdateNotice } from "@/components/updates/PanelUpdateNotice";
 import { useRef, useCallback } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
@@ -116,7 +117,7 @@ const MainDashboard = () => {
 		}
 	}, [sheet]);
 
-	if (role === 'ROLE_TESTER') return <div className="h-full overflow-y-auto pb-6"><div className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-4 md:p-6"><p className="text-sm text-slate-600">{t('physicalSchedule.adminOnly')}</p></div></div>;
+	if (role === 'ROLE_TESTER') return <TestingPage />;
 
 	return (
 		<div className="w-full h-full pb-3">

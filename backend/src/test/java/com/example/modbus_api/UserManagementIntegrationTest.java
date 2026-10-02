@@ -96,6 +96,26 @@ class UserManagementIntegrationTest {
         mvc.perform(post(url+"/apply")).andExpect(status().isUnauthorized());
         verifyNoInteractions(modbus);
     }
+    @Test void testingEndpointsOnlyAllowTesterAndNeverTouchControllerForOtherRoles() throws Exception {
+        String url = "/api/v1/testing";
+        for (Role role : Role.values()) {
+            if (role == Role.ROLE_TESTER) continue;
+            String header = "Bearer " + login(account(role));
+            clearInvocations(modbus);
+            mvc.perform(get(url + "/status").header("Authorization", header)).andExpect(status().isForbidden());
+            mvc.perform(post(url + "/mode").header("Authorization", header).contentType("application/json").content("{\"enabled\":true}")).andExpect(status().isForbidden());
+            mvc.perform(post(url + "/commands").header("Authorization", header).contentType("application/json").content("{\"command\":2}")).andExpect(status().isForbidden());
+            verifyNoInteractions(modbus);
+        }
+        String header = "Bearer " + login(account(Role.ROLE_TESTER));
+        when(modbus.readRegister(SAUNA_PLC, 0x0302)).thenReturn(8);
+        mvc.perform(get(url + "/status").header("Authorization", header)).andExpect(status().isOk());
+        mvc.perform(post(url + "/commands").header("Authorization", header).contentType("application/json").content("{\"command\":2}")).andExpect(status().isOk());
+        verify(modbus).writeCommandOnce(SAUNA_PLC, 0x0307, 2);
+        mvc.perform(post(url + "/commands").header("Authorization", header).contentType("application/json").content("{\"command\":15,\"index\":0}")).andExpect(status().isBadRequest());
+        mvc.perform(get(url + "/status")).andExpect(status().isUnauthorized());
+    }
+
     @Test void adminCanReadPhysicalMapAndApplySchedules() throws Exception {
         when(modbus.readRegisters(eq(SAUNA_PLC),anyList())).thenReturn(Collections.emptyMap());
         mvc.perform(get("/api/v1/devices/physical-schedules").header("Authorization",auth())).andExpect(status().isOk());
