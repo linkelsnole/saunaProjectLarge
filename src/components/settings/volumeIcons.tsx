@@ -6,3 +6,5 @@ export const Target = (p: Props) => <svg {...base} {...p}><path d="M27 15a12 12 
 export const Leaf = (p: Props) => <svg {...base} {...p}><path d="M6 24C-1 6 18 5 28 4c-2 9 2 25-16 23" fill="currentColor" stroke="none"/><path d="M4 29 21 12" strokeWidth="2.5"/><path d="m9 23 12-11" stroke="white" strokeWidth="1.5"/></svg>;
 export const Fan = (p: Props) => <svg {...base} {...p}><path d="M15 13c-2-3-6-7-3-10 4-4 9 0 7 4l-2 5M19 15c3-2 7-6 10-3 4 4 0 9-4 7l-5-2M17 19c2 3 6 7 3 10-4 4-9 0-7-4l2-5M13 17c-3 2-7 6-10 3-4-4 0-9 4-7l5 2"/><circle cx="16" cy="16" r="2"/></svg>;
 export const SlidersHorizontal = (p: Props) => <svg {...base} {...p}><path d="M3 7h9m6 0h11M3 16h17m6 0h3M3 25h4m6 0h16"/><circle cx="15" cy="7" r="3"/><circle cx="23" cy="16" r="3"/><circle cx="10" cy="25" r="3"/></svg>;
+
+export const Boost = (p: Props) => <svg {...base} {...p}><path d="M3 19h11c5 0 6-3 6-7V3m-6 6 6-6 6 6M3 24h17c7 0 7 7 2 6M3 29h10M5 14h4c4 0 4-5 1-5"/></svg>;

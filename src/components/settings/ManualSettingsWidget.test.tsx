@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ManualSettingsWidget } from './ManualSettingsWidget';
-const fixture = vi.hoisted(() => ({ airflow: 15000 }));
+const fixture = vi.hoisted(() => ({ airflow: 15000, mode: 4 }));
 vi.mock('@/api/useDashboard', () => ({ useDashboardData: () => ({data: {
   volumeSettings: { manualAirflow: fixture.airflow, ecoAirflow: 15000, normalAirflow: 21000, intensiveAirflow: 21000 },
-  ventilationModeCode: 4, screenMode: true, recuperatorStatus: { enabled: true }
+  ventilationModeCode: fixture.mode, screenMode: true, recuperatorStatus: { enabled: true }
 }}) }));
 vi.mock('@/api/hooks', () => ({ useSetVentilationMode: () => ({mutate: vi.fn()}), useUpdateVolumeSettings: () => ({mutate: vi.fn()}) }));
 vi.mock('@/contexts/AuthContext', () => ({useAuth: () => ({role: 'ROLE_ADMIN'})}));
@@ -25,3 +25,11 @@ describe('airflow controls', () => {
 });
 
 vi.mock('@tanstack/react-query', () => ({useIsMutating: () => 0}));
+
+it.each([1,2,3,4])('keeps one manual dial visible in mode %s', mode => {
+ fixture.mode=mode;
+ const html=renderToStaticMarkup(<ManualSettingsWidget/>);
+ expect(html.match(/role="slider"/g)).toHaveLength(1);
+ expect(html).not.toContain('type="range"');
+ expect(html).not.toContain('volumeWidget.currentMode');
+});

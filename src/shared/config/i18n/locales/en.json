@@ -91,6 +91,7 @@
     "boost": "Boost (supply-exhaust)"
   },
   "volumeWidget": {
+    "boostHint": "Supply over exhaust",
     "modeTitle": "Ventilation mode",
     "modes": {
       "eco": "ECO",

@@ -2,7 +2,7 @@ import { LatestSaveQueue } from './latestSaveQueue';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
 import { useSetVentilationMode, useUpdateVolumeSettings } from '@/api/hooks';
-import { Wind, Target, Leaf, Fan, SlidersHorizontal } from './volumeIcons';
+import { Wind, Target, Leaf, Fan, SlidersHorizontal, Boost } from './volumeIcons';
 import './volumeWidget.css';
 import { radialValue } from './radialValue';
 import { NeoInput } from '@/shared/ui/NeoInput';
@@ -138,10 +138,6 @@ export const ManualSettingsWidget = () => {
     manualQueue.schedule(nextValue);
   };
 
-  const angle = (135 + sliderProgress * 2.7) * Math.PI / 180;
-  const knobX = 160 + 122 * Math.cos(angle);
-  const knobY = 160 + 122 * Math.sin(angle);
-
   return (
     <div className="volume-panel">
       <div className="volume-metrics">
@@ -165,8 +161,7 @@ export const ManualSettingsWidget = () => {
         ))}
       </div>
       {!screenMode && <div className="volume-mode-caption text-amber-700">{t('volumeWidget.screenModeHint')}</div>}
-      <div className={`volume-controls ${activeMode === 4 ? '' : 'volume-controls-presets-only'}`}>
-        {activeMode === 4 && (
+      <div className="volume-controls">
           <section className="volume-surface volume-manual">
             <div className="volume-gauge" role="slider" tabIndex={sliderDisabled ? -1 : 0}
               aria-label={t('volumeWidget.manualTarget')} aria-valuemin={0} aria-valuemax={AIRFLOW_MAX}
@@ -199,8 +194,8 @@ export const ManualSettingsWidget = () => {
                 </defs>
                 <circle cx="160" cy="160" r="147" fill="none" stroke="white" strokeWidth="2" />
                 <path d="M 73.73 246.27 A 122 122 0 1 1 246.27 246.27" fill="none" stroke="#e4e8ee" strokeWidth="24" strokeLinecap="round" />
-                <path d="M 73.73 246.27 A 122 122 0 1 1 246.27 246.27" fill="none" stroke={`url(#${gaugeId})`} strokeWidth="24" strokeLinecap="round" pathLength="100" strokeDasharray={`${sliderProgress} 100`} />
-                <circle cx={knobX} cy={knobY} r="16" fill="#151b25" stroke="white" strokeWidth="6" />
+                <path className="volume-dial-fill" d="M 73.73 246.27 A 122 122 0 1 1 246.27 246.27" fill="none" stroke={`url(#${gaugeId})`} strokeWidth="24" strokeLinecap="round" pathLength="100" strokeDasharray={`${sliderProgress} 100`} />
+                <g className="volume-dial-knob" style={{ transform: `rotate(${sliderProgress * 2.7}deg)` }}><circle cx="73.73" cy="246.27" r="16" fill="#151b25" stroke="white" strokeWidth="6" /></g>
               </svg>
               <div className="volume-gauge-label">
                 <h3>{t('volumeWidget.manualTarget')}</h3>
@@ -212,21 +207,20 @@ export const ManualSettingsWidget = () => {
                 readOnly={sliderDisabled} min={AIRFLOW_MIN} max={AIRFLOW_MAX} unit={t('units.m3h')} ariaLabel={t('volumeWidget.manualTarget')} /></div>
             </div>
           </section>
-        )}
         <section className="volume-surface volume-presets">
           <h3>{t('volumeWidget.presetsTitle')}</h3>
           {!isAdmin && <div className="text-xs text-slate-500">{t('volumeWidget.readOnly')}</div>}
           <div className="volume-preset-list">
             {presetRows.map(({ key, label, Icon }, index) => (
               <div key={key} className={`volume-preset volume-preset-${index + 1}`}>
-                <div className="volume-preset-label"><Icon aria-hidden="true" /><span>{label}</span></div>
+                <div className="volume-preset-label"><span className="volume-icon-disc"><Icon aria-hidden="true" /></span><span>{label}</span></div>
                 <NumberEditor value={volume?.[key]} onCommit={(value) => saveVolume({ [key]: value })}
                   readOnly={!isAdmin} min={AIRFLOW_MIN} max={AIRFLOW_MAX} unit={t('units.m3h')} ariaLabel={`${label}, ${t('units.m3h')}`} />
               </div>
             ))}
           </div>
           <div className="volume-boost">
-            <h3>{t('volumeWidget.boost')}</h3>
+            <div className="volume-boost-label"><span className="volume-icon-disc"><Boost aria-hidden="true" /></span><div><h3>{t('volumeWidget.boost')}</h3><p>{t('volumeWidget.boostHint')}</p></div></div>
             <NumberEditor value={volume?.boostPercent} onCommit={(value) => saveVolume({ boostPercent: value })}
               readOnly={!canOperate} min={-100} max={100} step={0.1} unit="%" ariaLabel={t('volumeWidget.boost')} />
           </div>
