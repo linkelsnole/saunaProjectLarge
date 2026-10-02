@@ -17,6 +17,21 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class DeviceServiceRegisterMapTest {
+    @Test
+    void dashboardNeverPollsUnconfirmedLegacyTemperatureRegisters() throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        when(client.readRegisters(eq(SAUNA_PLC), anyList())).thenAnswer(invocation -> {
+            java.util.List<Integer> requested = invocation.getArgument(1);
+            assertFalse(requested.contains(0x007E), "Legacy temperature tracking address must not be polled");
+            assertFalse(requested.contains(0x00DD), "Legacy algorithm address must not be polled");
+            assertTrue(requested.contains(ModbusRegisterMap.AGGREGATE_STATE));
+            return Collections.emptyMap();
+        });
+        new DeviceService(client).getDashboardData();
+        verify(client).readRegisters(eq(SAUNA_PLC), anyList());
+        verify(client, never()).writeRegister(anyString(), anyInt(), anyInt());
+    }
+
 
     @Test void dashboardDoesNotRequestLegacyRegistersAndScalesStartupPercent() throws IOException {
         ModbusClientAdapter client=mock(ModbusClientAdapter.class);

@@ -1,5 +1,5 @@
 .volume-panel{container-type:inline-size;color:#112348;padding:4px 2px 18px;--volume-blue:#29b9ed}
-.volume-surface{border:1px solid #edf5fc;border-radius:24px;background:linear-gradient(140deg,#fff 0%,#f5fbff 100%);box-shadow:0 6px 22px #329bdf0d,inset 0 1px 0 white}
+.volume-surface{border:1px solid #edf5fc;border-radius:24px;background:linear-gradient(140deg,#fff 0%,#f5fbff 100%);box-shadow:0 2px 5px #18365306,0 9px 24px -9px #1836531a,inset 0 1px 0 white}
 .volume-metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .volume-metric{padding:20px;display:flex;align-items:flex-start;gap:14px;min-width:0}
 .volume-metric>svg{width:32px;height:32px;flex-shrink:0;color:var(--volume-blue);margin-top:4px;stroke-width:1.8}
