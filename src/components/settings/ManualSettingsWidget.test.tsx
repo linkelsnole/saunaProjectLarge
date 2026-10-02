@@ -18,8 +18,8 @@ describe('airflow controls', () => {
     expect(range).toContain('step="500"'); expect(range).toContain(`value="${value}"`);
     expect(html).toContain(`width:${percent}%`);
     expect(html).toContain(`left:calc(${percent}% + 4px)`);
-    const presets=[...html.matchAll(/<input[^>]*type="number"[^>]*>/g)].slice(0,3);
-    expect(presets).toHaveLength(3);
+    const presets=[...html.matchAll(/<input[^>]*type="number"[^>]*>/g)].slice(0,4);
+    expect(presets).toHaveLength(4);
     for(const [input] of presets) {expect(input).toContain('min="0"');expect(input).toContain('max="21000"');}
   });
 });
