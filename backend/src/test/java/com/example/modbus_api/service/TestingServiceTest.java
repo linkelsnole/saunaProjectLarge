@@ -69,9 +69,39 @@ class TestingServiceTest {
     }
     @Test void toggleOnlyWhenNeededAndUseBitThreeOf0302() throws IOException {
         when(client.readRegister(SAUNA_PLC, 0x0302)).thenReturn(0, 8, 8, 8);
+        when(client.readRegister(SAUNA_PLC, 0x0301)).thenReturn(1);
         assertEquals(true, service.setMode(true).get("enabled"));
         service.setMode(true);
         verify(client, times(1)).writeCommandOnce(SAUNA_PLC, 0x0300, 14);
+    }
+    @ParameterizedTest @ValueSource(ints = {0, 2, 4, 8, 16, 32, 64, 65, 128, 256, 512, 1024, 2048, 65535, -1})
+    void toggleIsBlockedUnlessAggregateIsConfirmedOff(int state) throws IOException {
+        when(client.readRegister(SAUNA_PLC, 0x0301)).thenReturn(state);
+        assertThrows(IllegalStateException.class, () -> service.setMode(true));
+        active();
+        assertThrows(IllegalStateException.class, () -> service.setMode(false));
+        verify(client, never()).writeCommandOnce(anyString(), anyInt(), anyInt());
+    }
+    @Test void unreadableAggregateNeverSendsToggle() throws IOException {
+        when(client.readRegister(SAUNA_PLC, 0x0301)).thenThrow(new IOException("offline"));
+        assertThrows(IOException.class, () -> service.setMode(true));
+        verify(client, never()).writeCommandOnce(anyString(), anyInt(), anyInt());
+    }
+    @Test void stoppedAggregateMayLeaveTestingWithStateCheckedBeforeCommand() throws IOException {
+        when(client.readRegister(SAUNA_PLC, 0x0302)).thenReturn(8, 0);
+        when(client.readRegister(SAUNA_PLC, 0x0301)).thenReturn(1);
+        assertEquals(false, service.setMode(false).get("enabled"));
+        InOrder order = inOrder(client);
+        order.verify(client).readRegister(SAUNA_PLC, 0x0302);
+        order.verify(client).readRegister(SAUNA_PLC, 0x0301);
+        order.verify(client).writeCommandOnce(SAUNA_PLC, 0x0300, 14);
+        order.verify(client).readRegister(SAUNA_PLC, 0x0302);
+    }
+    @Test void alreadyMatchingModeDoesNotNeedToggleOrAggregateRead() throws IOException {
+        active();
+        service.setMode(true);
+        verify(client, never()).readRegister(SAUNA_PLC, 0x0301);
+        verify(client, never()).writeCommandOnce(anyString(), anyInt(), anyInt());
     }
     @Test void uncertainCommandFailureIsNotRepeatedAndResultNotRead() throws IOException {
         active(); doThrow(new IOException("unknown outcome")).when(client).writeCommandOnce(SAUNA_PLC, 0x0307, 8);

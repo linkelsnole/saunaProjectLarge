@@ -30,7 +30,14 @@ public class TestingService {
 
     public synchronized Map<String, Object> setMode(boolean desired) throws IOException {
         // Command 14 toggles; never retry an uncertain write or toggle an already matching state.
-        if (enabled() != desired) client.writeCommandOnce(SAUNA_PLC, MODE_COMMAND, 14);
+        if (enabled() != desired) {
+            // Only a confirmed stopped aggregate may switch modes; unknown/fault states fail closed.
+            int aggregateState = client.readRegister(SAUNA_PLC, ModbusRegisterMap.AGGREGATE_STATE);
+            if (aggregateState != 1) {
+                throw new IllegalStateException("Переключение тестового режима доступно только при выключенной установке. Дождитесь полной остановки.");
+            }
+            client.writeCommandOnce(SAUNA_PLC, MODE_COMMAND, 14);
+        }
         return status();
     }
 
