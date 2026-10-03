@@ -17,6 +17,33 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class DeviceServiceRegisterMapTest {
+    @ParameterizedTest @ValueSource(ints = {8, 9, 65535})
+    void normalStartNeverWritesWhileTestingIsEnabled(int mode) throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        when(client.readRegister(SAUNA_PLC, 0x0302)).thenReturn(mode);
+        assertThrows(IllegalStateException.class, () -> new DeviceService(client).enableRecuperator());
+        verify(client, never()).writeRegister(anyString(), anyInt(), anyInt());
+        verify(client, never()).writeCommandOnce(anyString(), anyInt(), anyInt());
+    }
+    @Test void unreadableOrInvalidModeNeverStartsAggregate() throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        when(client.readRegister(SAUNA_PLC, 0x0302)).thenThrow(new IOException("offline"));
+        assertThrows(IOException.class, () -> new DeviceService(client).enableRecuperator());
+        doReturn(-1, 65536).when(client).readRegister(SAUNA_PLC, 0x0302);
+        assertThrows(IOException.class, () -> new DeviceService(client).enableRecuperator());
+        assertThrows(IOException.class, () -> new DeviceService(client).enableRecuperator());
+        verify(client, never()).writeCommandOnce(anyString(), anyInt(), anyInt());
+    }
+    @Test void normalStartChecksModeBeforeNonRetriedCommand() throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        when(client.readRegister(SAUNA_PLC, 0x0302)).thenReturn(0);
+        new DeviceService(client).enableRecuperator();
+        InOrder order = inOrder(client);
+        order.verify(client).readRegister(SAUNA_PLC, 0x0302);
+        order.verify(client).writeCommandOnce(SAUNA_PLC, 0x0300, 1);
+        verify(client, never()).writeRegister(anyString(), anyInt(), anyInt());
+    }
+
     @Test void pumpCommandUsesCurrentWorkState2AndPreservesUnknown() throws IOException {
         ModbusClientAdapter client = mock(ModbusClientAdapter.class);
         Map<Integer, Integer> values = new HashMap<>();

@@ -36,7 +36,14 @@ public class DeviceService {
 	}
 
 	public void enableRecuperator() throws IOException {
-		modbusClient.writeRegister(SAUNA_PLC, REG_AGGREGATE_CMD, 1);
+        synchronized (modbusClient) {
+            int mode = modbusClient.readRegister(SAUNA_PLC, 0x0302);
+            if (mode < 0 || mode > 0xFFFF) throw new IOException("Недостоверное состояние тестового режима");
+            if ((mode & (1 << 3)) != 0) {
+                throw new IllegalStateException("Сначала выключите режим тестирования. Запуск установки заблокирован.");
+            }
+            modbusClient.writeCommandOnce(SAUNA_PLC, REG_AGGREGATE_CMD, 1);
+        }
 		
 		try {
 			Thread.sleep(500);

@@ -117,6 +117,10 @@ export async function toggleRecuperator(enable: boolean): Promise<void> {
   const response = await fetchWithAuth(endpoint, { method: 'POST' });
 
   if (!response.ok) {
+    if (response.status === 409) {
+      const body = await response.json().catch(() => null);
+      throw new Error(typeof body?.error === 'string' ? body.error : 'Запуск заблокирован режимом тестирования');
+    }
     throw new Error('Failed to toggle recuperator');
   }
 }

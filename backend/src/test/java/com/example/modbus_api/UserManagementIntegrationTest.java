@@ -324,4 +324,16 @@ class UserManagementIntegrationTest {
         mvc.perform(get("/api/v1/admin/users").header("Authorization", header)).andExpect(status().isForbidden());
         mvc.perform(get("/api/v1/devices/physical-schedules").header("Authorization", header)).andExpect(status().isForbidden());
     }
+    @Test void testingBlocksNormalStartForEveryRoleWithoutAnyWrite() throws Exception {
+        when(modbus.readRegister(SAUNA_PLC, 0x0302)).thenReturn(8);
+        for (Role role : Role.values()) {
+            String header = "Bearer " + login(account(role));
+            boolean canStart = role == Role.ROLE_ADMIN || role == Role.ROLE_USER;
+            String body = mvc.perform(post("/api/v1/devices/recuperator/enable").header("Authorization", header))
+                .andExpect(status().is(canStart ? 409 : 403)).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+            if (canStart) assertTrue(body.contains("тестирования"));
+        }
+        verify(modbus, never()).writeCommandOnce(anyString(), anyInt(), anyInt());
+        verify(modbus, never()).writeRegister(anyString(), anyInt(), anyInt());
+    }
 }

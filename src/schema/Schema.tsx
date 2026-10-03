@@ -188,7 +188,7 @@ const Schema = () => {
 			toast.success(isCurrentlyEnabled ? t('schemaView.unitStopped') : t('schemaView.unitStarted'));
 		} catch (error) {
 			setOptimisticState(null);
-			toast.error(t('schemaView.toggleError'));
+			toast.error(error instanceof Error && error.message !== 'Failed to toggle recuperator' ? error.message : t('schemaView.toggleError'));
 			console.error(error);
 		} finally {
 			setLoading(false);

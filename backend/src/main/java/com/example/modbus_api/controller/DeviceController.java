@@ -86,6 +86,10 @@ public class DeviceController {
 			deviceService.enableRecuperator();
 			userActionLogService.log(ActionType.POWER, action, true, null);
 			return ResponseEntity.ok().build();
+        } catch (IllegalStateException e) {
+            userActionLogService.log(ActionType.POWER, action, false, e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(java.util.Collections.singletonMap("error", e.getMessage()));
 		} catch (IOException e) {
 			userActionLogService.log(ActionType.POWER, action, false, e.getMessage());
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
