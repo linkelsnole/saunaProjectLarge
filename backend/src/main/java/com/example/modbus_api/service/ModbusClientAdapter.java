@@ -429,6 +429,7 @@ public class ModbusClientAdapter {
 					}
 				}.call();
 		if (events == null) throw new IOException("Сервер вернул пустой ответ вместо списка событий");
+		events.forEach(DeviceEventPayload::decode);
 		return events;
 	}
 

@@ -17,6 +17,28 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class DeviceServiceRegisterMapTest {
+    @Test void pumpCommandUsesCurrentWorkState2AndPreservesUnknown() throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        Map<Integer, Integer> values = new HashMap<>();
+        when(client.readRegisters(eq(SAUNA_PLC), anyList())).thenAnswer(invocation -> {
+            java.util.List<Integer> requested = invocation.getArgument(1);
+            assertTrue(requested.contains(0x0306));
+            assertFalse(requested.contains(0x009F));
+            return new HashMap<>(values);
+        });
+        DeviceService service = new DeviceService(client);
+        assertNull(service.getDashboardData().getPumpActive());
+        values.put(0x0306, 0x4000);
+        assertEquals(Boolean.TRUE, service.getDashboardData().getPumpActive());
+        values.put(0x0306, 0x8000);
+        assertEquals(Boolean.FALSE, service.getDashboardData().getPumpActive());
+        values.put(0x0306, 0);
+        assertEquals(Boolean.FALSE, service.getDashboardData().getPumpActive());
+        values.put(0x0306, -1);
+        assertNull(service.getDashboardData().getPumpActive());
+        verify(client, never()).writeRegister(anyString(), anyInt(), anyInt());
+    }
+
     @Test
     void dashboardNeverPollsUnconfirmedLegacyTemperatureRegisters() throws IOException {
         ModbusClientAdapter client = mock(ModbusClientAdapter.class);

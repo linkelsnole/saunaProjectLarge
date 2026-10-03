@@ -15,6 +15,7 @@ import { TempSettingsWidget } from "@/components/settings/TempSettingsWidget";
 import { RecuperatorWidget } from "@/components/settings/RecuperatorWidget";
 import { ScheduleWorkspace } from "@/components/settings/ScheduleWorkspace";
 import { ConfiguratorWidget } from "@/components/settings/ConfiguratorWidget";
+import { DeviceErrorNotice } from "@/components/logs/DeviceErrorNotice";
 import SystemEventsJournal from "@/components/logs/SystemEventsJournal";
 import DashboardLogs from "@/components/logs/DashboardLogs";
 import UpdateSettings from "@/components/settings/UpdateSettings";
@@ -130,8 +131,9 @@ const MainDashboard = () => {
 				<div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
 					<Card className="overflow-hidden col-span-1 flex flex-col pt-0 pb-0 h-full rounded-[24px] border border-slate-200 bg-white shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_10px_10px_-5px_rgba(0,0,0,0.04)]">
 						<CardContent className="flex-1 flex flex-col h-full px-0">
+                            <DeviceErrorNotice />
 							<div
-								className="w-full h-full flex items-center justify-center touch-pan-y"
+								className="w-full flex-1 min-h-0 flex items-center justify-center touch-pan-y"
 								onTouchStart={handleTouchStart}
 								onTouchEnd={handleTouchEnd}
 							>

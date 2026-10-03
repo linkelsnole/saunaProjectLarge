@@ -189,6 +189,7 @@ public class DeviceService {
 			ModbusRegisterMap.AIRFLOW_IMBALANCE,
 			ModbusRegisterMap.AGGREGATE_STATE,
 			ModbusRegisterMap.WORK_STATE,
+			ModbusRegisterMap.WORK_STATE_2,
 			ModbusRegisterMap.RECUPERATOR_STATE,
 			ModbusRegisterMap.RECUPERATOR_MAX_RPM,
 			ModbusRegisterMap.RECUPERATOR_TARGET_RPM,
@@ -386,7 +387,8 @@ public class DeviceService {
 
 		// Workstate2: бит 14 — насос рекуператора (команда)
 		Integer workState2Raw = data.get(REG_Z_WORKSTATE2);
-		Boolean pumpActive = workState2Raw != null && (workState2Raw & MASK_PUMP_WORKSTATE) != 0;
+		Boolean pumpActive = workState2Raw == null || workState2Raw < 0 || workState2Raw > 0xFFFF
+                ? null : (workState2Raw & MASK_PUMP_WORKSTATE) != 0;
 
 		// целые значения 0, 1, 2, 3, 4
 		Integer recupStateRaw = data.get(ModbusRegisterMap.RECUPERATOR_STATE);

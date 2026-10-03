@@ -759,12 +759,8 @@ const Schema = () => {
 								x={120}
 								y={37}
 								rotation={180}
-								isActive={data?.pumpActive ?? false}
-								isStopped={
-									data?.recupStateCode === 0 ||
-									data?.recupStateCode === 4 ||
-									data?.recuperatorStatus?.enabled === false
-								}
+								isActive={data?.pumpActive ?? null}
+                                label={t(data?.pumpActive == null ? 'schemaView.pumpUnknown' : data.pumpActive ? 'schemaView.pumpOn' : 'schemaView.pumpOff')}
 							/>
 						</Html>
 						<Html>

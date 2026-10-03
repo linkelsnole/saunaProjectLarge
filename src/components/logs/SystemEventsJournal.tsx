@@ -3,10 +3,11 @@ import { Activity, AlertCircle, AlertTriangle, Clock, Cpu, Download, Info, Refre
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/shared/lib/utils';
 import { useSystemEvents } from '@/api/useSystemEvents';
-import { eventMessage, eventSource, eventTime, filterEvents, prepareEvents, type EventSeverity } from '@/api/systemEvents';
+import { DeviceErrorSummary } from "./DeviceErrorSummary";
+import { deviceEventPhase, eventTimestamp, eventMessage, eventSource, eventTime, filterEvents, prepareEvents, type EventSeverity } from '@/api/systemEvents';
 import { ControllerDiagnostics } from './ControllerDiagnostics';
 const TIME_OPTIONS = [15, 60, 240, 1440, 10080, 43200, 129600];
-const FILTER_OPTIONS = ['ALL', 'PROBLEMS', 'WARNING', 'ERROR', 'FAILURE', 'CRASH', 'INFO', 'LOG', 'UNKNOWN'];
+const FILTER_OPTIONS = ['ALL', 'PROBLEMS', 'RECOVERED', 'WARNING', 'ERROR', 'FAILURE', 'CRASH', 'INFO', 'LOG', 'UNKNOWN'];
 const severityStyle: Record<EventSeverity, {
     tile: string;
     edge: string;
@@ -60,22 +61,31 @@ const SystemEventsJournal = ({ mode = 'errors' }: {
   <div className="mt-2.5 grid grid-cols-1 gap-2 @[420px]:grid-cols-2"><select aria-label={tr('level')} className={`${input} bg-slate-50/70`} value={filter} onChange={e => { setFilter(e.target.value); resetPage(); }}>{FILTER_OPTIONS.map(value => <option value={value} key={value}>{tr(`levels.${value}`)}{counts[value] != null ? ` · ${counts[value]}` : ''}</option>)}</select><select aria-label={tr('source')} className={`${input} bg-slate-50/70`} value={source} onChange={e => { setSource(e.target.value); resetPage(); }}><option value="">{tr('allSources')}</option>{source && !sources.includes(source) && <option value={source}>{source}</option>}{sources.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
   <p className="mt-3 text-[11px] leading-relaxed text-slate-400">{tr('scopeHint')}{query.dataUpdatedAt > 0 && <> · {tr('lastRead')} {time(query.dataUpdatedAt)}</>}</p>
   {query.isError && <div role="alert" className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{tr(query.data ? 'staleJournal' : 'loadError')}</div>}
+  <div className="mt-3"><DeviceErrorSummary events={events} stale={query.isError} /></div>
   <div className="mt-4 space-y-3">
    {query.isPending ? <div className="space-y-2">{[0, 1, 2].map(i => <div key={i} className="h-20 animate-pulse rounded-xl bg-slate-100 motion-reduce:animate-none"/>)}</div> : filtered.length === 0 ? (!query.isError && <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-sm text-slate-500">{tr(events.length ? 'noMatches' : 'empty')}</div>) : filtered.slice(0, limit).map((event, index) => {
-            const config = severityStyle[event.severity];
+            const phase = deviceEventPhase(event);
+            const config = phase === 'recovered' ? { ...severityStyle.INFO, edge: 'border-l-emerald-500', badge: 'bg-emerald-50 text-emerald-800', tile: 'bg-emerald-600', surface: 'open:bg-emerald-50/40' } : severityStyle[event.severity];
             const Icon = config.icon;
-            const arrival = eventTime(event.arrivalTime?.timeInMS);
+            const arrival = eventTimestamp(event);
             const end = eventTime(event.endTime?.timeInMS);
             return <details key={event.key} className={cn('group overflow-hidden rounded-2xl border border-slate-200 border-l-[3px] bg-white transition-colors duration-150 animate-in fade-in fill-mode-backwards duration-200 motion-reduce:animate-none motion-reduce:transition-none', config.edge, config.surface)} style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
      <summary className="flex cursor-pointer list-none items-start gap-3 p-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-400 [&::-webkit-details-marker]:hidden">
       <span className={cn('mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm', config.tile)}><Icon size={20} strokeWidth={1.8}/></span>
-      <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2"><span className={cn('inline-flex rounded-lg px-2 py-1 text-[11px] font-medium', config.badge)}>{tr(`levels.${event.severity}`)}{event.severity === 'UNKNOWN' && event.level != null ? ` (${event.level})` : ''}</span><span className="inline-flex items-center gap-1.5 text-[10px] tabular-nums text-slate-500"><Clock size={12} className="shrink-0"/>{time(arrival)}</span></span>
+      <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2"><span className={cn('inline-flex rounded-lg px-2 py-1 text-[11px] font-medium', config.badge)}>{phase ? tr(`devicePhases.${phase}`) : tr(`levels.${event.severity}`)}{event.severity === 'UNKNOWN' && event.level != null ? ` (${event.level})` : ''}</span><span className="inline-flex items-center gap-1.5 text-[10px] tabular-nums text-slate-500"><Clock size={12} className="shrink-0"/>{time(arrival)}</span></span>
        <span className="mt-2 block whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-slate-900 [overflow-wrap:anywhere]">{eventMessage(event) || tr('noDescription')}</span>
        <span className="mt-1.5 block break-words text-[11px] leading-relaxed text-slate-500">{eventSource(event) || tr('unknownSource')} · {event.type != null ? t(`eventsJournal.types.t${event.type}`, { defaultValue: `${tr('type')} ${event.type}` }) : tr('unknownType')}</span>
       </span><span className="mt-1 shrink-0 text-slate-500"><ChevronDown size={17} className="transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"/><span className="sr-only">{tr('details')}</span></span>
      </summary>
      <div className="mx-3.5 mb-3.5 rounded-xl border border-slate-100 bg-white p-4 text-xs leading-relaxed">
 <dl className="grid grid-cols-1 gap-x-5 gap-y-1 @[440px]:grid-cols-[auto_minmax(0,1fr)] @[440px]:gap-y-2 [&_dt]:text-slate-400 [&_dd]:mb-2 @[440px]:[&_dd]:mb-0 [&_dd]:text-slate-700 break-words [overflow-wrap:anywhere]">
+       {event.deviceError && <>
+        <dt>{tr('device')}</dt><dd>{event.deviceError.devName || tr('unknownSource')}</dd>
+        <dt>{tr('level')}</dt><dd>{tr(`levels.${event.severity}`)}</dd>
+        <dt>{tr('deviceRegister')}</dt><dd>{event.deviceError.devEvtRegName || '—'}</dd>
+        <dt>{tr('value')}</dt><dd>{event.deviceError.devEvtRegValue ?? '—'}</dd>
+        <dt>{tr('devicePhase')}</dt><dd>{tr(`devicePhases.${phase}`)} ({event.deviceError.devEvtMode ?? '—'})</dd>
+       </>}
        <dt>{tr('id')}</dt><dd>{event.oid ?? '—'}</dd><dt>{tr('start')}</dt><dd>{time(arrival)}</dd><dt>{tr('end')}</dt><dd>{end != null ? time(end) : tr('notProvided')}</dd>
        {arrival != null && end != null && end > arrival && <><dt>{tr('duration')}</dt><dd>{((end - arrival) / 1000).toLocaleString(i18n.language)} {tr('seconds')}</dd></>}
        <dt>{tr('register')}</dt><dd>{event.regNum != null && event.regNum >= 0 ? `0x${event.regNum.toString(16).toUpperCase()} (${event.regNum})` : '—'}{event.bitNum != null && event.bitNum >= 0 ? ` [${event.bitNum}]` : ''}</dd>

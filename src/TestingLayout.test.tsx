@@ -2,6 +2,7 @@ import { expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
 import App from './App';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.stubGlobal('localStorage', { getItem: () => null });
 
@@ -23,7 +24,7 @@ vi.mock('@/components/testing/TestingWorkspace', () => ({ TestingWorkspace: () =
 
 function markup(role: string) {
   auth.role = role;
-  return renderToStaticMarkup(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>);
+  return renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}><MemoryRouter initialEntries={['/']}><App /></MemoryRouter></QueryClientProvider>);
 }
 it('keeps the diagram and regular tabs for testers and adds a testing tab', () => {
   const html = markup('ROLE_TESTER');

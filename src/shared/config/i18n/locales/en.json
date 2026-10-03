@@ -229,7 +229,10 @@
     "modeSwitchError": "Failed to switch control mode",
     "temperatureModes": "Temperature control modes",
     "zone1": "Zone 1",
-    "zone2": "Zone 2"
+    "zone2": "Zone 2",
+    "pumpUnknown": "Pump: command state unavailable",
+    "pumpOn": "Pump: on command",
+    "pumpOff": "Pump: off command"
   },
   "toasts": {
     "volumeSaved": "Volume settings saved",
@@ -384,7 +387,8 @@
       "ERROR": "Error",
       "FAILURE": "Failure",
       "CRASH": "Crash",
-      "UNKNOWN": "Unknown level"
+      "UNKNOWN": "Unknown level",
+      "RECOVERED": "Communication restored"
     },
     "flags": {
       "stateError": "State: error",
@@ -396,6 +400,19 @@
       "eventFailure": "Event: failure",
       "eventModbus": "Event: Modbus failure",
       "eventCrash": "Event: crash"
+    },
+    "device": "Device",
+    "deviceRegister": "Device register",
+    "devicePhase": "Event phase",
+    "devicePending": "Device faults without a recovery event",
+    "deviceWindowHint": "Based on events in the selected period. Check the current equipment state.",
+    "deviceStale": "Device events could not be refreshed. Current state is unknown.",
+    "devicePhases": {
+      "single": "Isolated fault",
+      "started": "Communication lost",
+      "recovered": "Communication restored",
+      "brief": "Brief failure",
+      "unknown": "Unknown fault type"
     }
   },
   "dashboardLogs": {

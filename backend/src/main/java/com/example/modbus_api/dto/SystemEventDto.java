@@ -26,6 +26,21 @@ public class SystemEventDto {
     private Integer logUnit;
     private String facadeClass;
 
+    private DeviceError deviceError;
+
+    @Data
+    public static class DeviceError {
+        private String devName;
+        private Integer devEvtMode;
+        private String devEvtRegName;
+        private String devEvtRegValue;
+        private Integer level;
+        private String title;
+        private String mes;
+        private String comment;
+        private Long timeStamp;
+    }
+
     @Data
     public static class EventTime {
         private Long timeInMS;

@@ -210,7 +210,20 @@ export interface LegacyDateTime {
   timeInMS?: number;
 }
 
+export interface DeviceError {
+  devName?: string | null;
+  devEvtMode?: number | null;
+  devEvtRegName?: string | null;
+  devEvtRegValue?: string | null;
+  level?: number | null;
+  title?: string | null;
+  mes?: string | null;
+  comment?: string | null;
+  timeStamp?: number | null;
+}
+
 export interface SystemEvent {
+  deviceError?: DeviceError | null;
   oid?: string | null;
   valid?: boolean | null;
   type?: number | null;

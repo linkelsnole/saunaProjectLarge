@@ -8,10 +8,38 @@ export function eventSeverity(level: unknown): EventSeverity {
 export function eventTime(value: unknown): number | null {
     return typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 8640000000000000 ? value : null;
 }
-export const eventMessage = (event: SystemEvent) => event.comment?.trim() || event.title?.trim() || '';
-export const isProblem = (event: SystemEvent) => ['WARNING', 'ERROR', 'FAILURE', 'CRASH', 'UNKNOWN'].includes(eventSeverity(event.level));
+export type DeviceEventPhase = 'single' | 'started' | 'recovered' | 'brief' | 'unknown';
+export function deviceEventPhase(event: SystemEvent): DeviceEventPhase | null {
+    if (!event.deviceError) return null;
+    return ({ 0: 'single', 1: 'started', 2: 'recovered', 3: 'brief' } as const)[event.deviceError.devEvtMode as 0 | 1 | 2 | 3] ?? 'unknown';
+}
+export const severityOfEvent = (event: SystemEvent) => eventSeverity(event.deviceError?.level ?? event.level);
+export const eventTimestamp = (event: SystemEvent) => eventTime(event.deviceError?.timeStamp) ?? eventTime(event.arrivalTime?.timeInMS);
+export const eventMessage = (event: SystemEvent) => event.deviceError?.mes?.trim() || event.deviceError?.comment?.trim() || event.comment?.trim() || event.deviceError?.title?.trim() || event.title?.trim() || '';
+export const isProblem = (event: SystemEvent) => deviceEventPhase(event) !== 'recovered' && (event.deviceError != null || ['WARNING', 'ERROR', 'FAILURE', 'CRASH', 'UNKNOWN'].includes(severityOfEvent(event)));
 export function eventSource(event: SystemEvent): string {
-    return [event.devName, event.equipName, event.logUnit != null ? `#${event.logUnit}` : null].filter(Boolean).join(' / ');
+    return [...new Set([event.deviceError?.devName, event.devName, event.equipName, event.logUnit != null ? `#${event.logUnit}` : null].filter(Boolean))].join(' / ');
+}
+/** Only paired start/recovery events establish an interval; isolated faults cannot establish current state. */
+export function unresolvedDeviceErrors(events: SystemEvent[]): SystemEvent[] {
+    const latest = new Map<string, SystemEvent>();
+    const ambiguous = new Set<string>();
+    for (const event of events) {
+        const error = event.deviceError;
+        if (event.valid === false || !error?.devName?.trim()) continue;
+        const phase = deviceEventPhase(event);
+        if (phase !== 'started' && phase !== 'recovered') continue;
+        const key = JSON.stringify([event.logUnit ?? null, event.devName ?? null, error.devName, error.devEvtRegName || '']);
+        const time = eventTimestamp(event);
+        if (time == null) { ambiguous.add(key); continue; }
+        const previous = latest.get(key);
+        const previousTime = previous ? eventTimestamp(previous)! : -1;
+        // An equal-time recovery wins regardless of server list ordering.
+        if (time > previousTime || (time === previousTime && phase === 'recovered')) latest.set(key, event);
+    }
+    return [...latest.entries()].filter(([key, event]) => !ambiguous.has(key) && deviceEventPhase(event) === 'started'
+        && eventTime(event.endTime?.timeInMS) == null).map(([, event]) => event)
+        .sort((a, b) => eventTimestamp(b)! - eventTimestamp(a)!);
 }
 export function prepareEvents(events: SystemEvent[]) {
     const occurrences = new Map<string, number>();
@@ -19,14 +47,14 @@ export function prepareEvents(events: SystemEvent[]) {
         const identity = event.oid && event.oid !== '0' ? `oid:${event.oid}` : JSON.stringify(event);
         const n = occurrences.get(identity) ?? 0;
         occurrences.set(identity, n + 1);
-        return { ...event, key: `${identity}:${n}`, severity: eventSeverity(event.level) };
-    }).sort((a, b) => (eventTime(b.arrivalTime?.timeInMS) ?? 0) - (eventTime(a.arrivalTime?.timeInMS) ?? 0));
+        return { ...event, key: `${identity}:${n}`, severity: severityOfEvent(event) };
+    }).sort((a, b) => (eventTimestamp(b) ?? 0) - (eventTimestamp(a) ?? 0));
 }
 export function filterEvents<T extends SystemEvent>(events: T[], filter: string, source: string, search: string): T[] {
     const needle = search.trim().toLocaleLowerCase();
-    return events.filter(e => (filter === 'ALL' || (filter === 'PROBLEMS' ? isProblem(e) : eventSeverity(e.level) === filter))
+    return events.filter(e => (filter === 'ALL' || (filter === 'PROBLEMS' ? isProblem(e) : filter === 'RECOVERED' ? deviceEventPhase(e) === 'recovered' : severityOfEvent(e) === filter))
         && (!source || eventSource(e) === source)
-        && (!needle || [e.title, e.comment, e.devName, e.equipName, e.regNum, e.regNum != null ? `0x${e.regNum.toString(16)}` : '', e.packedValues].join(' ').toLocaleLowerCase().includes(needle)));
+        && (!needle || [e.title, e.comment, e.deviceError?.mes, e.deviceError?.devName, e.deviceError?.devEvtRegName, e.deviceError?.devEvtRegValue, e.devName, e.equipName, e.regNum, e.regNum != null ? `0x${e.regNum.toString(16)}` : '', e.packedValues].join(' ').toLocaleLowerCase().includes(needle)));
 }
 export type Diagnostics = {
     logName: string;
