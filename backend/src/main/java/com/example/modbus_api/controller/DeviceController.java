@@ -159,8 +159,11 @@ public class DeviceController {
 	) {
 		String action = "Изменение группы расписаний " + groupId;
 		try {
-			scheduleService.updateScheduleGroup(groupId, request);
-			userActionLogService.log(ActionType.SETPOINT, action, true, null);
+			synchronized (scheduleService) {
+                String details = scheduleService.describeGroupChanges(request);
+                scheduleService.updateScheduleGroup(groupId, request);
+                userActionLogService.log(ActionType.SETPOINT, action, true, details);
+            }
 			return ResponseEntity.ok().build();
 		} catch (IllegalArgumentException e) {
 			userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
@@ -239,18 +242,21 @@ public class DeviceController {
 	@PostMapping("/temperature-setpoints")
 	@PreAuthorize("hasAnyRole('ADMIN','USER')")
 	public ResponseEntity<?> updateTemperatureSetpoints(@RequestBody UpdateTemperatureSetpointsRequest request) {
-		String action = "Запись температурных уставок зоны";
-		try {
-			settingsService.updateTemperatureSetpoints(request);
-			userActionLogService.log(ActionType.SETPOINT, action, true, null);
-			return ResponseEntity.ok().build();
-		} catch (IllegalArgumentException e) {
-			userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
-			return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", e.getMessage()));
-		} catch (IOException e) {
-			userActionLogService.log(ActionType.SETPOINT, action, false, "Ошибка обмена с контроллером");
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(new ErrorResponse("MODBUS_ERROR", "Не удалось записать температурные уставки"));
+		synchronized (settingsService) {
+			String action = "Запись температурных уставок зоны";
+			try {
+				String details = describeTemperatureSetpoints(request);
+				settingsService.updateTemperatureSetpoints(request);
+				userActionLogService.log(ActionType.SETPOINT, action, true, details);
+				return ResponseEntity.ok().build();
+			} catch (IllegalArgumentException e) {
+				userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
+				return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", e.getMessage()));
+			} catch (IOException e) {
+				userActionLogService.log(ActionType.SETPOINT, action, false, "Ошибка обмена с контроллером");
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new ErrorResponse("MODBUS_ERROR", "Не удалось записать температурные уставки"));
+			}
 		}
 	}
 
@@ -258,23 +264,26 @@ public class DeviceController {
 	@PostMapping("/volume-settings")
 	@PreAuthorize("hasAnyRole('ADMIN','USER')")
 	public ResponseEntity<?> updateVolumeSettings(@RequestBody UpdateVolumeSettingsRequest request) {
-		String action = "Запись настроек объёма";
-		if (isRole("ROLE_USER") && request != null && request.hasPresetValues()) {
-			userActionLogService.log(ActionType.SETPOINT, action, false, "Недостаточно прав для уставок режимов");
-			return ResponseEntity.status(HttpStatus.FORBIDDEN)
-				.body(new ErrorResponse("FORBIDDEN", "Уставки ЭКО/Норм/Интенсив доступны только администратору"));
-		}
-		try {
-			settingsService.updateVolumeSettings(request);
-			userActionLogService.log(ActionType.SETPOINT, action, true, describeVolumeSettings(request));
-			return ResponseEntity.ok().build();
-		} catch (IllegalArgumentException e) {
-			userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
-			return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", e.getMessage()));
-		} catch (IOException e) {
-			userActionLogService.log(ActionType.SETPOINT, action, false, "Ошибка обмена с контроллером");
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(new ErrorResponse("MODBUS_ERROR", "Не удалось сохранить настройки объёма"));
+		synchronized (settingsService) {
+			String action = "Запись настроек объёма";
+			if (isRole("ROLE_USER") && request != null && request.hasPresetValues()) {
+				userActionLogService.log(ActionType.SETPOINT, action, false, "Недостаточно прав для уставок режимов");
+				return ResponseEntity.status(HttpStatus.FORBIDDEN)
+					.body(new ErrorResponse("FORBIDDEN", "Уставки ЭКО/Норм/Интенсив доступны только администратору"));
+			}
+			try {
+				String details = describeVolumeSettings(request);
+				settingsService.updateVolumeSettings(request);
+				userActionLogService.log(ActionType.SETPOINT, action, true, details);
+				return ResponseEntity.ok().build();
+			} catch (IllegalArgumentException e) {
+				userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
+				return ResponseEntity.badRequest().body(new ErrorResponse("VALIDATION_ERROR", e.getMessage()));
+			} catch (IOException e) {
+				userActionLogService.log(ActionType.SETPOINT, action, false, "Ошибка обмена с контроллером");
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new ErrorResponse("MODBUS_ERROR", "Не удалось сохранить настройки объёма"));
+			}
 		}
 	}
 
@@ -282,71 +291,90 @@ public class DeviceController {
 	@PostMapping("/manual-settings")
 	@PreAuthorize("hasAnyRole('ADMIN','USER')")
 	public ResponseEntity<?> updateManualSettings(@RequestBody UpdateManualSettingsRequest request) {
-		String action = "Запись ручных уставок";
-		try {
-			List<String> parts = new ArrayList<>();
-			if (request.getSupplySpeed() != null) {
-				parts.add("Ручной объём → " + request.getSupplySpeed() + " м³/ч");
+		synchronized (settingsService) {
+			String action = "Запись ручных уставок";
+			try {
+				UpdateVolumeSettingsRequest volume = new UpdateVolumeSettingsRequest();
+	            volume.setManualAirflow(request.getSupplySpeed());
+	            volume.setBoostPercent(request.getBoostPercent());
+	            String details = describeVolumeSettings(volume);
+	            settingsService.updateManualSettings(request.getSupplySpeed(), request.getBoostPercent());
+	            userActionLogService.log(ActionType.SETPOINT, action, true, details);
+				return ResponseEntity.ok().build();
+			} catch (IOException e) {
+				userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 			}
-			if (request.getBoostPercent() != null) {
-				parts.add("Наддув → " + request.getBoostPercent() + " %");
-			}
-
-			settingsService.updateManualSettings(request.getSupplySpeed(), request.getBoostPercent());
-			userActionLogService.log(ActionType.SETPOINT, action, true,
-					parts.isEmpty() ? null : String.join("; ", parts));
-			return ResponseEntity.ok().build();
-		} catch (IOException e) {
-			userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 	}
 
-	private static String describeVolumeSettings(UpdateVolumeSettingsRequest request) {
-		if (request == null) {
-			return null;
-		}
-		List<String> parts = new ArrayList<>();
-		if (request.getEcoAirflow() != null) parts.add("ЭКО → " + request.getEcoAirflow() + " м³/ч");
-		if (request.getNormalAirflow() != null) parts.add("Норм → " + request.getNormalAirflow() + " м³/ч");
-		if (request.getIntensiveAirflow() != null) parts.add("Интенсив → " + request.getIntensiveAirflow() + " м³/ч");
-		if (request.getManualAirflow() != null) parts.add("Ручной → " + request.getManualAirflow() + " м³/ч");
-		if (request.getBoostPercent() != null) parts.add("Наддув → " + request.getBoostPercent() + " %");
-		return parts.isEmpty() ? null : String.join("; ", parts);
-	}
+    private String describeVolumeSettings(UpdateVolumeSettingsRequest request) {
+        if (request == null) return null;
+        SettingChanges changes = new SettingChanges(deviceService.getModbusClient());
+        changes.floating(ModbusRegisterMap.AIRFLOW_ECO, "ЭКО", "м³/ч", request.getEcoAirflow());
+        changes.floating(ModbusRegisterMap.AIRFLOW_NORMAL, "Норм", "м³/ч", request.getNormalAirflow());
+        changes.floating(ModbusRegisterMap.AIRFLOW_INTENSIVE, "Интенсив", "м³/ч", request.getIntensiveAirflow());
+        changes.floating(ModbusRegisterMap.AIRFLOW_MANUAL, "Ручной объём", "м³/ч", request.getManualAirflow());
+        changes.number(ModbusRegisterMap.AIRFLOW_IMBALANCE, 10, "Наддув", "%", request.getBoostPercent());
+        return changes.describe();
+    }
+
+    private String describeTemperatureSetpoints(UpdateTemperatureSetpointsRequest request) {
+        if (request == null) return null;
+        SettingChanges changes = new SettingChanges(deviceService.getModbusClient());
+        for (int zone = 1; zone <= 2; zone++) {
+            int base = zone == 1 ? ModbusRegisterMap.HEATER_ZONE_1 : ModbusRegisterMap.HEATER_ZONE_2;
+            changes.number(base + ModbusRegisterMap.OUTFLOW_TARGET_OFFSET, 10,
+                "ОВ, зона " + zone, "°C", request.getOutflowTarget());
+            changes.number(base + ModbusRegisterMap.INFLOW_TARGET_OFFSET, 10,
+                "ПВ, зона " + zone, "°C", zone == 1 ? request.getInflowTargetZone1() : request.getInflowTargetZone2());
+            OrpSettingsDto orp = zone == 1 ? request.getOrpZone1() : request.getOrpZone2();
+            if (orp == null) continue;
+            String label = "ОРП, зона " + zone;
+            changes.number(base + ModbusRegisterMap.ORP_TARGET_T1_OFFSET, 1, label + ", T1 цель", "°C", orp.getTargetT1());
+            changes.number(base + ModbusRegisterMap.ORP_CURRENT_T1_OFFSET, 1, label + ", T1 текущая", "°C", orp.getCurrentT1());
+            changes.number(base + ModbusRegisterMap.ORP_TARGET_T2_OFFSET, 1, label + ", T2 цель", "°C", orp.getTargetT2());
+            changes.number(base + ModbusRegisterMap.ORP_CURRENT_T2_OFFSET, 1, label + ", T2 текущая", "°C", orp.getCurrentT2());
+            changes.number(base + ModbusRegisterMap.ORP_TARGET_T3_OFFSET, 1, label + ", T3 цель", "°C", orp.getTargetT3());
+            changes.number(base + ModbusRegisterMap.ORP_CURRENT_T3_OFFSET, 1, label + ", T3 текущая", "°C", orp.getCurrentT3());
+        }
+        return changes.describe();
+    }
 
 	@Operation(summary = "Обновить температурные уставки")
 	@PostMapping("/temp-settings")
 	@PreAuthorize("hasAnyRole('ADMIN','USER')")
 	public ResponseEntity<?> updateTempSettings(@RequestBody UpdateTempSettingsRequest request) {
-		String action = "Запись уставок температуры";
-		if (isRole("ROLE_USER") && hasNonZoneTempFields(request)) {
-			userActionLogService.log(ActionType.SETPOINT, action, false, "Недостаточно прав для изменения этих уставок");
-			return ResponseEntity.status(HttpStatus.FORBIDDEN)
-				.body(new ErrorResponse("FORBIDDEN", "Недостаточно прав для изменения этих уставок"));
-		}
-		try {
-			String details = describeTempSettingsChanges(request);
-			settingsService.updateTempSettings(
-				request.getTargetZone1(),
-				request.getTargetZone2(),
-				request.getWaterWarnThreshold(),
-				request.getWaterFailThreshold(),
-				request.getInflowWarnThreshold(),
-				request.getInflowFailThreshold(),
-				request.getNeutralZoneT(),
-				request.getHotValveMinProc(),
-				request.getWaterMinTNoWork(),
-				request.getWaterMinTWork(),
-				request.getValveStartupPosition(),
-				request.getControlAlgorithm(),
-				request.getTempTrackingInterval()
-			);
-			userActionLogService.log(ActionType.SETPOINT, action, true, details);
-			return ResponseEntity.ok().build();
-		} catch (IOException e) {
-			userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+		synchronized (settingsService) {
+			String action = "Запись уставок температуры";
+			if (isRole("ROLE_USER") && hasNonZoneTempFields(request)) {
+				userActionLogService.log(ActionType.SETPOINT, action, false, "Недостаточно прав для изменения этих уставок");
+				return ResponseEntity.status(HttpStatus.FORBIDDEN)
+					.body(new ErrorResponse("FORBIDDEN", "Недостаточно прав для изменения этих уставок"));
+			}
+			try {
+				String details = describeTempSettingsChanges(request);
+				settingsService.updateTempSettings(
+					request.getTargetZone1(),
+					request.getTargetZone2(),
+					request.getWaterWarnThreshold(),
+					request.getWaterFailThreshold(),
+					request.getInflowWarnThreshold(),
+					request.getInflowFailThreshold(),
+					request.getNeutralZoneT(),
+					request.getHotValveMinProc(),
+					request.getWaterMinTNoWork(),
+					request.getWaterMinTWork(),
+					request.getValveStartupPosition(),
+					request.getControlAlgorithm(),
+					request.getTempTrackingInterval()
+				);
+				userActionLogService.log(ActionType.SETPOINT, action, true, details);
+				return ResponseEntity.ok().build();
+			} catch (IOException e) {
+				userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			}
 		}
 	}
 
@@ -354,41 +382,43 @@ public class DeviceController {
 	@PostMapping("/recuperator-settings")
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<?> updateRecupSettings(@RequestBody UpdateRecupSettingsReq request) {
-		String action = "Запись уставок рекуператора";
-		try {
-			List<Integer> regs = new ArrayList<>();
-			if (request.getTargetRpmMin() != null) {
-				regs.add(REG_R_TARGET_RPM_MIN);
-			}
-			if (request.getTargetRpmMax() != null) {
-				regs.add(REG_R_TARGET_RPM_MAX);
-			}
-			if (request.getTargetRpmStep() != null) {
-				regs.add(REG_R_TARGET_RPM_STEP);
-			}
-			if (request.getTrackingIntervalRecup() != null) {
-				regs.add(REG_R_TRACK_INTERVAL);
-			}
-			Map<Integer, Integer> old = readOldValues(regs);
+		synchronized (settingsService) {
+			String action = "Запись уставок рекуператора";
+			try {
+				List<Integer> regs = new ArrayList<>();
+				if (request.getTargetRpmMin() != null) {
+					regs.add(REG_R_TARGET_RPM_MIN);
+				}
+				if (request.getTargetRpmMax() != null) {
+					regs.add(REG_R_TARGET_RPM_MAX);
+				}
+				if (request.getTargetRpmStep() != null) {
+					regs.add(REG_R_TARGET_RPM_STEP);
+				}
+				if (request.getTrackingIntervalRecup() != null) {
+					regs.add(REG_R_TRACK_INTERVAL);
+				}
+				Map<Integer, Integer> old = readOldValues(regs);
 
-			List<String> parts = new ArrayList<>();
-			appendChange(parts, old, REG_R_TARGET_RPM_MIN, 100.0, "Мин. обороты", "об/мин", request.getTargetRpmMin());
-			appendChange(parts, old, REG_R_TARGET_RPM_MAX, 100.0, "Макс. обороты", "об/мин", request.getTargetRpmMax());
-			appendChange(parts, old, REG_R_TARGET_RPM_STEP, 100.0, "Шаг калибровки", "об/мин", request.getTargetRpmStep());
-			appendChange(parts, old, REG_R_TRACK_INTERVAL, 1.0, "Интервал слежения", "с", request.getTrackingIntervalRecup());
+				List<String> parts = new ArrayList<>();
+				appendChange(parts, old, REG_R_TARGET_RPM_MIN, 100.0, "Мин. обороты", "об/мин", request.getTargetRpmMin());
+				appendChange(parts, old, REG_R_TARGET_RPM_MAX, 100.0, "Макс. обороты", "об/мин", request.getTargetRpmMax());
+				appendChange(parts, old, REG_R_TARGET_RPM_STEP, 100.0, "Шаг калибровки", "об/мин", request.getTargetRpmStep());
+				appendChange(parts, old, REG_R_TRACK_INTERVAL, 1.0, "Интервал слежения", "с", request.getTrackingIntervalRecup());
 
-			settingsService.updateRecuperatorSettings(
-				request.getTargetRpmMin(),
-				request.getTargetRpmMax(),
-				request.getTargetRpmStep(),
-				request.getTrackingIntervalRecup()
-			);
-			userActionLogService.log(ActionType.SETPOINT, action, true,
-					parts.isEmpty() ? null : String.join("; ", parts));
-			return ResponseEntity.ok().build();
-		} catch (IOException e) {
-			userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
-			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+				settingsService.updateRecuperatorSettings(
+					request.getTargetRpmMin(),
+					request.getTargetRpmMax(),
+					request.getTargetRpmStep(),
+					request.getTrackingIntervalRecup()
+				);
+				userActionLogService.log(ActionType.SETPOINT, action, true,
+						parts.isEmpty() ? null : String.join("; ", parts));
+				return ResponseEntity.ok().build();
+			} catch (IOException e) {
+				userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
+				return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+			}
 		}
 	}
 
@@ -502,7 +532,13 @@ public class DeviceController {
 		if (regs.isEmpty()) {
 			return Collections.emptyMap();
 		}
-		return deviceService.getModbusClient().readRegisters(SAUNA_PLC, regs);
+		try {
+            Map<Integer, Integer> values = deviceService.getModbusClient().readRegisters(SAUNA_PLC, regs);
+            return values == null ? Collections.emptyMap() : values;
+        } catch (IOException e) {
+            // Failure to read audit context must not turn a valid setting into a failed write.
+            return Collections.emptyMap();
+        }
 	}
 
 	private String describeTempSettingsChanges(UpdateTempSettingsRequest request) throws IOException {
@@ -523,8 +559,8 @@ public class DeviceController {
 		Map<Integer, Integer> old = readOldValues(regs);
 
 		List<String> parts = new ArrayList<>();
-		appendChange(parts, old, REG_T_TARGET_ZONE1, 1.0, "Целевая T зоны 1", "°C", request.getTargetZone1());
-		appendChange(parts, old, REG_T_TARGET_ZONE2, 1.0, "Целевая T зоны 2", "°C", request.getTargetZone2());
+		appendChange(parts, old, REG_T_TARGET_ZONE1, 10.0, "Целевая T зоны 1", "°C", request.getTargetZone1());
+		appendChange(parts, old, REG_T_TARGET_ZONE2, 10.0, "Целевая T зоны 2", "°C", request.getTargetZone2());
 		appendChange(parts, old, REG_T_WATER_WARN, 10.0, "Порог T воды (снижение)", "°C", request.getWaterWarnThreshold());
 		appendChange(parts, old, REG_T_WATER_FAIL, 10.0, "Порог T воды (авария)", "°C", request.getWaterFailThreshold());
 		appendChange(parts, old, REG_T_INFLOW_WARN, 10.0, "Порог T притока (снижение)", "°C", request.getInflowWarnThreshold());
@@ -545,11 +581,8 @@ public class DeviceController {
 			return;
 		}
 		Integer raw = old.get(register);
-		String oldText = raw == null || raw == INVALID_VALUE ? "—" : formatNumber(raw / divisor);
+		String oldText = raw == null || raw == INVALID_VALUE || raw < 0 || raw > 65535 ? "неизвестно" : formatNumber(("°C".equals(unit) ? (short) raw.intValue() : raw) / divisor);
 		String newText = formatNumber(newValue.doubleValue());
-		if (oldText.equals(newText)) {
-			return;
-		}
 		parts.add(label + ": " + oldText + " → " + newText + (unit.isEmpty() ? "" : " " + unit));
 	}
 

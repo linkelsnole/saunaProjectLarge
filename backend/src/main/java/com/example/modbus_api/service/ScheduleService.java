@@ -119,7 +119,56 @@ public class ScheduleService {
         return schedule;
     }
 
-    public void updateScheduleGroup(int groupId, UpdateScheduleGroupRequest request) throws IOException {
+    public String describeGroupChanges(UpdateScheduleGroupRequest request) {
+        if (request == null || request.getIntervals() == null) return null;
+        SettingChanges changes = new SettingChanges(modbusClient);
+        int weekDays = encodeWeekDays(request.getWeekDays());
+        for (UpdateScheduleIntervalRequest interval : request.getIntervals()) {
+            if (interval == null) continue;
+            int base = ModbusRegisterMap.scheduleBaseById(interval.getScheduleId());
+            String label = "Интервал " + interval.getScheduleId() + ", ";
+            changes.formatted(base + ModbusRegisterMap.SCHEDULE_WEEK_DAYS_OFFSET, label + "дни", weekDays, value -> {
+                String[] names = {"Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"};
+                List<String> days = new ArrayList<>();
+                for (int i = 0; i < names.length; i++) if ((value.intValue() & (1 << i)) != 0) days.add(names[i]);
+                return days.isEmpty() ? "нет" : String.join(", ", days);
+            });
+            changes.formatted(base + ModbusRegisterMap.SCHEDULE_STATE_OFFSET, label + "активность",
+                request.isActive() ? 1 : 0, value -> (value.intValue() & ModbusRegisterMap.SCHEDULE_SELECTED_MASK) != 0 ? "включено" : "выключено");
+            changes.formatted(base + ModbusRegisterMap.SCHEDULE_START_DATE_OFFSET, label + "дата начала", request.getStartDate(), ScheduleService::auditDate);
+            changes.formatted(base + ModbusRegisterMap.SCHEDULE_END_DATE_OFFSET, label + "дата окончания", request.getEndDate(), ScheduleService::auditDate);
+            changes.formatted(base + ModbusRegisterMap.SCHEDULE_START_TIME_OFFSET, label + "начало", interval.getStartTime(), ScheduleService::auditTime);
+            changes.formatted(base + ModbusRegisterMap.SCHEDULE_END_TIME_OFFSET, label + "окончание", interval.getEndTime(), ScheduleService::auditTime);
+            changes.formatted(base + ModbusRegisterMap.SCHEDULE_VENTILATION_MODE_OFFSET, label + "объём", interval.getAirControlMode(), value -> {
+                String mode = ModbusRegisterMap.ventilationModeName(value.intValue());
+                return mode == null ? "код " + value.intValue() : mode;
+            });
+            changes.formatted(base + ModbusRegisterMap.SCHEDULE_TEMPERATURE_CONTROL_ZONE_1_OFFSET, label + "регулирование зоны 1", interval.getZone1ControlMode(), ScheduleService::auditControl);
+            changes.formatted(base + ModbusRegisterMap.SCHEDULE_TEMPERATURE_CONTROL_ZONE_2_OFFSET, label + "регулирование зоны 2", interval.getZone2ControlMode(), ScheduleService::auditControl);
+            if (interval.getZone1ControlMode() != 0) changes.number(base + ModbusRegisterMap.SCHEDULE_TARGET_TEMPERATURE_ZONE_1_OFFSET, 10, label + "цель зоны 1", "°C", interval.getZone1TargetTemperature());
+            if (interval.getZone2ControlMode() != 0) changes.number(base + ModbusRegisterMap.SCHEDULE_TARGET_TEMPERATURE_ZONE_2_OFFSET, 10, label + "цель зоны 2", "°C", interval.getZone2TargetTemperature());
+        }
+        return changes.describe();
+    }
+
+    private static String auditDate(Double value) {
+        int raw = value.intValue();
+        return raw == 0 ? "без ограничения" : String.format(java.util.Locale.ROOT, "%02d.%02d", raw & 255, (raw >> 8) & 255);
+    }
+    private static String auditTime(Double value) {
+        int raw = value.intValue();
+        return String.format(java.util.Locale.ROOT, "%02d:%02d", (raw >> 8) & 255, raw & 255);
+    }
+    private static String auditControl(Double value) {
+        switch (value.intValue()) {
+            case 0: return "ОРП";
+            case 1: return "ПВ";
+            case 2: return "ОВ";
+            default: return "код " + value.intValue();
+        }
+    }
+
+    public synchronized void updateScheduleGroup(int groupId, UpdateScheduleGroupRequest request) throws IOException {
         if (request == null || request.getIntervals() == null) throw new IllegalArgumentException("Нет интервалов");
         List<Integer> submitted = new ArrayList<>();
         for (UpdateScheduleIntervalRequest interval : request.getIntervals()) {
@@ -155,7 +204,7 @@ public class ScheduleService {
         modbusClient.writeRegister(SAUNA_PLC, ModbusRegisterMap.AGGREGATE_COMMAND, CMD_FAST_MODE_CHANGE);
     }
 
-    public void toggleScheduleGroupActive(int groupId, boolean active) throws IOException {
+    public synchronized void toggleScheduleGroupActive(int groupId, boolean active) throws IOException {
         List<Integer> scheduleIds = scheduleIdsForGroup(groupId);
         Map<Integer, Integer> states = readGroupStates(scheduleIds);
         for (int scheduleId : scheduleIds) {

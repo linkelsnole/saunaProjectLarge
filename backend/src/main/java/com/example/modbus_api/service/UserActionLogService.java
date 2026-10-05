@@ -51,7 +51,7 @@ public class UserActionLogService {
                     type.name(),
                     action,
                     success ? 1 : 0,
-                    details != null && details.length() > 500 ? details.substring(0, 500) : details);
+                    details != null && details.length() > 64000 ? details.substring(0, 64000) : details);
         } catch (Exception e) {
             log.warn("Не удалось записать лог действия '{}': {}", action, e.getMessage());
         }

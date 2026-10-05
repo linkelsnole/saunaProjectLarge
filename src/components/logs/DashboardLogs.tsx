@@ -1,3 +1,4 @@
+import { ActionDetails } from './ActionDetails'
 import SystemEventsJournal from './SystemEventsJournal'
 import { useState } from 'react'
 import { Download, FileSpreadsheet, History, Loader2 } from 'lucide-react'
@@ -119,11 +120,7 @@ const DashboardLogs = () => {
 					<span className="text-slate-300">•</span>
 					<span>{t(`dashboardLogs.actions.types.${entry.actionType.toLowerCase()}`, { defaultValue: entry.actionType })}</span>
 				</div>
-				{entry.details && (
-					<div className={cn('mt-1 text-xs', entry.success ? 'text-slate-500' : 'text-rose-600')}>
-						{entry.details}
-					</div>
-				)}
+				<ActionDetails details={entry.details} success={entry.success} />
 			</div>
 			<span
 				className={cn(

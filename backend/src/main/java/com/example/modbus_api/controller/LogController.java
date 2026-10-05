@@ -51,7 +51,7 @@ public class LogController {
             int oldMinutes = readingsLogService.getIntervalMinutes();
             readingsLogService.setIntervalMinutes(minutes);
             userActionLogService.log(ActionType.SETPOINT, action, true,
-                    oldMinutes == minutes ? null : oldMinutes + " → " + minutes + " мин");
+                    "Интервал записи: " + oldMinutes + " → " + minutes + " мин");
             return ResponseEntity.ok(Collections.singletonMap("intervalMinutes", minutes));
         } catch (IllegalArgumentException e) {
             userActionLogService.log(ActionType.SETPOINT, action, false, e.getMessage());
