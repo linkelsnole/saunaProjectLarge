@@ -1,3 +1,4 @@
+import { climateDeviceNames } from './deviceLabels';
 import { zoneTarget } from "./zoneTarget";
 import { isAggregateAlarm } from "./aggregateState";
 import { formatValvePercent } from "./valveFormat";
@@ -125,7 +126,7 @@ const GlassBackground = ({ scale }: { scale: number }) => {
 	);
 };
 
-const Schema = () => {
+const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 	const { t } = useTranslation();
 	const { data, isLoading, refetch } = useDashboardData();
 	const { role } = useAuth();
@@ -227,24 +228,28 @@ const Schema = () => {
 	};
 
 	const formatTemperature = (id: string): string => {
+		if (diagnostics) return climateDeviceNames[id] ?? id;
 		const sensor = getClimate(id);
 		const temp = sensor?.temperature;
 		return temp != null ? `${temp.toFixed(1)} °C` : '-- °C';
 	};
 
 	const formatHumidity = (id: string): string => {
+		if (diagnostics) return '';
 		const sensor = getClimate(id);
 		const humid = sensor?.humidity;
 		return humid != null ? `${humid.toFixed(1)} %` : '-- %';
 	};
 
 	const formatPressure = (id: string): string => {
+		if (diagnostics) return id === 'BP1' ? 'PF1 · BP1' : id === 'BP2' ? 'PF2 · BP2' : id;
 		const sensor = getWSensor(id);
 		const value = sensor?.value;
 		return value != null ? `${Math.round(parseFloat(value))} ${t('units.pa')}` : `-- ${t('units.pa')}`;
 	};
 
 	const formatPressureSensor = (id: string): string => {
+		if (diagnostics) return id;
 		const sensor = getPressureSensor(id);
 		const value = sensor?.value;
 		if (value != null) {
@@ -255,6 +260,7 @@ const Schema = () => {
 	};
 
 	const formatValveLabel = (valveId: string, tempId: string): string => {
+		if (diagnostics) return climateDeviceNames[tempId] ?? tempId;
 		const valve = getValve(valveId);
 		const temp = getClimate(tempId);
 		
@@ -270,6 +276,7 @@ const Schema = () => {
 	};
 
 	const formatFanLabel = (id: string): string => {
+		if (diagnostics) return ({ 'Вентилятор 1': 'M1_1\nBF11', 'Вентилятор 2': 'M1_2\nBF12', 'Вентилятор 3': 'M2_1\nBF21', 'Вентилятор 4': 'M2_2\nBF22' } as Record<string, string>)[id] ?? id;
 		const fan = getFan(id);
 		const pressure = fan?.pressure;
 		const speed = fan?.speedPerc;
@@ -281,6 +288,7 @@ const Schema = () => {
 	};
 
 	const formatFanBottomLabel = (type: 'vm1' | 'vm2' | 'formula' | 'vmanual'): string => {
+		if (diagnostics) return '';
 		if (type === 'vm1') {
 			const v = data?.vm1;
 			return v != null ? `${v} ${t('units.m3h')}` : `-- ${t('units.m3h')}`;
@@ -301,6 +309,7 @@ const Schema = () => {
 	};
 
 	const formatZoneTemperature = (id: string): string => {
+		if (diagnostics) return '';
 		const temp = zoneTarget(data, id);
 		return temp != null ? `${temp.toFixed(1)} °C` : '-- °C';
 	};
@@ -323,6 +332,7 @@ const Schema = () => {
 	};
 
 	const formatRecuperator = (id: string): string => {
+		if (diagnostics) return id === 'R_TARGET' ? 'M3' : '';
 		if (id === 'R_SPEED') {
 			const speed = data?.recupSpeed;
 			return speed != null ? `${speed} ${t('units.rpm')}` : `-- ${t('units.rpm')}`;
@@ -657,6 +667,7 @@ const Schema = () => {
 			
 			{/*MG2 MG1 - задвижки притока и вытяжки*/}
 			<Group y={640}>
+                {diagnostics && <><Text x={425} y={14} text="D1" fontSize={13} fill="#334155" /><Text x={112} y={14} text="D2" fontSize={13} fill="#334155" /></>}
 				<Html>
 					<DiagonalBlock 
 						size={45}

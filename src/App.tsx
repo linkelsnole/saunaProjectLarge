@@ -1,6 +1,6 @@
 import { TestingWorkspace } from "@/components/testing/TestingWorkspace";
 import { PanelUpdateNotice } from "@/components/updates/PanelUpdateNotice";
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {Card,CardContent} from "@/shared/ui/card";
@@ -32,17 +32,21 @@ const SettingsTabs = ({
 	isAdmin,
 	canSeeConfigurator,
 	compact,
+	activeTab,
+	onTabChange,
 }: {
 	isAdmin: boolean;
 	canSeeConfigurator: boolean;
 	compact?: boolean;
+	activeTab: string;
+	onTabChange: (tab: string) => void;
 }) => {
 	const { t } = useTranslation();
 	const { role } = useAuth();
 	const isTester = role === "ROLE_TESTER";
 
 	return (
-		<Tabs defaultValue="volume" className="h-full flex flex-col min-h-0">
+		<Tabs value={activeTab} onValueChange={onTabChange} className="h-full flex flex-col min-h-0">
 			<TabsList className="mb-4 flex w-full shrink-0 flex-nowrap justify-start overflow-x-auto">
 				<TabsTrigger value="volume" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>
 					{t('app.tabs.volume')}
@@ -106,6 +110,7 @@ const SettingsTabs = ({
 };
 
 const MainDashboard = () => {
+	const [activeTab, setActiveTab] = useState("volume");
 	const { role } = useAuth();
 	const { t } = useTranslation();
 	const sheet = useSettingsSheet();
@@ -137,7 +142,7 @@ const MainDashboard = () => {
 								onTouchStart={handleTouchStart}
 								onTouchEnd={handleTouchEnd}
 							>
-								<Schema />
+								<Schema diagnostics={isAdmin && activeTab === "errors"} />
 							</div>
 						</CardContent>
 					</Card>
@@ -147,7 +152,7 @@ const MainDashboard = () => {
 						<Card className="h-full min-h-0 flex flex-col rounded-[24px] border border-slate-200 bg-white">
 							<CardContent className="flex flex-1 flex-col min-h-0 p-4 lg:p-5 xl:p-6">
 								<SettingsPanelBoundsProvider>
-									<SettingsTabs isAdmin={isAdmin} canSeeConfigurator={canSeeConfigurator} compact={false} />
+									<SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} isAdmin={isAdmin} canSeeConfigurator={canSeeConfigurator} compact={false} />
 								</SettingsPanelBoundsProvider>
 							</CardContent>
 						</Card>
@@ -164,7 +169,7 @@ const MainDashboard = () => {
 					</SheetHeader>
 					<div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4 pb-8">
 						<SettingsPanelBoundsProvider>
-							<SettingsTabs isAdmin={isAdmin} canSeeConfigurator={canSeeConfigurator} compact />
+							<SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} isAdmin={isAdmin} canSeeConfigurator={canSeeConfigurator} compact />
 						</SettingsPanelBoundsProvider>
 					</div>
 				</SheetContent>
