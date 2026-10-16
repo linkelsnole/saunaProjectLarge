@@ -106,7 +106,15 @@ export interface RecuperatorSettingsDto {
   trackingIntervalRecup?: number | null; // 0x0511 интервал опроса счётчика оборотов, секунды
 }
 
+export interface DeviceStateDto {
+  id: string;
+  baseAddress: number;
+  alarmMode: number | null;
+  alarmSeconds: number | null;
+}
+
 export interface DashboardData {
+  deviceStates?: DeviceStateDto[];
   climateSensors: ClimateSensorDto[];
   wSensors: SensorData[];
   pressureSensors: SensorData[];

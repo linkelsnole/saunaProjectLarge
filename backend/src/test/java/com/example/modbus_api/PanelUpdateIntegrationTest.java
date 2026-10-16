@@ -56,6 +56,15 @@ class PanelUpdateIntegrationTest {
     void state(long time) throws Exception {
         Files.write(root.resolve("status.json"), ("{\"status\":\"available\",\"tag\":\""+VERSION+"\",\"checked_at\":"+time+"}").getBytes("UTF-8"));
     }
+    @Test void platformStateIsPublicAndReadOnly() throws Exception {
+        mvc.perform(get("/api/v1/platform-state")).andExpect(status().isOk())
+            .andExpect(header().string("Cache-Control", "no-store"))
+            .andExpect(jsonPath("$.buildId").isString())
+            .andExpect(jsonPath("$.updating").value(false))
+            .andExpect(jsonPath("$.directory").doesNotExist());
+        assertFalse(Files.exists(root.resolve("request.json")));
+    }
+
     @Test void onlyAdminCanSeeOrRequestUpdates() throws Exception {
         mvc.perform(get("/api/v1/panel-updates")).andExpect(status().isUnauthorized());
         for (Role role : Role.values()) {

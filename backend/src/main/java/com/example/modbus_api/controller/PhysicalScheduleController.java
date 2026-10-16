@@ -76,6 +76,10 @@ public class PhysicalScheduleController {
             String mode = ModbusRegisterMap.ventilationModeName(value);
             return mode == null ? "код " + value : mode;
         }
+        if (offset == 12 || offset == 15) {
+            String mode = ModbusRegisterMap.temperatureModeName(value);
+            return mode == null ? "Неизвестный режим (" + value + ")" : mode;
+        }
         if (offset == 13 || offset == 16) return value == 0 ? "ОРП" : value == 1 ? "ПВ" : value == 2 ? "ОВ" : "код " + value;
         if (offset == 14 || offset == 17) return value == 32768 ? "неизвестно" : ((short) value) / 10.0 + " °C";
         return Integer.toString(value);

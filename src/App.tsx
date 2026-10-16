@@ -141,7 +141,7 @@ const MainDashboard = () => {
 							</div>
 						</CardContent>
 					</Card>
-					
+
 					{/* Правая часть - десктоп */}
 					<div className='hidden md:block h-full min-h-0 overflow-hidden'>
 						<Card className="h-full min-h-0 flex flex-col rounded-[24px] border border-slate-200 bg-white">
@@ -177,6 +177,7 @@ const MainDashboard = () => {
 const App = () => {
 	return (
 		<>
+			<PanelUpdateNotice />
 			<Routes>
 				<Route
 					path="/login"
@@ -205,7 +206,7 @@ const App = () => {
 											</div>
 										</div>
 									</div>
-								<PanelUpdateNotice />
+
 								</SettingsSheetProvider>
 							</RecuperatorTypeProvider>
 						</ProtectedRoute>

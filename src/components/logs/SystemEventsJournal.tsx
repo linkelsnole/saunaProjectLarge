@@ -6,6 +6,7 @@ import { useSystemEvents } from '@/api/useSystemEvents';
 import { DeviceErrorSummary } from "./DeviceErrorSummary";
 import { deviceEventPhase, eventTimestamp, eventMessage, eventSource, eventTime, filterEvents, prepareEvents, type EventSeverity } from '@/api/systemEvents';
 import { ControllerDiagnostics } from './ControllerDiagnostics';
+import { DeviceStatePanel } from './DeviceStatePanel';
 const TIME_OPTIONS = [15, 60, 240, 1440, 10080, 43200, 129600];
 const FILTER_OPTIONS = ['ALL', 'PROBLEMS', 'RECOVERED', 'WARNING', 'ERROR', 'FAILURE', 'CRASH', 'INFO', 'LOG', 'UNKNOWN'];
 const severityStyle: Record<EventSeverity, {
@@ -52,7 +53,7 @@ const SystemEventsJournal = ({ mode = 'errors' }: {
         setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
     return <div className="space-y-4">
- {mode === 'errors' && <ControllerDiagnostics />}
+ {mode === 'errors' && <><ControllerDiagnostics /><DeviceStatePanel /></>}
  <section aria-label={tr(mode === 'errors' ? 'errorTitle' : 'logTitle')} className="@container rounded-[22px] border border-slate-200/90 bg-white p-4 shadow-[0_4px_18px_-12px_rgba(15,23,42,.15)] sm:p-5 animate-in fade-in duration-200 motion-reduce:animate-none">
   <div className="flex flex-wrap items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-50 text-slate-900"><Activity size={23} strokeWidth={1.7}/></div><div className="min-w-0"><h3 className="text-lg font-semibold tracking-tight text-slate-950">{tr(mode === 'errors' ? 'errorTitle' : 'logTitle')}</h3><p className="mt-0.5 text-xs text-slate-500">{tr('historyHint')}</p></div></div>
   <div className="ml-auto flex gap-2"><button className={toolbarButton} disabled={!filtered.length || query.isPending} onClick={download} aria-label={tr('export')} title={tr('export')}><Download size={17}/><span>{tr('exportButton')}</span></button><button className={`${toolbarButton} w-10 px-0`} disabled={query.isFetching} onClick={() => void query.refetch()} aria-label={tr('refresh')}><RefreshCw size={18} className={query.isFetching ? 'animate-spin motion-reduce:animate-none' : ''}/></button></div></div>

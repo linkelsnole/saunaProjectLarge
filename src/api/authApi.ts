@@ -1,4 +1,5 @@
 import type { AuthRequest, AuthResponse, AuthUser } from './authTypes';
+import { platformFetch } from './platformUpdate';
 
 // The access token stays in memory; each app has its own HttpOnly session cookie.
 let accessToken: string | null = null;
@@ -70,18 +71,18 @@ export function refreshRequest(): Promise<AuthResponse> {
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   const originalToken = getAccessToken();
   const version = authVersion;
-  const response = await fetch(url, withAuthHeader(options, originalToken));
+  const response = await platformFetch(url, withAuthHeader(options, originalToken));
   // A 403 means insufficient permissions, not an expired login.
   if (response.status !== 401 || isAuthEndpoint(url)) return response;
   if (version !== authVersion) throw new Error('Authentication changed during request');
 
   // A slower request may have used the previous token while another refreshed it.
   if (accessToken && accessToken !== originalToken) {
-    return fetch(url, withAuthHeader(options, accessToken));
+    return platformFetch(url, withAuthHeader(options, accessToken));
   }
   try {
     const refreshed = await refreshRequest();
-    return fetch(url, withAuthHeader(options, refreshed.accessToken));
+    return platformFetch(url, withAuthHeader(options, refreshed.accessToken));
   } catch (error) {
     if (isSessionExpired(error) && version === authVersion) {
       clearAccessToken();

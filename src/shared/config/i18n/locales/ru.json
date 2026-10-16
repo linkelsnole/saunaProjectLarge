@@ -88,7 +88,7 @@
   },
   "manualWidget": {
     "supplySpeed": "Скорость вентилирования ПВ",
-    "boost": "Наддув (ПВ-ОВ)"
+    "boost": "Дисбаланс (ПВ-ОВ)"
   },
   "volumeWidget": {
     "boostHint": "Приток над вытяжкой",
@@ -113,7 +113,7 @@
     "presetsTitle": "Объём по режимам",
     "readOnly": "Только чтение",
     "manualTarget": "Ручной объём",
-    "boost": "Наддув"
+    "boost": "Дисбаланс"
   },
   "tempWidget": {
     "zone1": "Зона 1",

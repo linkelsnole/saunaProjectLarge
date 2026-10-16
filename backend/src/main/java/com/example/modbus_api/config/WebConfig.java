@@ -18,6 +18,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry
             .addResourceHandler("/**")
             .addResourceLocations("classpath:/static/")
+            .setCacheControl(org.springframework.http.CacheControl.noCache())
             .resourceChain(true)
             .addResolver(new PathResourceResolver() {
                 @Override

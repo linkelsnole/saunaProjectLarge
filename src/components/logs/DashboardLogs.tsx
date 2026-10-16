@@ -1,3 +1,4 @@
+import { formatModeLog } from './modeLabels';
 import { ActionDetails } from './ActionDetails'
 import SystemEventsJournal from './SystemEventsJournal'
 import { useState } from 'react'
@@ -114,7 +115,7 @@ const DashboardLogs = () => {
 				<div className="text-xs tabular-nums text-slate-400">{formatDate(entry.timestamp)}</div>
 			</div>
 			<div className="min-w-0 flex-1">
-				<div className="text-sm font-medium text-slate-800">{entry.action}</div>
+				<div className="text-sm font-medium text-slate-800">{formatModeLog(entry.action)}</div>
 				<div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-slate-500">
 					<span className="font-medium text-slate-600">{entry.username}</span>
 					<span className="text-slate-300">•</span>

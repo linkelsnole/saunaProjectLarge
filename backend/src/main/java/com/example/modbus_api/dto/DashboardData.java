@@ -13,6 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DashboardData {
+    private List<DeviceStateDto> deviceStates;
     private List<ClimateSensorDto> climateSensors; 
     private List<SensorData> debugValveSensors; // Для отображения ValveHeatPos1 и тд 22.01.2026
     

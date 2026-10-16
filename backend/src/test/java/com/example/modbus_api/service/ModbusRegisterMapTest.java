@@ -37,7 +37,7 @@ class ModbusRegisterMapTest {
 
     @Test
     void mapsUiModes() {
-        assertEquals("АВТО", ModbusRegisterMap.ventilationModeName(2));
+        assertEquals("Норм", ModbusRegisterMap.ventilationModeName(2));
         assertEquals("ОРП", ModbusRegisterMap.temperatureControlName(0));
         assertNull(ModbusRegisterMap.temperatureControlName(99));
     }

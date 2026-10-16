@@ -211,7 +211,7 @@ class DeviceServiceRegisterMapTest {
     void dashboardReadsFloatPairsScalesValuesAndUsesNewModes() throws IOException {
         ModbusClientAdapter client = mock(ModbusClientAdapter.class);
         Map<Integer, Integer> registers = new HashMap<>();
-        putFloat(registers, ModbusRegisterMap.PRESSURE_FAN_SUPPLY_1, 775.25f);
+        putFloat(registers, ModbusRegisterMap.PRESSURE_FAN_SUPPLY_1, 93.0f);
         putFloat(registers, ModbusRegisterMap.FAN_SUPPLY_1 + 8, 2934.5f);
         putFloat(registers, ModbusRegisterMap.FAN_SUPPLY_2 + 8, 2945.25f);
         putFloat(registers, ModbusRegisterMap.AIRFLOW_ECO, 750.0f);
@@ -221,7 +221,7 @@ class DeviceServiceRegisterMapTest {
         putFloat(registers, ModbusRegisterMap.AIRFLOW_TARGET, 6000.0f);
         putFloat(registers, ModbusRegisterMap.AIRFLOW_REAL, 5880.0f);
         registers.put(ModbusRegisterMap.AIRFLOW_IMBALANCE, (int) (short) -50);
-        registers.put(ModbusRegisterMap.FAN_SUPPLY_1 + 10, 7900);
+        registers.put(ModbusRegisterMap.FAN_SUPPLY_1 + 10, 700);
         registers.put(ModbusRegisterMap.SENSOR_T1 + 8, 100);
         registers.put(ModbusRegisterMap.SENSOR_T3 + 8, 200);
         registers.put(ModbusRegisterMap.SENSOR_T5 + 8, 300);
@@ -254,9 +254,9 @@ class DeviceServiceRegisterMapTest {
         registers.put(ModbusRegisterMap.RECUPERATOR_MOTOR_RPM, 123);
         registers.put(ModbusRegisterMap.RECUPERATOR_MAX_RPM, 200);
         registers.put(ModbusRegisterMap.RECUPERATOR_TRACKING_INTERVAL, 120);
-        registers.put(ModbusRegisterMap.RECUPERATOR_MIN_RPM_SETTING, 50);
-        registers.put(ModbusRegisterMap.RECUPERATOR_MAX_RPM_SETTING, 1000);
-        registers.put(ModbusRegisterMap.RECUPERATOR_RPM_STEP_SETTING, 10);
+        registers.put(ModbusRegisterMap.RECUPERATOR_MIN_RPM_SETTING, 200);
+        registers.put(ModbusRegisterMap.RECUPERATOR_MAX_RPM_SETTING, 9000);
+        registers.put(ModbusRegisterMap.RECUPERATOR_RPM_STEP_SETTING, 200);
         registers.put(ModbusRegisterMap.scheduleBase(2), ModbusRegisterMap.SCHEDULE_USERSET_MODE);
         registers.put(ModbusRegisterMap.scheduleBase(2) + 1, 3);
         when(client.readRegisters(eq(SAUNA_PLC), anyList())).thenAnswer(invocation -> {
@@ -269,8 +269,8 @@ class DeviceServiceRegisterMapTest {
 
         DashboardData data = new DeviceService(client).getDashboardData();
 
-        assertEquals(775.25, data.getFans().get(0).getPressure(), 0.001);
-        assertEquals(Integer.valueOf(79), data.getFans().get(0).getSpeedPerc());
+        assertEquals(930.0, data.getFans().get(0).getPressure(), 0.001);
+        assertEquals(Integer.valueOf(70), data.getFans().get(0).getSpeedPerc());
         assertEquals(Integer.valueOf(5880), data.getVm1());
         assertEquals(6300.0, data.getFans().get(2).getTargetAirFlow(), 0.001);
         assertEquals(10.0, data.getClimateSensors().get(0).getTemperature(), 0.001);
@@ -278,7 +278,7 @@ class DeviceServiceRegisterMapTest {
         assertEquals(19.0, data.getClimateSensors().get(10).getTemperature(), 0.001);
         assertEquals("26.0", data.getValves().get(0).getValue());
         assertEquals("50.0", data.getRecuperator().get(0).getValue());
-        assertEquals("АВТО", data.getVentilationModeName());
+        assertEquals("Норм", data.getVentilationModeName());
         assertEquals(6000.0, data.getAirflowTarget(), 0.001);
         assertEquals(5880.0, data.getAirflowReal(), 0.001);
         assertEquals(750.0, data.getVolumeSettings().getEcoAirflow(), 0.001);
@@ -301,11 +301,45 @@ class DeviceServiceRegisterMapTest {
         assertEquals(1.45, data.getRecupCurrentRpm(), 0.001);
         assertEquals(12.3, data.getRecupSpeedRpm(), 0.001);
         assertEquals(Integer.valueOf(120), data.getRecuperatorSettings().getTrackingIntervalRecup());
-        assertEquals(0.5, data.getRecuperatorSettings().getTargetRpmMin(), 0.001);
-        assertEquals(10.0, data.getRecuperatorSettings().getTargetRpmMax(), 0.001);
-        assertEquals(0.1, data.getRecuperatorSettings().getTargetRpmStep(), 0.001);
+        assertEquals(0.2, data.getRecuperatorSettings().getTargetRpmMin(), 0.001);
+        assertEquals(9.0, data.getRecuperatorSettings().getTargetRpmMax(), 0.001);
+        assertEquals(0.2, data.getRecuperatorSettings().getTargetRpmStep(), 0.001);
         assertEquals(Boolean.TRUE, data.getDamperSupply());
         assertEquals(Boolean.TRUE, data.getDamperExhaust());
+    }
+
+    @Test void sensorStatesFollowRegistersAndClearOnRecovery() throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        Map<Integer, Integer> values = new HashMap<>();
+        when(client.readRegisters(eq(SAUNA_PLC), anyList())).thenAnswer(call -> {
+            java.util.List<Integer> requested = call.getArgument(1);
+            assertTrue(requested.contains(0x1000));
+            assertTrue(requested.contains(0x1001));
+            assertTrue(requested.contains(0x1240));
+            assertTrue(requested.contains(0x1241));
+            assertTrue(requested.contains(0x10C0));
+            assertTrue(requested.contains(0x10C1));
+            return values;
+        });
+        DeviceService service = new DeviceService(client);
+        for (int mode = 0; mode <= 3; mode++) {
+            values.put(0x1000, mode); values.put(0x1001, 123);
+            DashboardData data = service.getDashboardData();
+            assertEquals(19, data.getDeviceStates().size());
+            assertEquals("TTR / BT6", data.getDeviceStates().get(18).getId());
+            assertEquals(Integer.valueOf(mode), data.getDeviceStates().get(0).getAlarmMode());
+            assertEquals(mode == 0 ? null : Integer.valueOf(123), data.getDeviceStates().get(0).getAlarmSeconds());
+            assertNull(data.getDeviceStates().get(1).getAlarmMode());
+        }
+        values.put(0x1000, 32768);
+        assertNull(service.getDashboardData().getDeviceStates().get(0).getAlarmMode());
+        values.put(0x1000, 0);
+        assertNull(service.getDashboardData().getDeviceStates().get(0).getAlarmSeconds());
+        putFloat(values, ModbusRegisterMap.PRESSURE_FILTER_SUPPLY, 93f);
+        assertEquals("930.0", service.getDashboardData().getWSensors().get(0).getValue());
+        values.clear();
+        assertNull(service.getDashboardData().getFans().get(0).getPressure());
+        verify(client, never()).writeRegister(anyString(), anyInt(), anyInt());
     }
 
     private static void putFloat(Map<Integer, Integer> registers, int base, float value) {

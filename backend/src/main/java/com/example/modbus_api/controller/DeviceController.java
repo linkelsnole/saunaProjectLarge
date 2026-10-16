@@ -226,7 +226,8 @@ public class DeviceController {
 		try {
 			settingsService.setTemperatureControlModes(request);
 			userActionLogService.log(ActionType.MODE, action, true,
-				"Зона 1: " + request.getZone1Mode() + "; зона 2: " + request.getZone2Mode());
+				"Зона 1: " + (request.getZone1Mode() == null ? "без изменения" : ModbusRegisterMap.temperatureControlName(request.getZone1Mode()))
+                    + "; зона 2: " + (request.getZone2Mode() == null ? "без изменения" : ModbusRegisterMap.temperatureControlName(request.getZone2Mode())));
 			return ResponseEntity.ok().build();
 		} catch (IllegalArgumentException e) {
 			userActionLogService.log(ActionType.MODE, action, false, e.getMessage());
@@ -401,9 +402,9 @@ public class DeviceController {
 				Map<Integer, Integer> old = readOldValues(regs);
 
 				List<String> parts = new ArrayList<>();
-				appendChange(parts, old, REG_R_TARGET_RPM_MIN, 100.0, "Мин. обороты", "об/мин", request.getTargetRpmMin());
-				appendChange(parts, old, REG_R_TARGET_RPM_MAX, 100.0, "Макс. обороты", "об/мин", request.getTargetRpmMax());
-				appendChange(parts, old, REG_R_TARGET_RPM_STEP, 100.0, "Шаг калибровки", "об/мин", request.getTargetRpmStep());
+				appendChange(parts, old, REG_R_TARGET_RPM_MIN, ModbusRegisterMap.RECUPERATOR_SETTING_SCALE, "Мин. обороты", "об/мин", request.getTargetRpmMin());
+				appendChange(parts, old, REG_R_TARGET_RPM_MAX, ModbusRegisterMap.RECUPERATOR_SETTING_SCALE, "Макс. обороты", "об/мин", request.getTargetRpmMax());
+				appendChange(parts, old, REG_R_TARGET_RPM_STEP, ModbusRegisterMap.RECUPERATOR_SETTING_SCALE, "Шаг калибровки", "об/мин", request.getTargetRpmStep());
 				appendChange(parts, old, REG_R_TRACK_INTERVAL, 1.0, "Интервал слежения", "с", request.getTrackingIntervalRecup());
 
 				settingsService.updateRecuperatorSettings(

@@ -9,6 +9,12 @@ public final class ModbusRegisterMap {
     private ModbusRegisterMap() {
     }
 
+    // Controller display units confirmed during October commissioning.
+    public static final double FAN_PERCENT_SCALE = 10.0;
+    public static final double PRESSURE_DISPLAY_MULTIPLIER = 10.0;
+    public static final double RECUPERATOR_SETTING_SCALE = 1000.0;
+    public static final int SENSOR_ALARM_MODE_OFFSET = 0;
+    public static final int SENSOR_ALARM_TIME_OFFSET = 1;
     public static final int TEMPERATURE_OFFSET = 8;
     public static final int HUMIDITY_OFFSET = 9;
     public static final int PRESSURE_OFFSET = 8;
@@ -164,12 +170,23 @@ public final class ModbusRegisterMap {
         }
     }
 
-    public static String ventilationModeName(Integer code) {
+    public static String temperatureModeName(Integer code) {
         if (code == null) return null;
         switch (code) {
             case 0: return "Отключен";
             case 1: return "ЭКО";
             case 2: return "АВТО";
+            case 3: return "Ручной";
+            default: return null;
+        }
+    }
+
+    public static String ventilationModeName(Integer code) {
+        if (code == null) return null;
+        switch (code) {
+            case 0: return "Отключен";
+            case 1: return "ЭКО";
+            case 2: return "Норм";
             case 3: return "Интенсив";
             case 4: return "Ручной";
             default: return null;

@@ -1,3 +1,4 @@
+import { formatValvePercent } from '@/schema/valveFormat';
 import { useEffect, useRef, useState } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
 import { useSetTemperatureControl, useUpdateTemperatureSetpoints, useUpdateTempSettings } from '@/api/hooks';
@@ -65,7 +66,7 @@ const TempInput = ({ label, value, onChange, unit = '°C', decimals = 1, readOnl
 const ValveMonitorRow = ({ label, value }: { label: string; value: string | null | undefined }) => (
   <div className="mb-1 flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 last:mb-0">
     <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{label}</span>
-    <span className="font-mono text-sm font-bold text-slate-700">{value ?? '-'} <span className="text-[10px] text-slate-400">%</span></span>
+    <span className="font-mono text-sm font-bold text-slate-700">{formatValvePercent(value)}</span>
   </div>
 );
 

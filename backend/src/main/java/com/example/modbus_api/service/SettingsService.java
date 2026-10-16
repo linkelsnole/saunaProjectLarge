@@ -275,7 +275,7 @@ public class SettingsService {
 			return;
 		}
 		if (value.isNaN() || value.isInfinite() || value < BOOST_MIN || value > BOOST_MAX) {
-			throw new IllegalArgumentException("Наддув должен быть в диапазоне от -100 до 100 %");
+			throw new IllegalArgumentException("Дисбаланс должен быть в диапазоне от -100 до 100 %");
 		}
 	}
 
@@ -380,23 +380,28 @@ public class SettingsService {
 		Double targetRpmStep,
 		Integer trackingIntervalRecup
 	) throws IOException {
+        for (Double value : new Double[] {targetRpmMin, targetRpmMax, targetRpmStep}) {
+            if (value != null && (!Double.isFinite(value) || value < 0 || value * ModbusRegisterMap.RECUPERATOR_SETTING_SCALE > 32767)) {
+                throw new IllegalArgumentException("Обороты должны быть от 0 до 32.767 об/мин");
+            }
+        }
 		// 0x0511 DQualityBack — интервал опроса счётчика оборотов, секунды
 		if (trackingIntervalRecup != null) {
 			modbusClient.writeRegister(SAUNA_PLC, REG_R_TRACK_INTERVAL, clampToInt16(trackingIntervalRecup));
 		}
 
 		if (targetRpmMin != null) {
-			int rawValue = (int) Math.round(targetRpmMin * 100);
+			int rawValue = (int) Math.round(targetRpmMin * ModbusRegisterMap.RECUPERATOR_SETTING_SCALE);
 			modbusClient.writeRegister(SAUNA_PLC, REG_R_TARGET_RPM_MIN, rawValue);
 		}
 
 		if (targetRpmMax != null) {
-			int rawValue = (int) Math.round(targetRpmMax * 100);
+			int rawValue = (int) Math.round(targetRpmMax * ModbusRegisterMap.RECUPERATOR_SETTING_SCALE);
 			modbusClient.writeRegister(SAUNA_PLC, REG_R_TARGET_RPM_MAX, rawValue);
 		}
 
 		if (targetRpmStep != null) {
-			int rawValue = (int) Math.round(targetRpmStep * 100);
+			int rawValue = (int) Math.round(targetRpmStep * ModbusRegisterMap.RECUPERATOR_SETTING_SCALE);
 			modbusClient.writeRegister(SAUNA_PLC, REG_R_TARGET_RPM_STEP, rawValue);
 		}
 

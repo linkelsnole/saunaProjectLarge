@@ -170,7 +170,7 @@ public class ModbusConstants {
     public static final int REG_VALVE_COOL_POS2 = ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.COOL_VALVE_SETTING_OFFSET;
     public static final int REG_VALVE_OPEN_PROC2 = ModbusRegisterMap.HEATER_ZONE_2 + ModbusRegisterMap.EXTRA_HEAT_VALVE_SETTING_OFFSET;
 
-	// Уставки рекуператора: Power=-2, значение регистра / 100
+	// Уставки рекуператора: значение регистра / 1000
     public static final int REG_R_TARGET_RPM_MIN = ModbusRegisterMap.RECUPERATOR_MIN_RPM_SETTING;
     public static final int REG_R_TARGET_RPM_MAX = ModbusRegisterMap.RECUPERATOR_MAX_RPM_SETTING;
     public static final int REG_R_TARGET_RPM_STEP = ModbusRegisterMap.RECUPERATOR_RPM_STEP_SETTING;

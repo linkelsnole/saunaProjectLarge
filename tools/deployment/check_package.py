@@ -19,6 +19,7 @@ def main():
         if archive.testzip():
             raise SystemExit('Damaged JAR')
         for name in ('BOOT-INF/classes/static/index.html',
+                     'BOOT-INF/classes/static/panel-build.json',
                      'BOOT-INF/classes/com/example/modbus_api/ModbusApiApplication.class'):
             archive.getinfo(name)
         bad = [n for n in archive.namelist() if re.search(r'\.(db|sqlite|token|pem|key|ovpn|p12|pfx)$', n)]

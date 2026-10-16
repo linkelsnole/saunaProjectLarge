@@ -28,7 +28,7 @@ public class TestingController {
     @PostMapping("/mode")
     public Map<String, Object> mode(@RequestBody ModeRequest request) throws IOException {
         if (request.getEnabled() == null) throw new IllegalArgumentException("Не указан режим");
-        return audited("Режим тестирования: " + request.getEnabled(), () -> service.setMode(request.getEnabled()));
+        return audited("Режим тестирования: " + (request.getEnabled() ? "включение" : "выключение"), () -> service.setMode(request.getEnabled()));
     }
     @PostMapping("/commands")
     public Map<String, Object> execute(@RequestBody CommandRequest request) throws IOException {

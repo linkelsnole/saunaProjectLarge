@@ -2,6 +2,7 @@ package com.example.modbus_api.service;
 
 import org.springframework.stereotype.Service;
 import com.example.modbus_api.dto.SensorData;
+import com.example.modbus_api.dto.DeviceStateDto;
 import com.example.modbus_api.dto.CalibrationData;
 import com.example.modbus_api.dto.DashboardData;
 import com.example.modbus_api.dto.ClimateSensorDto;
@@ -134,7 +135,14 @@ public class DeviceService {
 			ModbusRegisterMap.SENSOR_TC2
 		);
 
-		List<Integer> allRegs = new ArrayList<>();
+        List<Integer> statusBases = new ArrayList<>(sensorBases);
+        for (int base = 0x1200; base <= 0x1270; base += 0x10) statusBases.add(base);
+        statusBases.add(ModbusRegisterMap.SENSOR_RECUPERATOR_CARRIER);
+        List<Integer> allRegs = new ArrayList<>();
+        for (int base : statusBases) {
+            allRegs.add(base + ModbusRegisterMap.SENSOR_ALARM_MODE_OFFSET);
+            allRegs.add(base + ModbusRegisterMap.SENSOR_ALARM_TIME_OFFSET);
+        }
 		for (Integer base : sensorBases) {
 			allRegs.add(base + ModbusRegisterMap.TEMPERATURE_OFFSET);
 			allRegs.add(base + ModbusRegisterMap.HUMIDITY_OFFSET);
@@ -279,8 +287,8 @@ public class DeviceService {
 
 		// --- ДАВЛЕНИЕ (W)  ---
 		List<SensorData> wSensors = Arrays.asList(
-			createSensor("BP1", "Давление фильтра НВ", decodeFloat(data, ModbusRegisterMap.PRESSURE_FILTER_SUPPLY), "Pa"),
-			createSensor("BP2", "Давление фильтра ОВ", decodeFloat(data, ModbusRegisterMap.PRESSURE_FILTER_EXHAUST), "Pa")
+			createSensor("BP1", "Давление фильтра НВ", readDisplayPressure(data, ModbusRegisterMap.PRESSURE_FILTER_SUPPLY), "Pa"),
+			createSensor("BP2", "Давление фильтра ОВ", readDisplayPressure(data, ModbusRegisterMap.PRESSURE_FILTER_EXHAUST), "Pa")
 		);
 
 		
@@ -426,9 +434,9 @@ public class DeviceService {
 
 		// --- УСТАВКИ РЕКУПЕРАТОРА ---
 		RecuperatorSettingsDto recuperatorSettings = RecuperatorSettingsDto.builder()
-			.targetRpmMin(getValidScaled(data.get(REG_R_TARGET_RPM_MIN), 100.0))
-			.targetRpmMax(getValidScaled(data.get(REG_R_TARGET_RPM_MAX), 100.0))
-			.targetRpmStep(getValidScaled(data.get(REG_R_TARGET_RPM_STEP), 100.0))
+			.targetRpmMin(getValidScaled(data.get(REG_R_TARGET_RPM_MIN), ModbusRegisterMap.RECUPERATOR_SETTING_SCALE))
+			.targetRpmMax(getValidScaled(data.get(REG_R_TARGET_RPM_MAX), ModbusRegisterMap.RECUPERATOR_SETTING_SCALE))
+			.targetRpmStep(getValidScaled(data.get(REG_R_TARGET_RPM_STEP), ModbusRegisterMap.RECUPERATOR_SETTING_SCALE))
 			.trackingIntervalRecup(getValidOrNull(data.get(REG_R_TRACK_INTERVAL)))
 			.build();
 		
@@ -457,6 +465,7 @@ public class DeviceService {
 			.build();
 		
 		return DashboardData.builder()
+            .deviceStates(readDeviceStates(statusBases, data))
 			.climateSensors(climate)
 			.wSensors(wSensors)
 			.pressureSensors(pressureSensors)
@@ -513,6 +522,22 @@ public class DeviceService {
 
 
 
+    private List<DeviceStateDto> readDeviceStates(List<Integer> bases, Map<Integer, Integer> data) {
+        String[] ids = {"T1", "T2", "T3", "T4_1", "T4_2", "T5", "TH1", "TC1", "TH2", "TC2",
+            "BF11", "BF12", "BF21", "BF22", "BP1", "BP2", "BP10", "BP5", "TTR / BT6"};
+        List<DeviceStateDto> states = new ArrayList<>();
+        for (int i = 0; i < bases.size(); i++) {
+            int base = bases.get(i);
+            Integer mode = data.get(base + ModbusRegisterMap.SENSOR_ALARM_MODE_OFFSET);
+            Integer seconds = data.get(base + ModbusRegisterMap.SENSOR_ALARM_TIME_OFFSET);
+            boolean known = mode != null && mode >= 0 && mode <= 3;
+            states.add(new DeviceStateDto(ids[i], base,
+                known ? mode : null,
+                known && mode != 0 && seconds != null && seconds >= 0 && seconds <= 65535 ? seconds : null));
+        }
+        return states;
+    }
+
 	private ClimateSensorDto mapClimate(String id, String label, int register, Map<Integer, Integer> data) {
 		Integer temp = data.get(register + ModbusRegisterMap.TEMPERATURE_OFFSET);
 		Integer humid = data.get(register + ModbusRegisterMap.HUMIDITY_OFFSET);
@@ -535,14 +560,14 @@ public class DeviceService {
 	}
 
 	private FanFlowData mapFan(String id, String type, int pressureRegister, int fanBase, Double targetFlow, Map<Integer, Integer> data) {
-		Double pressure = decodeFloat(data, pressureRegister);
+		Double pressure = readDisplayPressure(data, pressureRegister);
 		Double airflow = decodeFloat(data, fanBase + ModbusRegisterMap.FAN_AIRFLOW_OFFSET);
 		Integer speedPercRaw = data.get(fanBase + ModbusRegisterMap.FAN_PERCENT_OFFSET);
 		
 		return FanFlowData.builder()
 			.type(type)
 			.pressure(pressure)
-			.speedPerc(roundToInteger(getValidScaledSigned(speedPercRaw, 100.0)))
+			.speedPerc(roundToInteger(getValidScaledSigned(speedPercRaw, ModbusRegisterMap.FAN_PERCENT_SCALE)))
 			.vm(roundToInteger(airflow))
 			.targetAirFlow(targetFlow)
 			.build();
@@ -566,6 +591,11 @@ public class DeviceService {
 		registers.add(lowRegister);
 		registers.add(lowRegister + 1);
 	}
+
+    private Double readDisplayPressure(Map<Integer, Integer> data, int register) {
+        Double value = decodeFloat(data, register);
+        return value == null ? null : value * ModbusRegisterMap.PRESSURE_DISPLAY_MULTIPLIER;
+    }
 
 	private Double decodeFloat(Map<Integer, Integer> data, int lowRegister) {
 		return ModbusRegisterMap.decodeFloat(data.get(lowRegister), data.get(lowRegister + 1));
