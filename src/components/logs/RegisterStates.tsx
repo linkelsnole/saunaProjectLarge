@@ -19,8 +19,8 @@ export function decodeRegisterStates(state: number | null, work: number | null):
  return rows;
 }
 export function RegisterStates({ state, workState, stale }: Props) {
- return <div className="mt-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-700">
-  <p className="mb-2 font-semibold">{stale ? 'Последние известные состояния · связь не подтверждена' : 'Состояния по регистрам контроллера'}</p>
-  <ul className="grid gap-2 sm:grid-cols-2">{decodeRegisterStates(state, workState).map(label => <li key={label}>{label}</li>)}</ul>
+ return <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-700">
+  {stale && <p className="mb-2 font-semibold">Последние известные состояния · связь не подтверждена</p>}
+  <ul className="flex flex-wrap gap-x-5 gap-y-1">{decodeRegisterStates(state, workState).map(label => <li key={label}>{label.includes('назначение неизвестно') ? 'Неизвестный сигнал контроллера' : label}</li>)}</ul>
  </div>;
 }

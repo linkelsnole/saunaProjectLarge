@@ -4,9 +4,9 @@ import { useDashboardData } from '@/api/useDashboard';
 import { alarmDuration, deviceDescriptions, deviceStates } from '@/schema/deviceLabels';
 
 const groups = [
-  { title: 'Воздух', code: 'T', description: 'Температура и влажность', icon: Thermometer, ids: ['T1', 'T2', 'T3', 'T4_1', 'T4_2', 'T5', 'TTR'] },
-  { title: 'Водяной контур', code: 'TH / TC', description: 'Нагрев и охлаждение', icon: Droplets, ids: ['TH1', 'TC1', 'TH2', 'TC2'] },
-  { title: 'Давление', code: 'M / PF / PR', description: 'Вентиляторы, фильтры, рекуператор', icon: Gauge, ids: ['BF11', 'BF12', 'BF21', 'BF22', 'BP1', 'BP2', 'BP10', 'BP5'] },
+  { title: 'Воздух', icon: Thermometer, ids: ['T1', 'T2', 'T3', 'T4_1', 'T4_2', 'T5', 'TTR'] },
+  { title: 'Водяной контур', icon: Droplets, ids: ['TH1', 'TC1', 'TH2', 'TC2'] },
+  { title: 'Давление', icon: Gauge, ids: ['BF11', 'BF12', 'BF21', 'BF22', 'BP1', 'BP2', 'BP10', 'BP5'] },
 ];
 export function DeviceStatePanel() {
   const { data, error, isLoading } = useDashboardData();
@@ -16,7 +16,7 @@ export function DeviceStatePanel() {
   const abnormal = devices.filter(d => mode(d.alarmMode) && d.alarmMode !== 0);
   const unknown = devices.length - normal - abnormal.length;
   const known = new Set(groups.flatMap(g => g.ids));
-  const sections = [...groups, { title: 'Другие датчики', code: '', description: 'Состояние оборудования', icon: Gauge, ids: devices.filter(d => !known.has(d.id)).map(d => d.id) }];
+  const sections = [...groups, { title: 'Другие датчики', icon: Gauge, ids: devices.filter(d => !known.has(d.id)).map(d => d.id) }];
   return <section aria-label="Состояние датчиков" className="@container rounded-[24px] border border-slate-200/80 bg-white p-4 shadow-[0_8px_30px_-22px_rgba(15,23,42,.25)] sm:p-5">
     <header className="mb-5">
       <h3 className="text-xl font-semibold tracking-tight text-slate-950">Состояние датчиков</h3>
@@ -25,9 +25,9 @@ export function DeviceStatePanel() {
     {error && <p role="alert" className="mb-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">Нет связи. Состояния датчиков не подтверждены.</p>}
     <div className="grid min-w-0 grid-cols-1 gap-3 @[660px]:grid-cols-3">
       {sections.filter(group => group.ids.some(id => devices.some(d => d.id === id))).map(group => <section key={group.title} aria-label={group.title} className="min-w-0 rounded-[22px] border border-slate-100 bg-gradient-to-b from-slate-50/80 to-white p-3">
-        <div className="mb-4 flex items-center gap-3 px-1 pt-1">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white bg-white text-slate-500 shadow-sm"><group.icon size={20} strokeWidth={1.6} /></span>
-          <div className="min-w-0"><p className="text-[10px] font-semibold tracking-wider text-slate-400">{group.code}</p><h4 className="text-sm font-semibold text-slate-900">{group.title}</h4><p className="mt-0.5 text-[10px] leading-4 text-slate-500">{group.description}</p></div>
+        <div className="mb-3 flex items-center gap-2 px-1">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-2xl border border-white bg-white text-slate-500 shadow-sm"><group.icon size={17} strokeWidth={1.6} /></span>
+          <h4 className="min-w-0 text-sm font-semibold text-slate-900">{group.title}</h4>
         </div>
         <div className="space-y-2">{group.ids.map(id => {
           const device = devices.find(d => d.id === id);
