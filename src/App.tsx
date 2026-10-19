@@ -1,3 +1,4 @@
+import { selectDevice } from '@/schema/deviceIdentity';
 import { TestingWorkspace } from "@/components/testing/TestingWorkspace";
 import { PanelUpdateNotice } from "@/components/updates/PanelUpdateNotice";
 import { useRef, useCallback, useState } from "react";
@@ -152,7 +153,7 @@ const MainDashboard = () => {
 						<Card className="h-full min-h-0 flex flex-col rounded-[24px] border border-slate-200 bg-white">
 							<CardContent className="flex flex-1 flex-col min-h-0 p-4 lg:p-5 xl:p-6">
 								<SettingsPanelBoundsProvider>
-									<SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} isAdmin={isAdmin} canSeeConfigurator={canSeeConfigurator} compact={false} />
+									<SettingsTabs activeTab={activeTab} onTabChange={tab => { selectDevice(null); setActiveTab(tab); }} isAdmin={isAdmin} canSeeConfigurator={canSeeConfigurator} compact={false} />
 								</SettingsPanelBoundsProvider>
 							</CardContent>
 						</Card>
@@ -169,7 +170,7 @@ const MainDashboard = () => {
 					</SheetHeader>
 					<div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4 pb-8">
 						<SettingsPanelBoundsProvider>
-							<SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} isAdmin={isAdmin} canSeeConfigurator={canSeeConfigurator} compact />
+							<SettingsTabs activeTab={activeTab} onTabChange={tab => { selectDevice(null); setActiveTab(tab); }} isAdmin={isAdmin} canSeeConfigurator={canSeeConfigurator} compact />
 						</SettingsPanelBoundsProvider>
 					</div>
 				</SheetContent>

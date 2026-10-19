@@ -1,3 +1,4 @@
+import { deviceName, displayDeviceText, selectDevice } from '@/schema/deviceIdentity';
 import { Thermometer, Droplets, Gauge, ChevronDown, AlertCircle } from 'lucide-react';
 import { useDashboardData } from '@/api/useDashboard';
 import { alarmDuration, deviceDescriptions, deviceStates } from '@/schema/deviceLabels';
@@ -5,7 +6,7 @@ import { alarmDuration, deviceDescriptions, deviceStates } from '@/schema/device
 const groups = [
   { title: 'Воздух', code: 'T', description: 'Температура и влажность', icon: Thermometer, ids: ['T1', 'T2', 'T3', 'T4_1', 'T4_2', 'T5', 'TTR'] },
   { title: 'Водяной контур', code: 'TH / TC', description: 'Нагрев и охлаждение', icon: Droplets, ids: ['TH1', 'TC1', 'TH2', 'TC2'] },
-  { title: 'Давление', code: 'BF / BP', description: 'Вентиляторы, фильтры, рекуператор', icon: Gauge, ids: ['BF11', 'BF12', 'BF21', 'BF22', 'BP1', 'BP2', 'BP10', 'BP5'] },
+  { title: 'Давление', code: 'M / PF / PR', description: 'Вентиляторы, фильтры, рекуператор', icon: Gauge, ids: ['BF11', 'BF12', 'BF21', 'BF22', 'BP1', 'BP2', 'BP10', 'BP5'] },
 ];
 export function DeviceStatePanel() {
   const { data, error, isLoading } = useDashboardData();
@@ -35,20 +36,20 @@ export function DeviceStatePanel() {
           const active = state && device.alarmMode !== 0;
           const duration = active ? alarmDuration(device.alarmSeconds) : '';
           return <details key={id} className={`group rounded-2xl border shadow-[0_2px_8px_-6px_rgba(15,23,42,.2)] transition-colors duration-200 motion-reduce:transition-none ${state?.row ?? 'border-slate-200 bg-slate-50 text-slate-500'}`}>
-            <summary className="flex min-h-12 cursor-pointer list-none flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl px-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-slate-400 [&::-webkit-details-marker]:hidden">
+            <summary onClick={() => selectDevice(id)} className="flex min-h-12 cursor-pointer list-none flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl px-3 py-3 outline-none focus-visible:ring-2 focus-visible:ring-slate-400 [&::-webkit-details-marker]:hidden">
               <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${active ? state.dot + ' text-white' : 'bg-slate-50'}`} aria-hidden="true">{active ? <AlertCircle size={15} /> : <span className={`h-2.5 w-2.5 rounded-full ${state?.dot ?? 'bg-slate-300'}`} />}</span>
-              <span className="text-xs font-semibold">{id}</span>
+              <span className="text-xs font-semibold">{deviceName(id)}</span>
               <span className={`ml-auto text-[10px] ${active ? 'font-medium' : 'text-slate-400'}`}>{state?.label ?? 'Нет данных'}{duration && <span className="ml-1 tabular-nums">{duration}</span>}</span>
               <ChevronDown size={12} className="shrink-0 text-slate-400 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
             </summary>
-            <div className="border-t border-current/10 px-3 py-3 text-xs leading-5"><p>{deviceDescriptions[id] ?? id}</p>{duration && <p className="mt-1">Продолжительность: {duration} ({device.alarmSeconds} с)</p>}</div>
+            <div className="border-t border-current/10 px-3 py-3 text-xs leading-5"><p>{displayDeviceText(deviceDescriptions[id] ?? id)}</p>{duration && <p className="mt-1">Продолжительность: {duration} ({device.alarmSeconds} с)</p>}</div>
           </details>;
         })}</div>
       </section>)}
     </div>
     {abnormal.length > 0 && <div className="mt-4 space-y-2" aria-label="Активные отклонения">{abnormal.map(device => {
       const state = mode(device.alarmMode)!;
-      return <div key={device.id} className={`flex flex-wrap items-center gap-2 rounded-2xl border px-4 py-3 text-xs ${state.row}`}><AlertCircle size={16} /><strong>{device.id}</strong><span>· {state.label}</span><span className="ml-auto tabular-nums">{alarmDuration(device.alarmSeconds)}</span></div>;
+      return <button type="button" onClick={() => selectDevice(device.id)} key={device.id} className={`flex w-full flex-wrap items-center gap-2 rounded-2xl border px-4 py-3 text-left text-xs ${state.row}`}><AlertCircle size={16} /><strong>{deviceName(device.id)}</strong><span>· {state.label}</span><span className="ml-auto tabular-nums">{alarmDuration(device.alarmSeconds)}</span></button>;
     })}</div>}
   </section>;
 }

@@ -1,3 +1,4 @@
+import { displayDeviceText } from '@/schema/deviceIdentity';
 import type { SystemEvent } from './typesApi';
 import { fetchWithAuth } from './authApi';
 export type EventSeverity = 'LOG' | 'INFO' | 'WARNING' | 'ERROR' | 'FAILURE' | 'CRASH' | 'UNKNOWN';
@@ -15,7 +16,7 @@ export function deviceEventPhase(event: SystemEvent): DeviceEventPhase | null {
 }
 export const severityOfEvent = (event: SystemEvent) => eventSeverity(event.deviceError?.level ?? event.level);
 export const eventTimestamp = (event: SystemEvent) => eventTime(event.deviceError?.timeStamp) ?? eventTime(event.arrivalTime?.timeInMS);
-export const eventMessage = (event: SystemEvent) => event.deviceError?.mes?.trim() || event.deviceError?.comment?.trim() || event.comment?.trim() || event.deviceError?.title?.trim() || event.title?.trim() || '';
+export const eventMessage = (event: SystemEvent) => displayDeviceText(event.deviceError?.mes?.trim() || event.deviceError?.comment?.trim() || event.comment?.trim() || event.deviceError?.title?.trim() || event.title?.trim() || '');
 export const isProblem = (event: SystemEvent) => deviceEventPhase(event) !== 'recovered' && (event.deviceError != null || ['WARNING', 'ERROR', 'FAILURE', 'CRASH', 'UNKNOWN'].includes(severityOfEvent(event)));
 export function eventSource(event: SystemEvent): string {
     return [...new Set([event.deviceError?.devName, event.devName, event.equipName, event.logUnit != null ? `#${event.logUnit}` : null].filter(Boolean))].join(' / ');
@@ -54,7 +55,7 @@ export function filterEvents<T extends SystemEvent>(events: T[], filter: string,
     const needle = search.trim().toLocaleLowerCase();
     return events.filter(e => (filter === 'ALL' || (filter === 'PROBLEMS' ? isProblem(e) : filter === 'RECOVERED' ? deviceEventPhase(e) === 'recovered' : severityOfEvent(e) === filter))
         && (!source || eventSource(e) === source)
-        && (!needle || [e.title, e.comment, e.deviceError?.mes, e.deviceError?.devName, e.deviceError?.devEvtRegName, e.deviceError?.devEvtRegValue, e.devName, e.equipName, e.regNum, e.regNum != null ? `0x${e.regNum.toString(16)}` : '', e.packedValues].join(' ').toLocaleLowerCase().includes(needle)));
+        && (!needle || [e.title, e.comment, e.deviceError?.mes, e.deviceError?.devName, e.deviceError?.devEvtRegName, e.deviceError?.devEvtRegValue, e.devName, e.equipName, e.regNum, e.regNum != null ? `0x${e.regNum.toString(16)}` : '', e.packedValues].map(value => displayDeviceText(String(value ?? ''))).join(' ').toLocaleLowerCase().includes(needle)));
 }
 export type Diagnostics = {
     logName: string;
@@ -69,10 +70,10 @@ export function diagnosticFlags(data: Diagnostics): string[] {
     const result: string[] = [];
     const add = (word: number | null, mask: number, key: string) => { if (word != null && (word & mask) !== 0)
         result.push(key); };
-    add(data.state, 1 << 8, 'stateError');
+    add(data.state, (1 << 8) | (1 << 2), 'stateError');
     add(data.state, 1 << 9, 'stateFailure');
     add(data.state, 1 << 10, 'stateFreeze');
-    add(data.state, 1 << 11, 'stateCrash');
+    add(data.state, (1 << 11) | (1 << 1), 'stateCrash');
     add(data.workState, 1 << 6, 'eventFreeze');
     add(data.workState, 1 << 7, 'eventError');
     add(data.workState, 1 << 8, 'eventFailure');

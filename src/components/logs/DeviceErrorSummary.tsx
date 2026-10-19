@@ -1,3 +1,4 @@
+import { displayDeviceText, selectDevice } from '@/schema/deviceIdentity';
 import { AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { SystemEvent } from '@/api/typesApi';
@@ -14,7 +15,7 @@ export function DeviceErrorSummary({ events, stale = false }: { events: SystemEv
         </div></div>
         <ul className="mt-2 max-h-36 space-y-2 overflow-y-auto text-xs">
             {unresolved.map((event, index) => <li key={`${event.oid ?? ''}:${index}`} className="break-words [overflow-wrap:anywhere]">
-                <strong>{eventSource(event)}</strong>
+                <button className="text-left font-semibold underline underline-offset-2" onClick={() => selectDevice(event.deviceError?.devName || event.devName || null)}>{displayDeviceText(eventSource(event))}</button>
                 {event.deviceError?.devEvtRegName && <> · {event.deviceError.devEvtRegName}</>}
                 <p className="mt-0.5 whitespace-pre-wrap">{eventMessage(event)}</p>
             </li>)}

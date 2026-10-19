@@ -11,7 +11,7 @@ export const deviceDescriptions: Record<string, string> = {
   BF11: 'Давление · вентилятор M1_1', BF12: 'Давление · вентилятор M1_2',
   BF21: 'Давление · вентилятор M2_1', BF22: 'Давление · вентилятор M2_2',
   BP1: 'Давление · фильтр PF1', BP2: 'Давление · фильтр PF2',
-  BP5: 'Давление рекуператора · BP5', BP10: 'Давление рекуператора · BP10',
+  BP5: 'Давление рекуператора · ОВ–ВВ', BP10: 'Давление рекуператора · НВ–ОВ',
 };
 export const deviceStates = [
   { label: 'Норма', dot: 'bg-emerald-500', row: 'border-slate-100 bg-white text-slate-800', ink: '#059669', background: '#ffffff' },

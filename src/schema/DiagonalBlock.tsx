@@ -36,11 +36,14 @@ export function DiagonalBlock({ size, x = 0, y = 0, isOpen = null }: DiagonalBlo
 			}}
 		>
 			<svg
+                aria-label={isOpen == null ? "Положение неизвестно" : isOpen ? "Открыта" : "Закрыта"}
 				width={size}
 				height={size}
 				style={{ position: 'absolute', top: 0, left: 0 }}
 			>
 				<line
+                    className="transition-transform duration-300 motion-reduce:transition-none"
+                    style={{ transformOrigin: "center", transformBox: "view-box", transform: isOpen === false ? "rotate(45deg)" : "rotate(0deg)", opacity: isOpen == null ? 0 : 1 }}
 					x1="0"
 					y1={size}
 					x2={size}
@@ -50,8 +53,10 @@ export function DiagonalBlock({ size, x = 0, y = 0, isOpen = null }: DiagonalBlo
 					strokeLinecap="round"
 				/>
 			</svg>
+            {isOpen == null && <span className="absolute left-1 top-0 text-xs text-slate-400" aria-hidden="true">?</span>}
 
 			<div
+                className="transition-colors duration-300 motion-reduce:transition-none"
 				style={{
 					width: circleSize,
 					height: circleSize,
@@ -61,7 +66,7 @@ export function DiagonalBlock({ size, x = 0, y = 0, isOpen = null }: DiagonalBlo
 					border: indicatorBorder,
 					outline: '2px solid white',
 					zIndex: 2, 
-					transition: 'all 0.3s ease',
+
 				}}
 			/>
 		</div>

@@ -1,3 +1,4 @@
+import { DeviceHighlights } from './DeviceHighlights';
 import { climateDeviceNames } from './deviceLabels';
 import { zoneTarget } from "./zoneTarget";
 import { isAggregateAlarm } from "./aggregateState";
@@ -242,7 +243,7 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 	};
 
 	const formatPressure = (id: string): string => {
-		if (diagnostics) return id === 'BP1' ? 'PF1 · BP1' : id === 'BP2' ? 'PF2 · BP2' : id;
+		if (diagnostics) return id === 'BP1' ? 'PF1' : id === 'BP2' ? 'PF2' : id;
 		const sensor = getWSensor(id);
 		const value = sensor?.value;
 		return value != null ? `${Math.round(parseFloat(value))} ${t('units.pa')}` : `-- ${t('units.pa')}`;
@@ -276,7 +277,7 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 	};
 
 	const formatFanLabel = (id: string): string => {
-		if (diagnostics) return ({ 'Вентилятор 1': 'M1_1\nBF11', 'Вентилятор 2': 'M1_2\nBF12', 'Вентилятор 3': 'M2_1\nBF21', 'Вентилятор 4': 'M2_2\nBF22' } as Record<string, string>)[id] ?? id;
+		if (diagnostics) return ({ 'Вентилятор 1': 'M1_1', 'Вентилятор 2': 'M1_2', 'Вентилятор 3': 'M2_1', 'Вентилятор 4': 'M2_2' } as Record<string, string>)[id] ?? id;
 		const fan = getFan(id);
 		const pressure = fan?.pressure;
 		const speed = fan?.speedPerc;
@@ -481,7 +482,7 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 			  <StatusLine
 				  x={165}
 				  y={600}
-					  text={[data?.recuperatorStatus?.stateName, data?.ventilationModeName].filter(Boolean).join(' · ') || '—'}
+					  text={diagnostics ? 'S1' : [data?.recuperatorStatus?.stateName, data?.ventilationModeName].filter(Boolean).join(' · ') || '—'}
 			  />
 		  </Html>
 		  <Pipe points={[160, 500, 160, 50]} type="hot" />
@@ -506,7 +507,7 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 			x={90}
 			y={435}
 			text="ΔP"
-			label={`${formatPressureSensor('BP5')}`}
+			label={diagnostics ? 'PR1\nPR2' : `${formatPressureSensor('BP5')}`}
 			labelWidth={70}
 			labelOffsetX={-15}
 			labelOffsetY={-5}
@@ -667,7 +668,7 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 			
 			{/*MG2 MG1 - задвижки притока и вытяжки*/}
 			<Group y={640}>
-                {diagnostics && <><Text x={425} y={14} text="D1" fontSize={13} fill="#334155" /><Text x={112} y={14} text="D2" fontSize={13} fill="#334155" /></>}
+                {diagnostics && <><Text x={425} y={14} text="D1" fontSize={13} fill="#334155" /><Text x={112} y={14} text="D2" fontSize={13} fill="#334155" /><Text x={196} y={20} text="B1" fontSize={13} fill="#334155" /></>}
 				<Html>
 					<DiagonalBlock 
 						size={45}
@@ -746,6 +747,7 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 
 
 			<Group x={120} y={410}>
+                {diagnostics && recuperatorType === 1 && <Text x={100} y={59} text="Насос" fontSize={11} fill="#334155" />}
 				{recuperatorType === 1 ? (
 					<>
 						<Html>
@@ -775,11 +777,11 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 							/>
 						</Html>
 						<Html>
-							<FanBottomLabel x={90} y={-32} text={formatRecupTempBt6()} />
+							<FanBottomLabel x={90} y={-32} text={diagnostics ? 'TTR' : formatRecupTempBt6()} />
 							<TemperatureBlockIcon width={40} height={24} x={120} y={0} rotation={90} />
 						</Html>
 						<Html>
-							<FanBottomLabel x={173} y={-15} text={formatRecupFormula()} />
+							<FanBottomLabel x={173} y={-15} text={diagnostics ? 'Вентиль' : formatRecupFormula()} />
 							<CanvasIcon src="/iconc.png" x={190} y={18} size={50} />
 						</Html>
 					</>
@@ -834,7 +836,8 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 			
 
 			  </Group>
-	          </Layer>
+	          {diagnostics && <Group y={SCHEMA_TOP_INSET}><DeviceHighlights /></Group>}
+                  </Layer>
         </Stage>
 		</div>
       </div>

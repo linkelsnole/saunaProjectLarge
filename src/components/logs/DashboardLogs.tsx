@@ -121,7 +121,7 @@ const DashboardLogs = () => {
 					<span className="text-slate-300">•</span>
 					<span>{t(`dashboardLogs.actions.types.${entry.actionType.toLowerCase()}`, { defaultValue: entry.actionType })}</span>
 				</div>
-				<ActionDetails details={entry.details} success={entry.success} />
+				<ActionDetails action={entry.action} details={entry.details} success={entry.success} />
 			</div>
 			<span
 				className={cn(

@@ -1,3 +1,4 @@
+import { deviceName, displayDeviceText, selectDevice } from '@/schema/deviceIdentity';
 import { useMemo, useState } from 'react';
 import { Activity, AlertCircle, AlertTriangle, Clock, Cpu, Download, Info, RefreshCw, Search, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -59,7 +60,7 @@ const SystemEventsJournal = ({ mode = 'errors' }: {
   <div className="ml-auto flex gap-2"><button className={toolbarButton} disabled={!filtered.length || query.isPending} onClick={download} aria-label={tr('export')} title={tr('export')}><Download size={17}/><span>{tr('exportButton')}</span></button><button className={`${toolbarButton} w-10 px-0`} disabled={query.isFetching} onClick={() => void query.refetch()} aria-label={tr('refresh')}><RefreshCw size={18} className={query.isFetching ? 'animate-spin motion-reduce:animate-none' : ''}/></button></div></div>
   <div className="mt-5 flex flex-wrap gap-1 rounded-xl bg-slate-50 p-1" role="group" aria-label={tr('period')}>{TIME_OPTIONS.map(m => <button key={m} className={cn('min-h-9 flex-1 whitespace-nowrap rounded-lg px-2.5 py-2 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 motion-reduce:transition-none', minutes === m ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-white')} aria-pressed={minutes === m} onClick={() => { setMinutes(m); setSource(''); resetPage(); }}>{windowLabel(m)}</button>)}</div>
   <label className="relative mt-3 block"><Search size={17} className="pointer-events-none absolute left-3 top-3 text-slate-400"/><input className={`${input} w-full pl-10`} value={search} placeholder={tr('search')} aria-label={tr('search')} onChange={e => { setSearch(e.target.value); resetPage(); }}/></label>
-  <div className="mt-2.5 grid grid-cols-1 gap-2 @[420px]:grid-cols-2"><select aria-label={tr('level')} className={`${input} bg-slate-50/70`} value={filter} onChange={e => { setFilter(e.target.value); resetPage(); }}>{FILTER_OPTIONS.map(value => <option value={value} key={value}>{tr(`levels.${value}`)}{counts[value] != null ? ` · ${counts[value]}` : ''}</option>)}</select><select aria-label={tr('source')} className={`${input} bg-slate-50/70`} value={source} onChange={e => { setSource(e.target.value); resetPage(); }}><option value="">{tr('allSources')}</option>{source && !sources.includes(source) && <option value={source}>{source}</option>}{sources.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+  <div className="mt-2.5 grid grid-cols-1 gap-2 @[420px]:grid-cols-2"><select aria-label={tr('level')} className={`${input} bg-slate-50/70`} value={filter} onChange={e => { setFilter(e.target.value); resetPage(); }}>{FILTER_OPTIONS.map(value => <option value={value} key={value}>{tr(`levels.${value}`)}{counts[value] != null ? ` · ${counts[value]}` : ''}</option>)}</select><select aria-label={tr('source')} className={`${input} bg-slate-50/70`} value={source} onChange={e => { setSource(e.target.value); resetPage(); }}><option value="">{tr('allSources')}</option>{source && !sources.includes(source) && <option value={source}>{displayDeviceText(source)}</option>}{sources.map(s => <option key={s} value={s}>{displayDeviceText(s)}</option>)}</select></div>
   <p className="mt-3 text-[11px] leading-relaxed text-slate-400">{tr('scopeHint')}{query.dataUpdatedAt > 0 && <> · {tr('lastRead')} {time(query.dataUpdatedAt)}</>}</p>
   {query.isError && <div role="alert" className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{tr(query.data ? 'staleJournal' : 'loadError')}</div>}
   <div className="mt-3"><DeviceErrorSummary events={events} stale={query.isError} /></div>
@@ -71,17 +72,17 @@ const SystemEventsJournal = ({ mode = 'errors' }: {
             const arrival = eventTimestamp(event);
             const end = eventTime(event.endTime?.timeInMS);
             return <details key={event.key} className={cn('group overflow-hidden rounded-2xl border border-slate-200 border-l-[3px] bg-white transition-colors duration-150 animate-in fade-in fill-mode-backwards duration-200 motion-reduce:animate-none motion-reduce:transition-none', config.edge, config.surface)} style={{ animationDelay: `${Math.min(index, 6) * 20}ms` }}>
-     <summary className="flex cursor-pointer list-none items-start gap-3 p-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-400 [&::-webkit-details-marker]:hidden">
+     <summary onClick={() => selectDevice(event.deviceError?.devName || event.devName || null)} className="flex cursor-pointer list-none items-start gap-3 p-3.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-400 [&::-webkit-details-marker]:hidden">
       <span className={cn('mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-white shadow-sm', config.tile)}><Icon size={20} strokeWidth={1.8}/></span>
       <span className="min-w-0 flex-1"><span className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2"><span className={cn('inline-flex rounded-lg px-2 py-1 text-[11px] font-medium', config.badge)}>{phase ? tr(`devicePhases.${phase}`) : tr(`levels.${event.severity}`)}{event.severity === 'UNKNOWN' && event.level != null ? ` (${event.level})` : ''}</span><span className="inline-flex items-center gap-1.5 text-[10px] tabular-nums text-slate-500"><Clock size={12} className="shrink-0"/>{time(arrival)}</span></span>
        <span className="mt-2 block whitespace-pre-wrap break-words text-sm font-medium leading-relaxed text-slate-900 [overflow-wrap:anywhere]">{eventMessage(event) || tr('noDescription')}</span>
-       <span className="mt-1.5 block break-words text-[11px] leading-relaxed text-slate-500">{eventSource(event) || tr('unknownSource')} · {event.type != null ? t(`eventsJournal.types.t${event.type}`, { defaultValue: `${tr('type')} ${event.type}` }) : tr('unknownType')}</span>
+       <span className="mt-1.5 block break-words text-[11px] leading-relaxed text-slate-500">{displayDeviceText(eventSource(event)) || tr('unknownSource')} · {event.type != null ? t(`eventsJournal.types.t${event.type}`, { defaultValue: `${tr('type')} ${event.type}` }) : tr('unknownType')}</span>
       </span><span className="mt-1 shrink-0 text-slate-500"><ChevronDown size={17} className="transition-transform duration-150 group-open:rotate-180 motion-reduce:transition-none"/><span className="sr-only">{tr('details')}</span></span>
      </summary>
      <div className="mx-3.5 mb-3.5 rounded-xl border border-slate-100 bg-white p-4 text-xs leading-relaxed">
 <dl className="grid grid-cols-1 gap-x-5 gap-y-1 @[440px]:grid-cols-[auto_minmax(0,1fr)] @[440px]:gap-y-2 [&_dt]:text-slate-400 [&_dd]:mb-2 @[440px]:[&_dd]:mb-0 [&_dd]:text-slate-700 break-words [overflow-wrap:anywhere]">
        {event.deviceError && <>
-        <dt>{tr('device')}</dt><dd>{event.deviceError.devName || tr('unknownSource')}</dd>
+        <dt>{tr('device')}</dt><dd>{deviceName(event.deviceError.devName || '') || tr('unknownSource')}</dd>
         <dt>{tr('level')}</dt><dd>{tr(`levels.${event.severity}`)}</dd>
         <dt>{tr('deviceRegister')}</dt><dd>{event.deviceError.devEvtRegName || '—'}</dd>
         <dt>{tr('value')}</dt><dd>{event.deviceError.devEvtRegValue ?? '—'}</dd>
@@ -92,7 +93,7 @@ const SystemEventsJournal = ({ mode = 'errors' }: {
        <dt>{tr('register')}</dt><dd>{event.regNum != null && event.regNum >= 0 ? `0x${event.regNum.toString(16).toUpperCase()} (${event.regNum})` : '—'}{event.bitNum != null && event.bitNum >= 0 ? ` [${event.bitNum}]` : ''}</dd>
        <dt>{tr(event.type === 16 ? 'reactionCode' : 'value')}</dt><dd>{event.value ?? '—'}</dd><dt>{tr(event.type === 16 ? 'sourceCode' : 'previousValue')}</dt><dd>{event.prevValue ?? '—'}</dd>
        <dt>{tr('viewLevel')}</dt><dd>{event.viewLevel ?? '—'}</dd><dt>{tr('secondRegister')}</dt><dd>{event.secondRegNum ?? '—'} / {event.secondRegValue ?? '—'}</dd>
-       {event.title && <><dt>{tr('originalTitle')}</dt><dd className="whitespace-pre-wrap">{event.title}</dd></>}{event.packedValues && <><dt>{tr('packedValues')}</dt><dd className="whitespace-pre-wrap font-mono">{event.packedValues}</dd></>}
+       {event.title && <><dt>{tr('originalTitle')}</dt><dd className="whitespace-pre-wrap">{displayDeviceText(event.title)}</dd></>}{event.packedValues && <><dt>{tr('packedValues')}</dt><dd className="whitespace-pre-wrap font-mono">{event.packedValues}</dd></>}
       </dl><p className="mt-3 text-[11px] leading-relaxed text-slate-400">{tr('reactionHint')}</p></div>
     </details>;
         })}
