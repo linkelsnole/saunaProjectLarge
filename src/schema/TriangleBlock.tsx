@@ -1,4 +1,5 @@
 interface TriangleBlockProps {
+ tone?: string
 	size: number
 	x?: number
 	y?: number
@@ -16,6 +17,7 @@ interface TriangleBlockProps {
 }
 
 export function TriangleBlock({
+ tone,
 	size,
 	x = 0,
 	y = 0,
@@ -37,7 +39,7 @@ export function TriangleBlock({
 		width: labelWidth,
 		fontSize: labelFontSize,
 		lineHeight: `${labelLineHeight}px`,
-		color: labelColor,
+		color: tone ?? labelColor,
 		fontFamily: 'ui-monospace, SFMono-Regular, Menlo, sans-serif',
 		fontWeight: 400,
 		whiteSpace: 'pre-line',
@@ -102,7 +104,7 @@ export function TriangleBlock({
 					width: size,
 					height: size,
 					borderRadius: '50%',
-					backgroundColor: '#FFFFFF',
+					backgroundColor: tone ? (tone === '#dc2626' ? '#fff1f2' : tone === '#d97706' ? '#fffbeb' : '#ecfdf5') : '#FFFFFF',
 					border: '1px solid #E2E8F0',
 					boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04)',
 					display: 'flex',
@@ -116,8 +118,8 @@ export function TriangleBlock({
 					width={size * 0.88} 
 					height={size * 0.88}
 					viewBox="0 0 24 24"
-					fill="#F1F5F9"    
-					stroke="#334155"  
+					fill={tone ? (tone === '#dc2626' ? '#fff1f2' : tone === '#d97706' ? '#fffbeb' : '#ecfdf5') : "#F1F5F9"}
+					stroke={tone ?? "#334155"}
 					strokeWidth="1.4"   
 					strokeLinejoin="round" 
 					strokeLinecap="round"

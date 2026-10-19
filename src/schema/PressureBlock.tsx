@@ -1,4 +1,5 @@
 interface PressureBlockProps {
+ tone?: string
 	width: number
 	height: number
 	text: string
@@ -14,6 +15,7 @@ interface PressureBlockProps {
 }
 
 export function PressureBlock({
+ tone,
 	width,
 	height,
 	text,
@@ -51,7 +53,7 @@ export function PressureBlock({
 					marginRight: gap,
 					fontSize: labelFontSize,
 					lineHeight: '1.2',
-					color: labelColor,
+					color: tone ?? labelColor,
 					fontFamily: 'ui-monospace, SFMono-Regular, Menlo, sans-serif',
 					fontWeight: 400,
 					textAlign: labelAlign,
@@ -69,7 +71,7 @@ export function PressureBlock({
 				style={{
 					width: width,
 					height: height,
-					backgroundColor: '#FFFFFF',
+					backgroundColor: tone ? (tone === '#dc2626' ? '#fff1f2' : tone === '#d97706' ? '#fffbeb' : '#ecfdf5') : '#FFFFFF',
 					border: '1px solid #E2E8F0',
 					borderRadius: '14px', 
 					boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
@@ -86,7 +88,7 @@ export function PressureBlock({
 					height={height * 0.9}
 					viewBox="0 0 24 24"
 					fill="none"
-					stroke="#0F172A" // Темно-синий/черный
+					stroke={tone ?? "#0F172A"} // Темно-синий/черный
 					strokeWidth="2"
 					strokeLinecap="round" 
 					strokeLinejoin="round" // ВАЖНО: Скругляет острые углы зигзага

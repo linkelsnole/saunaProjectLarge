@@ -1,4 +1,5 @@
 interface TemperatureBlockIconProps {
+ tone?: string
 	width: number
 	height: number
 	x?: number
@@ -7,6 +8,7 @@ interface TemperatureBlockIconProps {
 }
 
 export function TemperatureBlockIcon({
+ tone,
 	width,
 	height,
 	x = 0,
@@ -40,8 +42,8 @@ export function TemperatureBlockIcon({
 			>
 				<polygon
 					points={`5,0 ${triangleSize},${triangleSize / 2} 5,${triangleSize}`}
-					fill="#000"
-					stroke="#000"
+					fill={tone ?? "#000"}
+					stroke={tone ?? "#000"}
 					strokeWidth="1"
 				/>
 				<line
@@ -49,7 +51,7 @@ export function TemperatureBlockIcon({
 					y1={triangleSize / 2}
 					x2={triangleSize + lineLength}
 					y2={triangleSize / 2}
-					stroke="#000"
+					stroke={tone ?? "#000"}
 					strokeWidth="2"
 				/>
 			</svg>

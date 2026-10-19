@@ -1,6 +1,7 @@
 import { Group, Circle, Text } from 'react-konva'
 
 interface DeltaPBlockProps {
+ tone?: string
 	x: number
 	y: number
 	radius?: number
@@ -26,6 +27,7 @@ interface DeltaPBlockProps {
 }
 
 export function DeltaPBlock({
+ tone,
 	x,
 	y,
 	radius = 18,
@@ -57,9 +59,9 @@ export function DeltaPBlock({
 				x={0}
 				y={0}
 				radius={radius}
-				stroke={strokeColor}
+				stroke={tone ?? strokeColor}
 				strokeWidth={strokeWidth}
-				fill={fillColor}
+				fill={tone ? (tone === '#dc2626' ? '#fff1f2' : tone === '#d97706' ? '#fffbeb' : '#ecfdf5') : fillColor}
 			/>
 			<Text
 				text={text}
@@ -70,7 +72,7 @@ export function DeltaPBlock({
 				align="center"
 				verticalAlign="middle"
 				fontSize={fontSize}
-				fill={strokeColor}
+				fill={tone ?? strokeColor}
 			/>
 
 			{label ? (
@@ -82,7 +84,7 @@ export function DeltaPBlock({
 					align={effectiveLabelAlign}
 					fontSize={labelFontSize}
 					lineHeight={labelLineHeight / labelFontSize}
-					fill={labelColor}
+					fill={tone ?? labelColor}
 				/>
 			) : null}
 		</Group>

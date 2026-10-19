@@ -1,14 +1,15 @@
 interface DiagonalBlockProps {
+ tone?: string
 	size: number
 	x?: number
 	y?: number
 	isOpen?: boolean | null
 }
 
-export function DiagonalBlock({ size, x = 0, y = 0, isOpen = null }: DiagonalBlockProps) {
+export function DiagonalBlock({ tone, size, x = 0, y = 0, isOpen = null }: DiagonalBlockProps) {
 	const circleSize = size * 0.3
 
-	const indicatorColor = isOpen === true ? '#10B981' : '#94a3b8'
+	const indicatorColor = tone ?? (isOpen === true ? '#10B981' : '#94a3b8')
 
 	const indicatorShadow = isOpen === true
 		? '0 0 10px 2px rgba(16, 185, 129, 0.4), inset 0 2px 4px rgba(255,255,255,0.4)'
@@ -24,7 +25,7 @@ export function DiagonalBlock({ size, x = 0, y = 0, isOpen = null }: DiagonalBlo
 				top: y,
 				width: size,
 				height: size,
-				backgroundColor: '#FFFFFF',
+				backgroundColor: tone ? (tone === '#dc2626' ? '#fff1f2' : tone === '#d97706' ? '#fffbeb' : '#ecfdf5') : '#FFFFFF',
 				border: '1px solid #E2E8F0', 
 				borderRadius: '14px', 
 				boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04)',

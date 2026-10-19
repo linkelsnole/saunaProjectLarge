@@ -1,4 +1,5 @@
 interface TemperatureBlockProps {
+ tone?: string
   width: number
   height: number
   text: string
@@ -16,6 +17,7 @@ interface TemperatureBlockProps {
 }
 
 export function TemperatureBlock({
+ tone,
   width,
   height,
   text,
@@ -66,7 +68,7 @@ export function TemperatureBlock({
       >
         <div
           style={{
-            backgroundColor: '#FFFFFF',
+            backgroundColor: tone ? (tone === '#dc2626' ? '#fff1f2' : tone === '#d97706' ? '#fffbeb' : '#ecfdf5') : '#FFFFFF',
             border: '1.4px solid #E2E8F0',
             borderRadius: '12px',
             boxShadow:
@@ -83,7 +85,7 @@ export function TemperatureBlock({
               fontSize: mainFontSize,
               fontFamily: 'Inter, Arial, sans-serif',
               fontWeight: 400,
-              color: '#0F172A',
+              color: tone ?? '#0F172A',
               lineHeight: '1',
               whiteSpace: 'nowrap',
               textAlign: 'right',
@@ -166,8 +168,8 @@ export function TemperatureBlock({
         >
           <polygon
             points={`5,0 ${triangleSize},${triangleSize / 2} 5,${triangleSize}`}
-            fill="#000"
-            stroke="#000"
+            fill={tone ?? "#000"}
+            stroke={tone ?? "#000"}
             strokeWidth="1"
           />
           <line
@@ -175,7 +177,7 @@ export function TemperatureBlock({
             y1={triangleSize / 2}
             x2={triangleSize + lineLength}
             y2={triangleSize / 2}
-            stroke="#000"
+            stroke={tone ?? "#000"}
             strokeWidth="2"
           />
         </svg>

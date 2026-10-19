@@ -1,4 +1,5 @@
 interface SquareBlockProps {
+ tone?: string
 	size: number
 	sign: '+' | '-'
 	x?: number
@@ -14,6 +15,7 @@ interface SquareBlockProps {
 }
 
 export function SquareBlock({
+ tone,
 	size,
 	sign,
 	x = 0,
@@ -37,7 +39,7 @@ export function SquareBlock({
 				top: y,
 				width: size,
 				height: size,
-				backgroundColor: '#FFFFFF', 
+				backgroundColor: tone ? (tone === '#dc2626' ? '#fff1f2' : tone === '#d97706' ? '#fffbeb' : '#ecfdf5') : '#FFFFFF',
 				border: '1.9px solid #cfd5e1', 
 				borderRadius: '14px', 
 				boxShadow: '0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04)',
@@ -59,7 +61,7 @@ export function SquareBlock({
 						lineHeight: `${labelLineHeight}px`,
 						fontFamily: 'ui-monospace, SFMono-Regular, Menlo, sans-serif',
 						fontWeight: 400, 
-						color: labelColor,
+						color: tone ?? labelColor,
 						whiteSpace: 'pre-line',
 						userSelect: 'none',
 					}}
@@ -74,7 +76,7 @@ export function SquareBlock({
 					width: circleSize,
 					height: circleSize,
 					borderRadius: '50%',
-					backgroundColor: '#F1F5F9', 
+					backgroundColor: tone ? (tone === '#dc2626' ? '#ffe4e6' : tone === '#d97706' ? '#fef3c7' : '#d1fae5') : '#F1F5F9',
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
@@ -95,13 +97,13 @@ export function SquareBlock({
 						<>
 							<line
 								x1="12.5" y1="5" x2="12.5" y2="19"
-								stroke="#0F172A"
+								stroke={tone ?? "#0F172A"}
 								strokeWidth="3" // Жирнее (было 2.5)
 								strokeLinecap="round"
 							/>
 							<line
 								x1="5.5" y1="12" x2="19.5" y2="12"
-								stroke="#0F172A"
+								stroke={tone ?? "#0F172A"}
 								strokeWidth="3"
 								strokeLinecap="round"
 							/>
@@ -109,7 +111,7 @@ export function SquareBlock({
 					) : (
 						<line
 							x1="5" y1="12" x2="19" y2="12"
-							stroke="#0F172A"
+							stroke={tone ?? "#0F172A"}
 							strokeWidth="3"
 							strokeLinecap="round"
 						/>
