@@ -32,6 +32,7 @@ import i18n from '@/shared/config/i18n/i18n';
 
 const SCHEMA_TOP_INSET = 96;
 const SCHEMA_SIDE_INSET = 16;
+const SCHEMA_CONTENT_WIDTH = 640;
 
 const LoadingOverlay = () => {
 	const { t } = useTranslation();
@@ -366,7 +367,7 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 		const container = containerRef.current;
 		if (!container) return;
 		
-		const baseWidth = 600 + SCHEMA_SIDE_INSET * 2;
+		const baseWidth = SCHEMA_CONTENT_WIDTH + SCHEMA_SIDE_INSET * 2;
 		const baseHeight = 740 + SCHEMA_TOP_INSET;
 		
 		const updateDimensions = () => {
@@ -536,7 +537,8 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 					y={510}
 					rotation={180}
 					labelWidth = {70}
-					labelOffsetX = {120}
+					labelOffsetX = {132}
+                    labelAlign="left"
 				/>
 			</Html>
 
@@ -645,7 +647,8 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 			{/* Справа над - */}
 			<Html>
 				<TemperatureBlock tone={tone('T4_2')}
-					width={100}
+					zone={2}
+                    width={100}
 					height={25}
 					text={formatTemperature('BT21')}
                     target={diagnostics ? undefined : formatZoneTemperature('T_ZONE2')}
@@ -654,14 +657,15 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 					y={42}
 					rotation={-180}
 					labelWidth={70}
-					labelOffsetX={152}
-					labelOffsetY={-18}
+					labelOffsetX={156}
+					labelOffsetY={-26}
 				/>
 			</Html>
 			{/* Слева над - */}
 			<Html>
 				<TemperatureBlock tone={tone('T4_1')}
-					width={100}
+					zone={1}
+                    width={100}
 					height={25}
 					text={formatTemperature('BT1')}
                     target={diagnostics ? undefined : formatZoneTemperature('T_ZONE1')}
@@ -669,8 +673,8 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 					x={152}
 					y={42}
 					labelWidth={70}
-					labelOffsetX={35}
-					labelOffsetY={-18}
+					labelOffsetX={16}
+					labelOffsetY={-26}
 				/>
 			</Html>
 			

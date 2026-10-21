@@ -2,6 +2,7 @@ interface TemperatureBlockProps {
  tone?: string
   width: number
   height: number
+  zone?: number
   target?: string
   text: string
   subText?: string
@@ -23,6 +24,7 @@ export function TemperatureBlock({
   height,
   text,
   target,
+  zone,
   subText,
   x = 0,
   y = 0,
@@ -70,7 +72,7 @@ export function TemperatureBlock({
       >
         <div
           style={{
-            width: target ? 70 : undefined,
+            width: target ? 90 : undefined,
             boxSizing: 'border-box',
             backgroundColor: tone ? (tone === '#dc2626' ? '#fff1f2' : tone === '#d97706' ? '#fffbeb' : '#ecfdf5') : '#FFFFFF',
             border: '1.4px solid #E2E8F0',
@@ -84,7 +86,8 @@ export function TemperatureBlock({
             userSelect: 'none',
           }}
         >
-          {target && <div aria-label="Цель температуры" style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:3,color:'#059669',fontFamily:'Inter, Arial, sans-serif',whiteSpace:'nowrap',paddingBottom:6,borderBottom:'1px solid #e2e8f0'}}><span style={{fontSize:8}}>Цель</span><span style={{fontSize:11,fontWeight:500}}>{target}</span></div>}
+          {target && zone && <div style={{fontSize:10,fontWeight:600,color:'#64748b',textAlign:'center',fontFamily:'Inter, Arial, sans-serif'}}>Зона {zone}</div>}
+          {target && <div aria-label="Цель температуры" style={{display:'flex',alignItems:'baseline',justifyContent:'center',gap:5,color:'#059669',fontFamily:'Inter, Arial, sans-serif',whiteSpace:'nowrap',paddingBottom:6,borderBottom:'1px solid #e2e8f0'}}><span style={{fontSize:9}}>Цель</span><span style={{fontSize:11,fontWeight:500}}>{target}</span></div>}
           <div
             style={{
               fontSize: mainFontSize,
@@ -93,7 +96,7 @@ export function TemperatureBlock({
               color: tone ?? '#0F172A',
               lineHeight: '1',
               whiteSpace: 'nowrap',
-              textAlign: 'right',
+              textAlign: target ? 'center' : 'right',
             }}
           >
             {text}
@@ -111,7 +114,7 @@ export function TemperatureBlock({
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
+                  justifyContent: target ? 'center' : 'space-between',
                   gap: 3,
                   marginTop: subTextOffsetY,
                 }}
