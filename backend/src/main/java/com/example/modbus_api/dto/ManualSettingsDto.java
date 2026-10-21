@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public class ManualSettingsDto {
     // Скорость вентилирования ПВ
     private Double supplySpeed;
-    // Процент наддува ПВ-ОВ
+    // Процент дисбаланса ПВ-ОВ
     private Double boostPercent;
 }
 

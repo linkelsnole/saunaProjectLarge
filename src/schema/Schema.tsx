@@ -657,8 +657,8 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 					y={42}
 					rotation={-180}
 					labelWidth={70}
-					labelOffsetX={156}
-					labelOffsetY={-26}
+					labelOffsetX={diagnostics ? 156 : 156}
+					labelOffsetY={diagnostics ? 0 : -26}
 				/>
 			</Html>
 			{/* Слева над - */}
@@ -673,8 +673,8 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 					x={152}
 					y={42}
 					labelWidth={70}
-					labelOffsetX={16}
-					labelOffsetY={-26}
+					labelOffsetX={diagnostics ? 58 : 16}
+					labelOffsetY={diagnostics ? 0 : -26}
 				/>
 			</Html>
 			

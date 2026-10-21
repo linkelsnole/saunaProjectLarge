@@ -54,10 +54,10 @@ class SettingChangesTest {
         when(client.readRegisters(eq(SAUNA_PLC), anyList())).thenReturn(before);
         SettingChanges changes = new SettingChanges(client);
         changes.floating(100, "ЭКО", "м³/ч", 3500);
-        changes.number(200, 10, "Наддув", "%", -5);
+        changes.number(200, 10, "Дисбаланс", "%", -5);
         changes.number(201, 10, "ПВ", "°C", 60);
         changes.number(202, 10, "ОВ", "°C", null);
-        assertEquals("ЭКО: 3500 → 3500 м³/ч; Наддув: -10 → -5 %; ПВ: неизвестно → 60 °C", changes.describe());
+        assertEquals("ЭКО: 3500 → 3500 м³/ч; Дисбаланс: -10 → -5 %; ПВ: неизвестно → 60 °C", changes.describe());
         verify(client).readRegisters(SAUNA_PLC, Arrays.asList(100,101,200,201));
         verifyNoMoreInteractions(client);
     }
