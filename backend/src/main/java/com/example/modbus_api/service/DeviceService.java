@@ -310,10 +310,10 @@ public class DeviceService {
 		List<SensorData> debugValveSensors = Arrays.asList(
 			createSensor("VHP1", "Положение вентиля ГВ зона 1", getValidScaledSigned(data.get(REG_VALVE_HEAT_POS1), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
 			createSensor("VCP1", "Положение вентиля ХВ зона 1", getValidScaledSigned(data.get(REG_VALVE_COOL_POS1), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
-			createSensor("VOP1", "% доп. открытия вентиля ГВ зона 1", getValidScaledSigned(data.get(REG_VALVE_OPEN_PROC1), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
+			createSensor("VOP1", "% доп. открытия вентиля ГВ зона 1", getValidScaledSigned(data.get(REG_VALVE_OPEN_PROC1), 100.0), "%"),
 			createSensor("VHP2", "Положение вентиля ГВ зона 2", getValidScaledSigned(data.get(REG_VALVE_HEAT_POS2), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
 			createSensor("VCP2", "Положение вентиля ХВ зона 2", getValidScaledSigned(data.get(REG_VALVE_COOL_POS2), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%"),
-			createSensor("VOP2", "% доп. открытия вентиля ГВ зона 2", getValidScaledSigned(data.get(REG_VALVE_OPEN_PROC2), ModbusRegisterMap.VALVE_PERCENT_SCALE), "%")
+			createSensor("VOP2", "% доп. открытия вентиля ГВ зона 2", getValidScaledSigned(data.get(REG_VALVE_OPEN_PROC2), 100.0), "%")
 		);
 
 		
@@ -446,7 +446,7 @@ public class DeviceService {
 			.inflowTargetZone2(inflowTargetZone2)
 			.orpZone1(orpZone1)
 			.orpZone2(orpZone2)
-			.valveStartupPosition(getValidScaled(data.get(REG_T_VALVE_START_POS), 10.0))       // 0x0708, десятые доли процента
+			.valveStartupPosition(getValidScaled(data.get(REG_T_VALVE_START_POS), 1.0))       // 0x0708, целые проценты
 			.controlAlgorithm(getValidOrNull(data.get(REG_T_CTRL_ALGORITHM)))           // п.2: 0x00DD алгоритм управления
 			.tempTrackingInterval(getValidOrNull(data.get(REG_T_TRACK_INTERVAL)))       // п.3: 0x007E интервал слежения по T
 			.targetZone1(targetZone1)
@@ -491,6 +491,7 @@ public class DeviceService {
 			.recupStateCode(recupStateCode)
 			.recupStateName(recupStateName)
 			.recupTargetRpm(recupTargetRpm)
+			.recupMaximumRpm(getValidScaledSigned(data.get(ModbusRegisterMap.RECUPERATOR_MAX_RPM), 100.0))
 			.recupCurrentRpm(recupCurrentRpm)
 			.recupSpeedRpm(recupSpeedRpm)
 			.recupTempBt6(recupTempBt6)

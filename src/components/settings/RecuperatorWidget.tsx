@@ -1,3 +1,5 @@
+import { RecuperatorLoad } from './RecuperatorLoad';
+import { pumpPercent } from './recuperatorPercent';
 import { useState, useEffect } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
 import { useUpdateRecuperatorSettings } from '@/api/hooks';
@@ -51,7 +53,7 @@ const RecuperatorInput = ({ label, value, onChange, unit, decimals = 1, readOnly
     const normalizedValue = localValue.replace(',', '.');
     const numVal = parseFloat(normalizedValue);
 
-    if (!isNaN(numVal) && Math.abs(numVal - (value || 0)) > 0.01) {
+    if (!isNaN(numVal) && Math.abs(numVal - (value || 0)) > 0.000001) {
       onChange(numVal);
     } else {
       if (value !== null && value !== undefined) {
@@ -66,13 +68,13 @@ const RecuperatorInput = ({ label, value, onChange, unit, decimals = 1, readOnly
 
   return (
     <div className="flex flex-col gap-1 w-full">
-      <span className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase tracking-wide px-1 truncate" title={label}>
+      <span className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase tracking-wide px-1 whitespace-normal" title={label}>
         {label}
       </span>
       <div className="relative">
         <Input
           type="number"
-          step={decimals === 0 ? '1' : '0.1'}
+          step={10 ** -decimals}
           value={localValue}
           onChange={(e) => {
             if (readOnly) return;
@@ -98,7 +100,7 @@ const RecuperatorInput = ({ label, value, onChange, unit, decimals = 1, readOnly
 
 export const RecuperatorWidget = () => {
   const { t } = useTranslation();
-  const { data } = useDashboardData();
+  const { data, error } = useDashboardData();
   const { mutate } = useUpdateRecuperatorSettings();
   const { role } = useAuth();
   const isAdmin = role === 'ROLE_ADMIN';
@@ -119,6 +121,7 @@ export const RecuperatorWidget = () => {
 
   return (
     <div className="space-y-6 pb-6">
+      <RecuperatorLoad type="glycol" percent={error ? null : pumpPercent(data?.pumpActive)} />
       {/* === СЕКЦИЯ 1: МОНИТОРИНГ РЕКУПЕРАТОРА === */}
       <div className="space-y-3 animate-in fade-in fill-mode-backwards duration-500 motion-reduce:animate-none">
         <div className="flex justify-between items-center py-3 px-4 rounded-xl border border-slate-200 bg-slate-50">
@@ -138,7 +141,7 @@ export const RecuperatorWidget = () => {
         />
         <RecuperatorTextRow
           label={t('recuperatorWidget.pump')}
-          value={data?.pumpActive ? t('recuperatorWidget.pumpOn') : t('recuperatorWidget.pumpOff')}
+          value={error || data?.pumpActive == null ? 'Нет данных' : data.pumpActive ? t('recuperatorWidget.pumpOn') : t('recuperatorWidget.pumpOff')}
         />
         <RecuperatorRow
           label={t('recuperatorWidget.bt6')}
@@ -153,12 +156,12 @@ export const RecuperatorWidget = () => {
           <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
           {t('recuperatorWidget.setpoints')}
         </h4>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <RecuperatorInput
             label={t('recuperatorWidget.trackingIntervalRecup')}
             value={recuperatorSettings?.trackingIntervalRecup ?? undefined}
             onChange={(val) => mutate({ trackingIntervalRecup: Math.round(val) })}
-            unit=""
+            unit={t('units.seconds')}
             decimals={0}
             readOnly={!isAdmin}
           />
@@ -166,21 +169,24 @@ export const RecuperatorWidget = () => {
             label={t('recuperatorWidget.minRpm')}
             value={recuperatorSettings?.targetRpmMin}
             onChange={(val) => mutate({ targetRpmMin: val })}
-            decimals={1}
+            unit="%"
+            decimals={2}
             readOnly={!isAdmin}
           />
           <RecuperatorInput
             label={t('recuperatorWidget.maxRpm')}
             value={recuperatorSettings?.targetRpmMax}
             onChange={(val) => mutate({ targetRpmMax: val })}
-            decimals={1}
+            unit="%"
+            decimals={2}
             readOnly={!isAdmin}
           />
           <RecuperatorInput
             label={t('recuperatorWidget.calibrationStep')}
             value={recuperatorSettings?.targetRpmStep}
             onChange={(val) => mutate({ targetRpmStep: val })}
-            decimals={1}
+            unit="%"
+            decimals={2}
             readOnly={!isAdmin}
           />
         </div>

@@ -282,7 +282,7 @@ public class SettingsService {
     static int encodeStartupPercent(double percent) {
         if (!Double.isFinite(percent) || percent < 0 || percent > 100)
             throw new IllegalArgumentException("Положение вентилей должно быть от 0 до 100%");
-        return (int)Math.round(percent * 10.0);
+        return (int)Math.round(percent);
     }
 
 	public synchronized void updateTempSettings(
@@ -310,7 +310,7 @@ public class SettingsService {
         }
 		/*
 		 * Порядок важен: сначала приоритет 0 по температуре (п.1–3), значения как в Modbus, без REG_POWERPROC:
-		 *   0x0708 (REG_T_VALVE_START_POS) — положение вентилей при запуске, ×10,
+		 *   0x0708 (REG_T_VALVE_START_POS) — положение вентилей при запуске, целые проценты,
 		 *   0x00DD (REG_T_CTRL_ALGORITHM) — алгоритм управления,
 		 *   0x007E (REG_T_TRACK_INTERVAL) — интервал слежения по T.
 		 * Затем целевые температуры зон, пороги воды и ПВ, новые температурные уставки; в конце — performFastModeChange() → REG_AGGREGATE_CMD.

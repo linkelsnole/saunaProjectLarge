@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RecuperatorSettingsDto {
-    // Уставки рекуператора: значение регистра / 1000
-    private Double targetRpmMin;   // Минимальные обороты (об/мин) - сейчас 0 или 0.5 оборотов
-    private Double targetRpmMax;   // Максимальные обороты (об/мин) - сейчас от 1 до 7 оборотов может стоять
-    private Double targetRpmStep;  // Шаг калибровки (об/мин) - сейчас 0.1 или 0.3 оборота
+    // Уставки рекуператора: значение регистра / 100, проценты
+    private Double targetRpmMin;   // Air2Common: проценты; имя поля сохранено для совместимости API.
+    private Double targetRpmMax;   // Air2Common: проценты; имя поля сохранено для совместимости API.
+    private Double targetRpmStep;  // Air2Common: проценты; имя поля сохранено для совместимости API.
     private Integer trackingIntervalRecup; // 0x0511, секунды
 }

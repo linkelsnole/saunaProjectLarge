@@ -141,7 +141,7 @@ public class ModbusConstants {
 	public static final int MASK_DAMPER_EXHAUST = 0x0002; // бит 1 - задвижка вытяжки
 
 	public static final int REG_Z_WORKSTATE2 = ModbusRegisterMap.WORK_STATE_2;    // Workstate2
-	public static final int MASK_PUMP_WORKSTATE = 0x4000; // бит 14 - насос рекуператора (команда)
+	public static final int MASK_PUMP_WORKSTATE = 0x0040; // Air2Common 2026-10-21: бит 6 - насос рекуператора (команда)
 
 
 	// Проверка на 32768

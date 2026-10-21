@@ -288,6 +288,14 @@ export const ScheduleSettingsWidget = () => {
     );
   }
 
+  if (groups.length === 0) {
+    return <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <h3 className="text-sm font-semibold text-slate-900">Расписания по дням и датам не настроены</h3>
+      <p className="mt-2 text-sm leading-relaxed text-slate-500">Данные получены. В контроллере нет записей расписания по дням недели или датам. Базовый и ручной режимы здесь не отображаются.</p>
+      <Button variant="outline" size="sm" className="mt-4" disabled={schedulesQuery.isFetching} onClick={() => void schedulesQuery.refetch()}>Обновить</Button>
+    </section>;
+  }
+
   return (
     <div className="space-y-3 pb-3">
       {groups.map((group, groupIndex) => {

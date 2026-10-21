@@ -12,10 +12,10 @@ import static org.mockito.Mockito.mock;
 class SettingsServiceRecuperatorTest {
 
     @Test
-    void writesUpdatedRecuperatorRegistersWithCommissionedScale() throws IOException {
+    void writesUpdatedRecuperatorRegistersAsHundredthsOfPercent() throws IOException {
         ModbusClientAdapter client = mock(ModbusClientAdapter.class);
 
-        new SettingsService(client).updateRecuperatorSettings(0.2, 9.0, 0.2, 120);
+        new SettingsService(client).updateRecuperatorSettings(2.0, 90.0, 0.2, 120);
 
         InOrder writes = inOrder(client);
         writes.verify(client).writeRegister(
@@ -25,7 +25,7 @@ class SettingsServiceRecuperatorTest {
         writes.verify(client).writeRegister(
             SAUNA_PLC, ModbusRegisterMap.RECUPERATOR_MAX_RPM_SETTING, 9000);
         writes.verify(client).writeRegister(
-            SAUNA_PLC, ModbusRegisterMap.RECUPERATOR_RPM_STEP_SETTING, 200);
+            SAUNA_PLC, ModbusRegisterMap.RECUPERATOR_RPM_STEP_SETTING, 20);
         writes.verify(client).writeRegister(
             SAUNA_PLC, ModbusRegisterMap.AGGREGATE_COMMAND, 6);
     }

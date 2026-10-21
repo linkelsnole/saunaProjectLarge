@@ -15,7 +15,6 @@ import { ManualSettingsWidget } from "@/components/settings/ManualSettingsWidget
 import { TempSettingsWidget } from "@/components/settings/TempSettingsWidget";
 import { RecuperatorWidget } from "@/components/settings/RecuperatorWidget";
 import { ScheduleWorkspace } from "@/components/settings/ScheduleWorkspace";
-import { ConfiguratorWidget } from "@/components/settings/ConfiguratorWidget";
 import { DeviceErrorNotice } from "@/components/logs/DeviceErrorNotice";
 import SystemEventsJournal from "@/components/logs/SystemEventsJournal";
 import DashboardLogs from "@/components/logs/DashboardLogs";
@@ -31,13 +30,11 @@ const SWIPE_THRESHOLD = 60;
 
 const SettingsTabs = ({
 	isAdmin,
-	canSeeConfigurator,
 	compact,
 	activeTab,
 	onTabChange,
 }: {
 	isAdmin: boolean;
-	canSeeConfigurator: boolean;
 	compact?: boolean;
 	activeTab: string;
 	onTabChange: (tab: string) => void;
@@ -62,11 +59,7 @@ const SettingsTabs = ({
 					{t('app.tabs.schedule')}
 				</TabsTrigger>
             {isTester && <TabsTrigger value="testing" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>{t('testing.title')}</TabsTrigger>}
-				{canSeeConfigurator && (
-					<TabsTrigger value="config" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>
-						{t('app.tabs.config')}
-					</TabsTrigger>
-				)}
+
 				{isAdmin && <TabsTrigger value="errors" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>{t('app.tabs.errors')}</TabsTrigger>}
 				{isAdmin && <TabsTrigger value="logs" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>{t('app.tabs.logs')}</TabsTrigger>}
 				{isAdmin && <TabsTrigger value="update" className={compact ? "flex-none px-4" : "min-w-max flex-1 px-3"}>{t('app.tabs.update')}</TabsTrigger>}
@@ -86,11 +79,7 @@ const SettingsTabs = ({
         {isTester && <TabsContent value="testing" className="flex-1 overflow-y-auto animate-in fade-in duration-200 motion-reduce:animate-none">
           <TestingWorkspace embedded />
         </TabsContent>}
-			{canSeeConfigurator && (
-				<TabsContent value="config" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
-					<ConfiguratorWidget />
-				</TabsContent>
-			)}
+
 			{isAdmin && (
 				<TabsContent value="errors" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
 					<SystemEventsJournal />
@@ -116,7 +105,6 @@ const MainDashboard = () => {
 	const { t } = useTranslation();
 	const sheet = useSettingsSheet();
 	const isAdmin = role === "ROLE_ADMIN";
-	const canSeeConfigurator = role === "ROLE_ADMIN" || role === "ROLE_CONFIG";
 	const touchStartX = useRef(0);
 
 	const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -153,7 +141,7 @@ const MainDashboard = () => {
 						<Card className="h-full min-h-0 flex flex-col rounded-[24px] border border-slate-200 bg-white">
 							<CardContent className="flex flex-1 flex-col min-h-0 p-4 lg:p-5 xl:p-6">
 								<SettingsPanelBoundsProvider>
-									<SettingsTabs activeTab={activeTab} onTabChange={tab => { selectDevice(null); setActiveTab(tab); }} isAdmin={isAdmin} canSeeConfigurator={canSeeConfigurator} compact={false} />
+									<SettingsTabs activeTab={activeTab} onTabChange={tab => { selectDevice(null); setActiveTab(tab); }} isAdmin={isAdmin} compact={false} />
 								</SettingsPanelBoundsProvider>
 							</CardContent>
 						</Card>
@@ -170,7 +158,7 @@ const MainDashboard = () => {
 					</SheetHeader>
 					<div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-5 py-4 pb-8">
 						<SettingsPanelBoundsProvider>
-							<SettingsTabs activeTab={activeTab} onTabChange={tab => { selectDevice(null); setActiveTab(tab); }} isAdmin={isAdmin} canSeeConfigurator={canSeeConfigurator} compact />
+							<SettingsTabs activeTab={activeTab} onTabChange={tab => { selectDevice(null); setActiveTab(tab); }} isAdmin={isAdmin} compact />
 						</SettingsPanelBoundsProvider>
 					</div>
 				</SheetContent>

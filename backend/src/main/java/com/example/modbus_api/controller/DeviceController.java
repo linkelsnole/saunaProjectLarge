@@ -316,7 +316,7 @@ public class DeviceController {
         changes.floating(ModbusRegisterMap.AIRFLOW_NORMAL, "Норм", "м³/ч", request.getNormalAirflow());
         changes.floating(ModbusRegisterMap.AIRFLOW_INTENSIVE, "Интенсив", "м³/ч", request.getIntensiveAirflow());
         changes.floating(ModbusRegisterMap.AIRFLOW_MANUAL, "Ручной объём", "м³/ч", request.getManualAirflow());
-        changes.number(ModbusRegisterMap.AIRFLOW_IMBALANCE, 10, "Наддув", "%", request.getBoostPercent());
+        changes.number(ModbusRegisterMap.AIRFLOW_IMBALANCE, 10, "Дисбаланс", "%", request.getBoostPercent());
         return changes.describe();
     }
 
@@ -402,9 +402,9 @@ public class DeviceController {
 				Map<Integer, Integer> old = readOldValues(regs);
 
 				List<String> parts = new ArrayList<>();
-				appendChange(parts, old, REG_R_TARGET_RPM_MIN, ModbusRegisterMap.RECUPERATOR_SETTING_SCALE, "Мин. обороты", "об/мин", request.getTargetRpmMin());
-				appendChange(parts, old, REG_R_TARGET_RPM_MAX, ModbusRegisterMap.RECUPERATOR_SETTING_SCALE, "Макс. обороты", "об/мин", request.getTargetRpmMax());
-				appendChange(parts, old, REG_R_TARGET_RPM_STEP, ModbusRegisterMap.RECUPERATOR_SETTING_SCALE, "Шаг калибровки", "об/мин", request.getTargetRpmStep());
+				appendChange(parts, old, REG_R_TARGET_RPM_MIN, ModbusRegisterMap.RECUPERATOR_SETTING_SCALE, "Минимальная скорость", "%", request.getTargetRpmMin());
+				appendChange(parts, old, REG_R_TARGET_RPM_MAX, ModbusRegisterMap.RECUPERATOR_SETTING_SCALE, "Максимальная скорость", "%", request.getTargetRpmMax());
+				appendChange(parts, old, REG_R_TARGET_RPM_STEP, ModbusRegisterMap.RECUPERATOR_SETTING_SCALE, "Шаг изменения скорости", "%", request.getTargetRpmStep());
 				appendChange(parts, old, REG_R_TRACK_INTERVAL, 1.0, "Интервал слежения", "с", request.getTrackingIntervalRecup());
 
 				settingsService.updateRecuperatorSettings(
@@ -570,7 +570,7 @@ public class DeviceController {
 		appendChange(parts, old, REG_HOT_VALVE_MIN_PROC, 10.0, "Мин. открытие вентиля ГВ", "%", request.getHotValveMinProc());
 		appendChange(parts, old, REG_T_WATER_NO_WORK, 10.0, "Мин. T воды без работы", "°C", request.getWaterMinTNoWork());
 		appendChange(parts, old, REG_T_WATER_WORK, 10.0, "Мин. T воды в работе", "°C", request.getWaterMinTWork());
-		appendChange(parts, old, REG_T_VALVE_START_POS, 10.0, "Положение вентилей при запуске", "%", request.getValveStartupPosition());
+		appendChange(parts, old, REG_T_VALVE_START_POS, 1.0, "Положение вентилей при запуске", "%", request.getValveStartupPosition());
 		appendChange(parts, old, REG_T_CTRL_ALGORITHM, 1.0, "Алгоритм управления по T", "", request.getControlAlgorithm());
 		appendChange(parts, old, REG_T_TRACK_INTERVAL, 1.0, "Интервал слежения по T", "с", request.getTempTrackingInterval());
 		return parts.isEmpty() ? null : String.join("; ", parts);

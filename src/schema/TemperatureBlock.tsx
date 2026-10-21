@@ -2,6 +2,7 @@ interface TemperatureBlockProps {
  tone?: string
   width: number
   height: number
+  target?: string
   text: string
   subText?: string
   x?: number
@@ -21,6 +22,7 @@ export function TemperatureBlock({
   width,
   height,
   text,
+  target,
   subText,
   x = 0,
   y = 0,
@@ -68,6 +70,8 @@ export function TemperatureBlock({
       >
         <div
           style={{
+            width: target ? 70 : undefined,
+            boxSizing: 'border-box',
             backgroundColor: tone ? (tone === '#dc2626' ? '#fff1f2' : tone === '#d97706' ? '#fffbeb' : '#ecfdf5') : '#FFFFFF',
             border: '1.4px solid #E2E8F0',
             borderRadius: '12px',
@@ -80,6 +84,7 @@ export function TemperatureBlock({
             userSelect: 'none',
           }}
         >
+          {target && <div aria-label="Цель температуры" style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:3,color:'#059669',fontFamily:'Inter, Arial, sans-serif',whiteSpace:'nowrap',paddingBottom:6,borderBottom:'1px solid #e2e8f0'}}><span style={{fontSize:8}}>Цель</span><span style={{fontSize:11,fontWeight:500}}>{target}</span></div>}
           <div
             style={{
               fontSize: mainFontSize,

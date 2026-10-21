@@ -4,21 +4,17 @@ import { ManualSettingsWidget } from './ManualSettingsWidget';
 import { TempSettingsWidget } from './TempSettingsWidget';
 import { RecuperatorWidget } from './RecuperatorWidget';
 import { ScheduleWorkspace } from './ScheduleWorkspace';
-import { ConfiguratorWidget } from './ConfiguratorWidget';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs';
-import { useAuth } from '@/contexts/AuthContext';
 
 export const SettingsWidget = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('volume');
-  const { role } = useAuth();
-  const canSeeConfigurator = role === 'ROLE_ADMIN' || role === 'ROLE_CONFIG';
 
   return (
     <div className="h-full flex flex-col overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 min-h-0 h-full flex flex-col overflow-hidden">
         <TabsList
-          className={`grid w-full mb-4 shrink-0 ${canSeeConfigurator ? 'grid-cols-5' : 'grid-cols-4'}`}
+          className="grid w-full mb-4 shrink-0 grid-cols-4"
         >
           <TabsTrigger value="volume" className="text-xs sm:text-sm">
             {t('app.tabsShort.volume')}
@@ -32,11 +28,7 @@ export const SettingsWidget = () => {
           <TabsTrigger value="schedule" className="text-xs sm:text-sm">
             {t('app.tabs.schedule')}
           </TabsTrigger>
-          {canSeeConfigurator && (
-            <TabsTrigger value="config" className="text-xs sm:text-sm">
-              {t('app.tabsShort.config')}
-            </TabsTrigger>
-          )}
+
         </TabsList>
 
         <TabsContent value="volume" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
@@ -55,11 +47,7 @@ export const SettingsWidget = () => {
           <ScheduleWorkspace />
         </TabsContent>
 
-        {canSeeConfigurator && (
-          <TabsContent value="config" className="flex-1 overflow-y-auto animate-in fade-in duration-500 motion-reduce:animate-none">
-            <ConfiguratorWidget />
-          </TabsContent>
-        )}
+
       </Tabs>
     </div>
   );

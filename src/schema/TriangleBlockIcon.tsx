@@ -15,9 +15,9 @@ export function TriangleBlockIcon({
 	isActive = null,
 	label,
 }: TriangleBlockIconProps) {
-    const fillColor = isActive ? '#dcfce7' : '#F1F5F9';
-    const strokeColor = isActive ? '#16a34a' : '#64748b';
-    const borderColor = isActive ? '#86efac' : '#E2E8F0';
+    const fillColor = isActive === true ? '#dcfce7' : isActive === false ? '#fee2e2' : '#F1F5F9';
+    const strokeColor = isActive === true ? '#16a34a' : isActive === false ? '#dc2626' : '#64748b';
+    const borderColor = isActive === true ? '#86efac' : isActive === false ? '#fca5a5' : '#E2E8F0';
 
 	return (
 		<div

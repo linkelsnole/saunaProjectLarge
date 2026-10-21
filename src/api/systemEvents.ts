@@ -62,6 +62,8 @@ export type Diagnostics = {
     readAt: number;
     state: number | null;
     workState: number | null;
+    state2?: number | null;
+    workState2?: number | null;
     modbusErrors: number | null;
     errorRestarts: number | null;
     failureRestarts: number | null;

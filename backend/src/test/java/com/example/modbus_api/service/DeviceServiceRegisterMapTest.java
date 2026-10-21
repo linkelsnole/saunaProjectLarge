@@ -25,6 +25,16 @@ class DeviceServiceRegisterMapTest {
         verify(client, never()).writeRegister(anyString(), anyInt(), anyInt());
         verify(client, never()).writeCommandOnce(anyString(), anyInt(), anyInt());
     }
+    @Test void rotorMaximumUsesDocumentedRpmRegister() throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        when(client.readRegisters(eq(SAUNA_PLC), anyList())).thenAnswer(invocation -> {
+            java.util.List<Integer> requested = invocation.getArgument(1);
+            assertTrue(requested.contains(0x0804));
+            return Collections.singletonMap(0x0804, 900);
+        });
+        assertEquals(9.0, new DeviceService(client).getDashboardData().getRecupMaximumRpm());
+    }
+
     @Test void unreadableOrInvalidModeNeverStartsAggregate() throws IOException {
         ModbusClientAdapter client = mock(ModbusClientAdapter.class);
         when(client.readRegister(SAUNA_PLC, 0x0302)).thenThrow(new IOException("offline"));
@@ -55,8 +65,10 @@ class DeviceServiceRegisterMapTest {
         });
         DeviceService service = new DeviceService(client);
         assertNull(service.getDashboardData().getPumpActive());
-        values.put(0x0306, 0x4000);
+        values.put(0x0306, 0x0040);
         assertEquals(Boolean.TRUE, service.getDashboardData().getPumpActive());
+        values.put(0x0306, 0x4000);
+        assertEquals(Boolean.FALSE, service.getDashboardData().getPumpActive());
         values.put(0x0306, 0x8000);
         assertEquals(Boolean.FALSE, service.getDashboardData().getPumpActive());
         values.put(0x0306, 0);
@@ -90,13 +102,13 @@ class DeviceServiceRegisterMapTest {
             for(int address:obsolete)assertFalse(requested.contains(address),"obsolete "+Integer.toHexString(address));
             assertTrue(requested.contains(0x708));
             assertTrue(requested.contains(0x10c8));
-            return Collections.singletonMap(0x708,300);
+            return Collections.singletonMap(0x708,30);
         });
         assertEquals(30.0,new DeviceService(client).getDashboardData().getTempSettings().getValveStartupPosition());
         new SettingsService(client).updateTempSettings(null,null,null,null,null,null,null,null,null,null,30.5,null,null);
-        verify(client).writeRegister(SAUNA_PLC,0x708,305);
-        assertEquals(300,SettingsService.encodeStartupPercent(30.0));
-        assertEquals(305,SettingsService.encodeStartupPercent(30.5));
+        verify(client).writeRegister(SAUNA_PLC,0x708,31);
+        assertEquals(30,SettingsService.encodeStartupPercent(30.0));
+        assertEquals(31,SettingsService.encodeStartupPercent(30.5));
         assertThrows(IllegalArgumentException.class,()->SettingsService.encodeStartupPercent(300));
         assertThrows(IllegalArgumentException.class,()->SettingsService.encodeStartupPercent(Double.NaN));
     }
@@ -269,7 +281,7 @@ class DeviceServiceRegisterMapTest {
 
         DashboardData data = new DeviceService(client).getDashboardData();
 
-        assertEquals(930.0, data.getFans().get(0).getPressure(), 0.001);
+        assertEquals(93.0, data.getFans().get(0).getPressure(), 0.001);
         assertEquals(Integer.valueOf(70), data.getFans().get(0).getSpeedPerc());
         assertEquals(Integer.valueOf(5880), data.getVm1());
         assertEquals(6300.0, data.getFans().get(2).getTargetAirFlow(), 0.001);
@@ -295,15 +307,16 @@ class DeviceServiceRegisterMapTest {
         assertEquals(15.0, data.getTempSettings().getOrpZone1().getCurrentT1(), 0.001);
         assertEquals(Integer.valueOf(10), data.getTempSettings().getCtrlModeZone1());
         assertEquals("25.0", data.getDebugValveSensors().get(0).getValue());
+        assertEquals("0.5", data.getDebugValveSensors().get(2).getValue());
         assertEquals(-5.0, data.getTempSettings().getRadTempFail(), 0.001);
         assertEquals(Boolean.TRUE, data.getScreenMode());
         assertEquals(1.5, data.getRecupTargetRpm(), 0.001);
         assertEquals(1.45, data.getRecupCurrentRpm(), 0.001);
         assertEquals(12.3, data.getRecupSpeedRpm(), 0.001);
         assertEquals(Integer.valueOf(120), data.getRecuperatorSettings().getTrackingIntervalRecup());
-        assertEquals(0.2, data.getRecuperatorSettings().getTargetRpmMin(), 0.001);
-        assertEquals(9.0, data.getRecuperatorSettings().getTargetRpmMax(), 0.001);
-        assertEquals(0.2, data.getRecuperatorSettings().getTargetRpmStep(), 0.001);
+        assertEquals(2.0, data.getRecuperatorSettings().getTargetRpmMin(), 0.001);
+        assertEquals(90.0, data.getRecuperatorSettings().getTargetRpmMax(), 0.001);
+        assertEquals(2.0, data.getRecuperatorSettings().getTargetRpmStep(), 0.001);
         assertEquals(Boolean.TRUE, data.getDamperSupply());
         assertEquals(Boolean.TRUE, data.getDamperExhaust());
     }
@@ -336,7 +349,7 @@ class DeviceServiceRegisterMapTest {
         values.put(0x1000, 0);
         assertNull(service.getDashboardData().getDeviceStates().get(0).getAlarmSeconds());
         putFloat(values, ModbusRegisterMap.PRESSURE_FILTER_SUPPLY, 93f);
-        assertEquals("930.0", service.getDashboardData().getWSensors().get(0).getValue());
+        assertEquals("93.0", service.getDashboardData().getWSensors().get(0).getValue());
         values.clear();
         assertNull(service.getDashboardData().getFans().get(0).getPressure());
         verify(client, never()).writeRegister(anyString(), anyInt(), anyInt());

@@ -47,6 +47,7 @@ public class DashboardData {
 
     // Новые регистры рекуператора
     private Double recupTargetRpm;   // Обороты вала рекуператора (целевые), об/мин
+    private Double recupMaximumRpm; // Air2Common RecupRealMaxVal, 0x0804 / 100
     private Double recupCurrentRpm;   // Обороты вала, об/мин
     private Double recupSpeedRpm;     // Скорость вращения, об/мин
 

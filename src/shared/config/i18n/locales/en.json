@@ -169,7 +169,7 @@
     "trackingIntervalRecup": "Recuperator tracking interval",
     "minRpm": "Minimum speed",
     "maxRpm": "Maximum speed",
-    "calibrationStep": "Calibration step"
+    "calibrationStep": "Speed adjustment step"
   },
   "recuperatorStates": {
     "0": "Off",

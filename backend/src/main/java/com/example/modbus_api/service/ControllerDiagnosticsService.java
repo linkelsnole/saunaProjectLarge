@@ -11,7 +11,7 @@ import java.util.Map;
 @Service
 public class ControllerDiagnosticsService {
     // Air2Common: State, WorkState, ModbusErrors, ErrRestarts, FailRestarts.
-    private static final java.util.List<Integer> REGISTERS = Arrays.asList(0x0301,0x0305,0x0600,0x0604,0x0605);
+    private static final java.util.List<Integer> REGISTERS = Arrays.asList(0x0301,0x0302,0x0305,0x0306,0x0600,0x0604,0x0605);
     private final ModbusClientAdapter client;
     private final ModbusProperties config;
     public ControllerDiagnosticsService(ModbusClientAdapter client,ModbusProperties config) { this.client=client;this.config=config; }
@@ -21,7 +21,7 @@ public class ControllerDiagnosticsService {
         if(values==null) throw new IOException("Empty register response");
         // 0x8000 is a valid WorkState value: bit 15 is EvtCollapse. Never replace it with zero/null.
         return new Snapshot(config.getLogName(),System.currentTimeMillis(),word(values.get(0x0301)),word(values.get(0x0305)),
-            word(values.get(0x0600)),word(values.get(0x0604)),word(values.get(0x0605)));
+            word(values.get(0x0600)),word(values.get(0x0604)),word(values.get(0x0605)),word(values.get(0x0302)),word(values.get(0x0306)));
     }
     private Integer word(Integer value) { return value==null || value<0 || value>65535 ? null:value; }
 
@@ -34,5 +34,7 @@ public class ControllerDiagnosticsService {
         private Integer modbusErrors;
         private Integer errorRestarts;
         private Integer failureRestarts;
+        private Integer state2;
+        private Integer workState2;
     }
 }

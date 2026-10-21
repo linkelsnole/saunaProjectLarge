@@ -1,7 +1,7 @@
 package com.example.modbus_api.service;
 
 /**
- * Регистры главной схемы Sauna21Control.xls (лист Air2).
+ * Регистры главной схемы Air2Common.xls (2026-10-21) (лист Air2).
  * Смещения из шаблонов XLS — десятичные. Format=2 — IEEE-754 float:
  * младшее слово по base, старшее по base+1.
  */
@@ -9,10 +9,10 @@ public final class ModbusRegisterMap {
     private ModbusRegisterMap() {
     }
 
-    // Controller display units confirmed during October commissioning.
+    // Air2Common.xls 2026-10-21: pressure is float Pa; recuperator setpoints are hundredths of percent.
     public static final double FAN_PERCENT_SCALE = 10.0;
-    public static final double PRESSURE_DISPLAY_MULTIPLIER = 10.0;
-    public static final double RECUPERATOR_SETTING_SCALE = 1000.0;
+    public static final double PRESSURE_DISPLAY_MULTIPLIER = 1.0;
+    public static final double RECUPERATOR_SETTING_SCALE = 100.0;
     public static final int SENSOR_ALARM_MODE_OFFSET = 0;
     public static final int SENSOR_ALARM_TIME_OFFSET = 1;
     public static final int TEMPERATURE_OFFSET = 8;
@@ -85,7 +85,7 @@ public final class ModbusRegisterMap {
     public static final int AIRFLOW_MANUAL = 0x0116;
     public static final int VENTILATION_MODE = 0x0122;
     public static final int AIRFLOW_TARGET = 0x0124;
-    public static final int AIRFLOW_REAL = 0x0126;
+    public static final int AIRFLOW_REAL = 0x0128;
     public static final int AIRFLOW_IMBALANCE = 0x0707;
     public static final int AGGREGATE_COMMAND = 0x0300;
     public static final int AGGREGATE_STATE = 0x0301;
