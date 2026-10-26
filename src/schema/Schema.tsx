@@ -522,8 +522,8 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 		  />
 		<Html>
 			{/* BP2 */}
-			<div style={{position:'absolute',left:190,top:255,transform:'scale(0.85)',transformOrigin:'top left'}}><FilterGauge name="PF2" coefficient={data?.filterExhaustCoefficient} /></div>
-            <div style={{position:'absolute',left:329,top:495,transform:'scale(0.85)',transformOrigin:'top left'}}><FilterGauge name="PF1" coefficient={data?.filterSupplyCoefficient} /></div>
+			<div className="schema-filter-compact" style={{position:'absolute',left:190,top:262}}><FilterGauge name="PF2" coefficient={data?.filterExhaustCoefficient} /></div>
+            <div className="schema-filter-compact" style={{position:'absolute',left:331,top:502}}><FilterGauge name="PF1" coefficient={data?.filterSupplyCoefficient} /></div>
             <PressureBlock tone={tone('PF2')}
 					width={45}
 					height={45}
