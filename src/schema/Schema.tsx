@@ -522,12 +522,8 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 		  />
 		<Html>
 			{/* BP2 */}
-			<section className="schema-filter-panel" style={{position:'absolute',left:450,top:630}} aria-label="Чистота фильтров">
-              <div className="schema-filter-pair">
-                <div><span>PF1</span><FilterGauge name="PF1" coefficient={data?.filterSupplyCoefficient} /></div>
-                <div><span>PF2</span><FilterGauge name="PF2" coefficient={data?.filterExhaustCoefficient} /></div>
-              </div>
-            </section>
+			<div style={{position:'absolute',left:190,top:248}}><FilterGauge name="PF2" coefficient={data?.filterExhaustCoefficient} /></div>
+            <div style={{position:'absolute',left:323,top:488}}><FilterGauge name="PF1" coefficient={data?.filterSupplyCoefficient} /></div>
             <PressureBlock tone={tone('PF2')}
 					width={45}
 					height={45}
