@@ -9,9 +9,11 @@ public final class ModbusRegisterMap {
     private ModbusRegisterMap() {
     }
 
-    // Air2Common.xls 2026-10-21: pressure is float Pa; recuperator setpoints are hundredths of percent.
+    // Psensor Pressure Power=1 confirmed by controller developer on 2026-10-26.
+    // Air2Common (1).xls leaves this cell blank; retain the explicit correction until the table is fixed.
+    // Recuperator setpoints are hundredths of percent.
     public static final double FAN_PERCENT_SCALE = 10.0;
-    public static final double PRESSURE_DISPLAY_MULTIPLIER = 1.0;
+    public static final double PRESSURE_DISPLAY_MULTIPLIER = 10.0;
     public static final double RECUPERATOR_SETTING_SCALE = 100.0;
     public static final int SENSOR_ALARM_MODE_OFFSET = 0;
     public static final int SENSOR_ALARM_TIME_OFFSET = 1;
@@ -84,6 +86,9 @@ public final class ModbusRegisterMap {
     public static final int AIRFLOW_INTENSIVE = 0x010E;
     public static final int AIRFLOW_MANUAL = 0x0116;
     public static final int VENTILATION_MODE = 0x0122;
+    public static final int FILTER_SUPPLY_COEFFICIENT = 0x012C;
+    public static final int FILTER_EXHAUST_COEFFICIENT = 0x012D;
+
     public static final int AIRFLOW_TARGET = 0x0124;
     public static final int AIRFLOW_REAL = 0x0128;
     public static final int AIRFLOW_IMBALANCE = 0x0707;

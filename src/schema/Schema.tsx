@@ -9,6 +9,7 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { Layer, Line, Stage, Group, Text } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import { useDashboardData } from '../api/useDashboard';
+import { FilterGauge } from '../components/filters/FilterHealth';
 import { PressureBlock } from './PressureBlock';
 import { SquareBlock } from './SquareBlock';
 import { TemperatureBlock } from './TemperatureBlock';
@@ -514,14 +515,20 @@ const Schema = ({ diagnostics = false }: { diagnostics?: boolean }) => {
 			x={90}
 			y={435}
 			text="ΔP"
-			label={diagnostics ? 'PR1\nPR2' : `${formatPressureSensor('BP5')}`}
+			label={diagnostics ? 'PR1\nPR2' : `${formatPressureSensor('BP10')}\n${formatPressureSensor('BP5')}`}
 			labelWidth={70}
 			labelOffsetX={-15}
 			labelOffsetY={-5}
 		  />
 		<Html>
 			{/* BP2 */}
-			<PressureBlock tone={tone('PF2')}
+			<section className="schema-filter-panel" style={{position:'absolute',left:450,top:630}} aria-label="Чистота фильтров">
+              <div className="schema-filter-pair">
+                <div><span>PF1</span><FilterGauge name="PF1" coefficient={data?.filterSupplyCoefficient} /></div>
+                <div><span>PF2</span><FilterGauge name="PF2" coefficient={data?.filterExhaustCoefficient} /></div>
+              </div>
+            </section>
+            <PressureBlock tone={tone('PF2')}
 					width={45}
 					height={45}
 					text={formatPressure('BP2')}

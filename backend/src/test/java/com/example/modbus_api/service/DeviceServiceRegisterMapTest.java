@@ -17,6 +17,44 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class DeviceServiceRegisterMapTest {
+    @Test void filterCoefficientsUseHundredthsAndPreserveMissingData() throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        Map<Integer, Integer> values = new HashMap<>();
+        values.put(0x012C, 90); values.put(0x012D, 350);
+        when(client.readRegisters(eq(SAUNA_PLC), anyList())).thenAnswer(call -> {
+            java.util.List<Integer> requested = call.getArgument(1);
+            assertTrue(requested.contains(0x012C)); assertTrue(requested.contains(0x012D));
+            return values;
+        });
+        DeviceService service = new DeviceService(client);
+        assertEquals(0.9, service.getDashboardData().getFilterSupplyCoefficient(), 0.0001);
+        assertEquals(3.5, service.getDashboardData().getFilterExhaustCoefficient(), 0.0001);
+        values.clear();
+        assertNull(service.getDashboardData().getFilterSupplyCoefficient());
+        assertNull(service.getDashboardData().getFilterExhaustCoefficient());
+    }
+
+    @Test
+    void scalesAllEightPressureSensorsExactlyOnce() throws IOException {
+        ModbusClientAdapter client = mock(ModbusClientAdapter.class);
+        Map<Integer, Integer> registers = new HashMap<>();
+        int[] addresses = {0x1208, 0x1218, 0x1228, 0x1238, 0x1248, 0x1258, 0x1268, 0x1278};
+        for (int i = 0; i < addresses.length; i++) {
+            putFloat(registers, addresses[i], 10.5f + i);
+        }
+        when(client.readRegisters(eq(SAUNA_PLC), anyList())).thenReturn(registers);
+        DashboardData data = new DeviceService(client).getDashboardData();
+        for (int i = 0; i < 4; i++) {
+            assertEquals(105.0 + 10 * i, data.getFans().get(i).getPressure(), 0.001);
+        }
+        assertEquals(145.0, Double.parseDouble(data.getWSensors().get(0).getValue()), 0.001);
+        assertEquals(155.0, Double.parseDouble(data.getWSensors().get(1).getValue()), 0.001);
+        assertEquals("BP10", data.getPressureSensors().get(1).getId());
+        assertEquals(165.0, Double.parseDouble(data.getPressureSensors().get(1).getValue()), 0.001);
+        assertEquals("BP5", data.getPressureSensors().get(0).getId());
+        assertEquals(175.0, Double.parseDouble(data.getPressureSensors().get(0).getValue()), 0.001);
+    }
+
     @ParameterizedTest @ValueSource(ints = {8, 9, 65535})
     void normalStartNeverWritesWhileTestingIsEnabled(int mode) throws IOException {
         ModbusClientAdapter client = mock(ModbusClientAdapter.class);
@@ -281,7 +319,7 @@ class DeviceServiceRegisterMapTest {
 
         DashboardData data = new DeviceService(client).getDashboardData();
 
-        assertEquals(93.0, data.getFans().get(0).getPressure(), 0.001);
+        assertEquals(930.0, data.getFans().get(0).getPressure(), 0.001);
         assertEquals(Integer.valueOf(70), data.getFans().get(0).getSpeedPerc());
         assertEquals(Integer.valueOf(5880), data.getVm1());
         assertEquals(6300.0, data.getFans().get(2).getTargetAirFlow(), 0.001);
@@ -349,7 +387,7 @@ class DeviceServiceRegisterMapTest {
         values.put(0x1000, 0);
         assertNull(service.getDashboardData().getDeviceStates().get(0).getAlarmSeconds());
         putFloat(values, ModbusRegisterMap.PRESSURE_FILTER_SUPPLY, 93f);
-        assertEquals("93.0", service.getDashboardData().getWSensors().get(0).getValue());
+        assertEquals("930.0", service.getDashboardData().getWSensors().get(0).getValue());
         values.clear();
         assertNull(service.getDashboardData().getFans().get(0).getPressure());
         verify(client, never()).writeRegister(anyString(), anyInt(), anyInt());

@@ -114,6 +114,8 @@ export interface DeviceStateDto {
 }
 
 export interface DashboardData {
+  filterSupplyCoefficient?: number | null;
+  filterExhaustCoefficient?: number | null;
   deviceStates?: DeviceStateDto[];
   climateSensors: ClimateSensorDto[];
   wSensors: SensorData[];

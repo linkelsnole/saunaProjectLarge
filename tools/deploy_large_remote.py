@@ -205,6 +205,36 @@ def install(stage, expected, port, database=None, restore_database=None, before_
         finally:
             if new.exists():
                 new.unlink()
+        # Cleanup failure must not roll back an already healthy application.
+        try:
+            prune_install_backups(jar)
+        except OSError as error:
+            print(json.dumps({'backup_cleanup': 'failed', 'error': type(error).__name__}), file=sys.stderr)
+
+
+def prune_install_backups(jar, keep=3):
+    """Bound installer backups independently from the UI's three-version history.
+
+    Called only after a successful start, while the deployment lock is held.
+    Do not touch live databases, failed-restore evidence, links or other apps.
+    """
+    if keep < 3:
+        raise ValueError('At least three installer backups must be retained')
+    jar = Path(jar)
+    pattern = re.compile(re.escape(jar.name) + r'\.backup-\d{8}-\d{6}(?:-\d+)?\Z')
+    backups = sorted((p for p in jar.parent.iterdir()
+                      if pattern.fullmatch(p.name) and p.is_file() and not p.is_symlink()),
+                     key=lambda p: p.name, reverse=True)
+    removed = 0
+    for backup in backups[keep:]:
+        snapshot = Path(str(backup) + '.sqlite')
+        if snapshot.is_symlink():
+            continue
+        if snapshot.is_file():
+            snapshot.unlink()
+        backup.unlink()
+        removed += 1
+    return removed
 
 
 def main():

@@ -1,3 +1,4 @@
+import { FilterHealthSummary } from '../filters/FilterHealth';
 import { LatestSaveQueue } from './latestSaveQueue';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useDashboardData } from '@/api/useDashboard';
@@ -239,6 +240,7 @@ export const ManualSettingsWidget = () => {
           </div>
         </section>
       </div>
+      <FilterHealthSummary supply={data?.filterSupplyCoefficient} exhaust={data?.filterExhaustCoefficient} />
     </div>
   );
 };
